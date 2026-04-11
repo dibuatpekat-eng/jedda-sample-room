@@ -469,9 +469,14 @@ async function saveNewArticle() {
     if (inters.length) await db.from('article_interlining').insert(inters)
   }
 
+  // Auto-add to pattern queue
+  const { data: queueData } = await db.from('pattern_queue').select('queue_order').order('queue_order', { ascending: false }).limit(1)
+  const maxOrder = queueData?.[0]?.queue_order || 0
+  await db.from('pattern_queue').insert({ article_id: art.id, queue_order: maxOrder + 1, status: 'waiting' })
+
   closeModal('modal-new')
   await loadArticles()
-  notify('Article created.', 'success')
+  notify('Article created and added to pola queue.', 'success')
 }
 
 // ── DETAIL MODAL ──
@@ -499,7 +504,8 @@ async function openDetail(id) {
 
 async function renderDSpec(a, isOwn) {
   const { data: fabrics } = await db.from('article_fabrics').select('*').eq('article_id', a.id)
-  const { data: lining } = await db.from('article_lining').select('*').eq('article_id', a.id).single()
+  const { data: linings } = await db.from('article_lining').select('*').eq('article_id', a.id)
+  const lining = linings?.[0] || null
   const { data: inters } = await db.from('article_interlining').select('*').eq('article_id', a.id)
 
   const fabricStr = fabrics?.map(f => `${esc(f.fabric_name)} — ${esc(f.color)}`).join('<br>') || '—'
