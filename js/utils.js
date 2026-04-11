@@ -1,3 +1,9 @@
+// ── ESCAPE HTML ──
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ── TOAST ──
 function toast(msg, duration = 2600) {
   const t = document.createElement('div');
