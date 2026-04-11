@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jedda — Dashboard</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-name">Jedda</div>
+      <div class="sidebar-brand-sub">Sample Room</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" onclick="showPage('overview', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><rect x="1" y="1" width="5" height="5" rx="0.5"/><rect x="8" y="1" width="5" height="5" rx="0.5"/><rect x="1" y="8" width="5" height="5" rx="0.5"/><rect x="8" y="8" width="5" height="5" rx="0.5"/></svg>
+        Overview
+      </div>
+      <div class="nav-section">Articles</div>
+      <div class="nav-item" onclick="showPage('articles', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><rect x="1" y="2" width="12" height="10" rx="0.5"/><line x1="4" y1="5" x2="10" y2="5"/><line x1="4" y1="7.5" x2="10" y2="7.5"/><line x1="4" y1="10" x2="7" y2="10"/></svg>
+        All articles
+      </div>
+      <div class="nav-item" onclick="showPage('archive', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><rect x="1" y="4" width="12" height="9" rx="0.5"/><path d="M1 4l2-3h8l2 3"/><line x1="5" y1="7" x2="9" y2="7"/></svg>
+        Archive
+      </div>
+      <div class="nav-section">Production</div>
+      <div class="nav-item" onclick="showPage('queue', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><line x1="1" y1="4" x2="13" y2="4"/><line x1="1" y1="7" x2="13" y2="7"/><line x1="1" y1="10" x2="13" y2="10"/></svg>
+        Pola queue
+      </div>
+      <div class="nav-item" onclick="showPage('sewing', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><circle cx="7" cy="7" r="5"/><circle cx="7" cy="7" r="2"/><line x1="7" y1="1" x2="7" y2="4"/><line x1="7" y1="10" x2="7" y2="13"/></svg>
+        Sewing workload
+      </div>
+      <div class="nav-item" onclick="showPage('readiness', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><polyline points="1,7 5,11 13,3"/></svg>
+        Production readiness
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="user-avatar">—</div>
+      <div>
+        <div class="sidebar-user-name" id="user-name">Loading...</div>
+        <div class="sidebar-user-role">Head</div>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Sign out">↪</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- OVERVIEW PAGE -->
+    <div id="page-overview">
+      <div class="topbar">
+        <div class="page-title">Overview</div>
+        <div class="topbar-actions">
+          <span id="today-date" style="font-size:11px;color:var(--ink-30)"></span>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stats-row" id="stats-row">
+          <div class="stat"><div class="stat-label">Active articles</div><div class="stat-val">—</div></div>
+          <div class="stat"><div class="stat-label">In sewing</div><div class="stat-val">—</div></div>
+          <div class="stat"><div class="stat-label">Sample master</div><div class="stat-val">—</div></div>
+          <div class="stat"><div class="stat-label">Ready to drop</div><div class="stat-val">—</div></div>
+        </div>
+
+        <!-- Pola Queue summary -->
+        <div class="section-label">Pola queue — Bu Oki</div>
+        <div id="overview-queue"></div>
+
+        <!-- Active work -->
+        <div class="section-label" style="margin-top:20px">Active articles</div>
+        <div class="list-head" style="grid-template-columns:2fr 1fr 1.5fr 1fr 1fr">
+          <div>Article</div><div>Category</div><div>Progress</div><div>Designer</div><div>Status</div>
+        </div>
+        <div id="overview-articles"></div>
+      </div>
+    </div>
+
+    <!-- ALL ARTICLES PAGE -->
+    <div id="page-articles" style="display:none">
+      <div class="topbar">
+        <div class="page-title">All articles</div>
+      </div>
+      <div class="content">
+        <div class="list-head" style="grid-template-columns:2fr 1fr 1.5fr 1fr 1fr">
+          <div>Article</div><div>Category</div><div>Progress</div><div>Designer</div><div>Status</div>
+        </div>
+        <div id="all-articles"></div>
+      </div>
+    </div>
+
+    <!-- ARCHIVE PAGE -->
+    <div id="page-archive" style="display:none">
+      <div class="topbar">
+        <div class="page-title">Archive</div>
+      </div>
+      <div class="content">
+        <div id="archive-list"></div>
+      </div>
+    </div>
+
+    <!-- POLA QUEUE PAGE -->
+    <div id="page-queue" style="display:none">
+      <div class="topbar">
+        <div class="page-title">Pola queue</div>
+      </div>
+      <div class="content">
+        <p style="font-size:12px;color:var(--ink-50);margin-bottom:16px">Bu Oki's current workload. You can override queue order here.</p>
+        <div id="queue-list"></div>
+      </div>
+    </div>
+
+    <!-- SEWING WORKLOAD PAGE -->
+    <div id="page-sewing" style="display:none">
+      <div class="topbar">
+        <div class="page-title">Sewing workload</div>
+      </div>
+      <div class="content">
+        <div id="sewing-list"></div>
+      </div>
+    </div>
+
+    <!-- PRODUCTION READINESS PAGE -->
+    <div id="page-readiness" style="display:none">
+      <div class="topbar">
+        <div class="page-title">Production readiness</div>
+      </div>
+      <div class="content">
+        <p style="font-size:12px;color:var(--ink-50);margin-bottom:16px">Articles approaching production. Check completion status before dropping to vendor.</p>
+        <div id="readiness-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ARTICLE DETAIL MODAL -->
+<div class="overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="detail-name"></div>
+        <div class="modal-sub" id="detail-sub"></div>
+      </div>
+      <button class="close-btn" onclick="closeModal('modal-detail')">×</button>
+    </div>
+    <div class="modal-tabs">
+      <div class="tab active" onclick="switchTab(this,'tab-spec')">Spec</div>
+      <div class="tab" onclick="switchTab(this,'tab-timeline')">Timeline</div>
+      <div class="tab" onclick="switchTab(this,'tab-samples')">Samples</div>
+      <div class="tab" onclick="switchTab(this,'tab-revisions')">Revisions</div>
+      <div class="tab" onclick="switchTab(this,'tab-readiness')">Readiness</div>
+    </div>
+    <div class="modal-body">
+      <div class="tab-pane active" id="tab-spec"></div>
+      <div class="tab-pane" id="tab-timeline"></div>
+      <div class="tab-pane" id="tab-samples"></div>
+      <div class="tab-pane" id="tab-revisions"></div>
+      <div class="tab-pane" id="tab-readiness"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHIVE CONFIRM MODAL -->
+<div class="overlay" id="modal-archive">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <div class="modal-title">Archive article</div>
+      <button class="close-btn" onclick="closeModal('modal-archive')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--ink-50);margin-bottom:14px;line-height:1.6">Article will be moved to archive. All data is preserved and can be restored.</p>
+      <div class="form-row"><label class="form-label">Reason</label><textarea id="archive-reason" placeholder="e.g. Not approved at mockup — direction changed. May revisit next season."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-archive')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmArchive()">Archive</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let profile = null
+let allArticles = []
+let pendingArchiveId = null
+let currentDetailId = null
+
+const STAGE_ORDER = ['design','pattern','sewing','sample_master','sample_vendor','production']
+const STAGE_LABEL = { design:'Design', pattern:'Pola', sewing:'Sewing', sample_master:'Sample Master', sample_vendor:'Sample Vendor', production:'Turun Produksi' }
+
+async function init() {
+  profile = await requireAuth(['head'])
+  if (!profile) return
+
+  document.getElementById('user-name').textContent = profile.full_name
+  document.getElementById('user-avatar').textContent = profile.full_name.charAt(0).toUpperCase()
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })
+
+  await loadAll()
+}
+
+async function loadAll() {
+  const { data } = await db.from('articles')
+    .select(`*, profiles!articles_designer_id_fkey(full_name)`)
+    .order('created_at', { ascending: false })
+
+  allArticles = data || []
+  renderOverview()
+  renderAllArticles()
+  renderArchive()
+  renderQueue()
+  renderSewing()
+  renderReadiness()
+}
+
+function renderOverview() {
+  const active = allArticles.filter(a => a.status === 'active')
+  const inSewing = active.filter(a => a.stage === 'sewing')
+  const inMaster = active.filter(a => a.stage === 'sample_master')
+  const ready = active.filter(a => a.stage === 'sample_vendor')
+
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat"><div class="stat-label">Active articles</div><div class="stat-val">${active.length}</div><div class="stat-sub">In development</div></div>
+    <div class="stat"><div class="stat-label">In sewing</div><div class="stat-val">${inSewing.length}</div><div class="stat-sub">With tailors</div></div>
+    <div class="stat"><div class="stat-label">Sample master</div><div class="stat-val">${inMaster.length}</div><div class="stat-sub">Being finalized</div></div>
+    <div class="stat"><div class="stat-label">At vendor</div><div class="stat-val">${ready.length}</div><div class="stat-sub">Sample vendor stage</div></div>`
+
+  // Queue preview
+  const queueEl = document.getElementById('overview-queue')
+  queueEl.innerHTML = active.filter(a => a.stage === 'pattern').length === 0
+    ? '<div class="empty" style="padding:16px 0">No articles in pola queue.</div>'
+    : active.filter(a => a.stage === 'pattern').slice(0, 3).map((a, i) => `
+      <div class="queue-item ${i === 0 ? 'queue-current' : ''}">
+        <div class="queue-num">${i + 1}</div>
+        <div>
+          <div style="font-size:12px;font-weight:400">${esc(a.name)}</div>
+          <div style="font-size:11px;color:var(--ink-50)">${a.profiles?.full_name || '—'}</div>
+        </div>
+        ${i === 0 ? '<span class="badge badge-sewing" style="margin-left:auto">In progress</span>' : ''}
+      </div>`).join('')
+
+  // Articles list
+  const artEl = document.getElementById('overview-articles')
+  artEl.innerHTML = active.length === 0
+    ? '<div class="empty">No active articles.</div>'
+    : active.map(a => articleRowHTML(a)).join('')
+}
+
+function articleRowHTML(a) {
+  const stageIdx = STAGE_ORDER.indexOf(a.stage)
+  const dots = STAGE_ORDER.map((s, i) => `<div class="prog-dot ${i < stageIdx ? 'done' : i === stageIdx ? 'active' : ''}"></div>`).join('')
+  return `<div class="list-row" style="grid-template-columns:2fr 1fr 1.5fr 1fr 1fr" onclick="openDetail('${a.id}')">
+    <div><div class="art-name">${esc(a.name)}</div><div class="art-sub">${esc(a.reference_source || '—')}</div></div>
+    <div style="font-size:12px;color:var(--ink-50)">${a.category}</div>
+    <div><div class="prog-dots">${dots}</div><div style="font-size:10px;color:var(--ink-30);margin-top:3px">${STAGE_LABEL[a.stage]}</div></div>
+    <div style="font-size:12px">${a.profiles?.full_name || '—'}</div>
+    <div>${stageBadgeHTML(a.stage, a.status)}</div>
+  </div>`
+}
+
+function renderAllArticles() {
+  const el = document.getElementById('all-articles')
+  const active = allArticles.filter(a => a.status === 'active')
+  el.innerHTML = active.length ? active.map(articleRowHTML).join('') : '<div class="empty">No active articles.</div>'
+}
+
+function renderArchive() {
+  const el = document.getElementById('archive-list')
+  const arch = allArticles.filter(a => a.status === 'archived')
+  if (!arch.length) { el.innerHTML = '<div class="empty">No archived articles.</div>'; return }
+  el.innerHTML = arch.map(a => `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="card-title">${esc(a.name)}</div><div class="card-sub">${a.category} · ${esc(a.reference_source || '—')} · ${a.profiles?.full_name || '—'} · Dropped at: ${STAGE_LABEL[a.stage]}</div></div>
+        <button class="btn btn-sage btn-sm" onclick="restoreArticle('${a.id}')">Restore</button>
+      </div>
+      <div class="arch-reason" style="margin-top:10px">
+        <div class="arch-reason-label">Reason archived</div>
+        <div class="arch-reason-val">${esc(a.archive_reason || '—')}</div>
+      </div>
+      <div style="font-size:10px;color:var(--ink-30);margin-top:6px">Started ${fmtDate(a.date_created)}</div>
+    </div>`).join('')
+}
+
+async function renderQueue() {
+  const { data } = await db.from('pattern_queue')
+    .select(`*, articles(name, category)`)
+    .eq('status', 'waiting').order('queue_order')
+  const inProg = await db.from('pattern_queue').select(`*, articles(name, category)`).eq('status', 'in_progress')
+
+  const el = document.getElementById('queue-list')
+  const all = [...(inProg.data || []), ...(data || [])]
+  if (!all.length) { el.innerHTML = '<div class="empty">No articles in pola queue.</div>'; return }
+  el.innerHTML = all.map((q, i) => `
+    <div class="queue-item ${q.status === 'in_progress' ? 'queue-current' : ''}">
+      <div class="queue-num">${i + 1}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:400">${esc(q.articles?.name || '—')}</div>
+        <div style="font-size:11px;color:var(--ink-50)">${q.articles?.category || '—'} ${q.target_completion ? '· Target: ' + fmtDateTime(q.target_completion) : ''}</div>
+        ${q.notes ? `<div style="font-size:11px;color:var(--ink-30);margin-top:2px;font-style:italic">${esc(q.notes)}</div>` : ''}
+      </div>
+      <span class="badge ${q.status === 'in_progress' ? 'badge-sewing' : 'badge-design'}">${q.status === 'in_progress' ? 'In progress' : 'Waiting'}</span>
+    </div>`).join('')
+}
+
+async function renderSewing() {
+  const { data: tailors } = await db.from('tailors').select('*').eq('is_active', true)
+  const { data: assignments } = await db.from('sewing_assignments')
+    .select(`*, articles(name), tailors(name, type)`)
+    .eq('status', 'on_progress')
+
+  const el = document.getElementById('sewing-list')
+  if (!tailors?.length) { el.innerHTML = '<div class="empty">No tailors found.</div>'; return }
+
+  el.innerHTML = tailors.map(t => {
+    const works = (assignments || []).filter(a => a.tailor_id === t.id)
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:400">${esc(t.name)}</div>
+        ${t.type === 'optional' ? '<span style="font-size:9px;color:var(--ink-30);letter-spacing:0.06em">(optional)</span>' : ''}
+        <span style="margin-left:auto;font-size:11px;color:var(--ink-50)">${works.length} active</span>
+      </div>
+      ${works.length ? works.map(w => `
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:0.5px solid var(--border)">
+          <div style="flex:1">
+            <div style="font-size:12px">${esc(w.articles?.name || '—')}</div>
+            <div style="font-size:11px;color:var(--ink-50)">${esc(w.size || '—')} · ${esc(w.color || '—')}</div>
+          </div>
+          <span class="badge badge-sewing">On progress</span>
+        </div>`).join('') : '<div style="font-size:11px;color:var(--ink-30);padding-top:4px">No active assignments.</div>'}
+    </div>`
+  }).join('')
+}
+
+async function renderReadiness() {
+  const advanced = allArticles.filter(a => a.status === 'active' && ['sample_master','sample_vendor','production'].includes(a.stage))
+  const el = document.getElementById('readiness-list')
+  if (!advanced.length) { el.innerHTML = '<div class="empty">No articles at advanced stages yet.</div>'; return }
+
+  el.innerHTML = advanced.map(a => `
+    <div class="card" style="cursor:pointer" onclick="openDetail('${a.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div><div class="card-title">${esc(a.name)}</div><div class="card-sub">${a.category} · ${a.profiles?.full_name || '—'}</div></div>
+        ${stageBadgeHTML(a.stage, a.status)}
+      </div>
+      <div class="checklist">
+        <div class="check-item"><div class="check-icon check-warn">?</div> Sample master — check in detail</div>
+        <div class="check-item"><div class="check-icon check-warn">?</div> Material status — check in detail</div>
+        <div class="check-item"><div class="check-icon check-warn">?</div> Production notes — check in detail</div>
+      </div>
+    </div>`).join('')
+}
+
+// ── DETAIL MODAL ──
+async function openDetail(id) {
+  currentDetailId = id
+  const a = allArticles.find(x => x.id === id)
+  if (!a) return
+
+  document.getElementById('detail-name').textContent = a.name
+  document.getElementById('detail-sub').textContent = `${a.category} · ${a.reference_source || '—'} · ${a.profiles?.full_name || '—'} · Started ${fmtDate(a.date_created)}`
+
+  document.querySelectorAll('#modal-detail .tab').forEach((t, i) => t.classList.toggle('active', i === 0))
+  document.querySelectorAll('#modal-detail .tab-pane').forEach((p, i) => p.classList.toggle('active', i === 0))
+
+  await renderDetailSpec(a)
+  await renderDetailTimeline(a)
+  await renderDetailSamples(a)
+  await renderDetailRevisions(a)
+  await renderDetailReadiness(a)
+  openModal('modal-detail')
+}
+
+async function renderDetailSpec(a) {
+  const { data: fabrics } = await db.from('article_fabrics').select('*').eq('article_id', a.id)
+  const { data: lining } = await db.from('article_lining').select('*').eq('article_id', a.id).single()
+  const { data: interlinings } = await db.from('article_interlining').select('*').eq('article_id', a.id)
+  const { data: accessories } = await db.from('article_accessories').select('*').eq('article_id', a.id)
+
+  const fabricStr = fabrics?.map(f => `${esc(f.fabric_name)} — ${esc(f.color)}`).join(', ') || '—'
+  const liningStr = !lining ? '—' : lining.lining_type === 'none' ? 'None' : lining.lining_type === 'dfc' ? 'DFC (Double Fabric Construction)' : esc(lining.fabric_name || '—')
+  const intStr = interlinings?.map(i => `${esc(i.interlining_name)}${i.position ? ' · ' + esc(i.position) : ''}`).join('<br>') || '—'
+
+  document.getElementById('tab-spec').innerHTML = `
+    <div class="spec-grid">
+      <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fabricStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${liningStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Size range</div><div class="spec-val">${esc(a.size_range || 'TBD')}</div></div>
+      <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Reference</div><div class="spec-val">${esc(a.reference_source || '—')}</div><div class="spec-sub">${esc(a.reference_notes || '')}</div></div>
+    </div>
+    ${accessories?.length ? `
+    <div class="section-label">Accessories</div>
+    <table class="data-table"><thead><tr><th>Item</th><th>Supplier</th><th>Code</th><th>Color</th><th>Status</th></tr></thead>
+    <tbody>${accessories.map(ac => `<tr>
+      <td>${esc(ac.name)}</td><td>${esc(ac.supplier || '—')}</td><td>${esc(ac.code || '—')}</td><td>${esc(ac.color || '—')}</td>
+      <td>${materialStatusHTML(ac.material_status)}</td>
+    </tr>`).join('')}</tbody></table>` : ''}
+    ${a.status === 'active' ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:0.5px solid var(--border)">
+      <span style="font-size:11px;color:var(--ink-50);font-style:italic">Current stage: ${STAGE_LABEL[a.stage]}</span>
+      <button class="btn btn-danger btn-sm" onclick="openArchiveConfirm('${a.id}')">Archive</button>
+    </div>` : ''}
+  `
+}
+
+async function renderDetailTimeline(a) {
+  const items = STAGE_ORDER.map((s, i) => {
+    const idx = STAGE_ORDER.indexOf(a.stage)
+    const dotClass = i < idx ? 'done' : i === idx ? 'active' : 'pending'
+    const statusHTML = i < idx ? `<div class="tl-status tl-done">Completed</div>` : i === idx ? `<div class="tl-status tl-active">Current stage</div>` : `<div class="tl-status tl-pending">Pending</div>`
+    return `<div class="tl-item">
+      <div class="tl-left"><div class="tl-dot ${dotClass}"></div>${i < STAGE_ORDER.length - 1 ? '<div class="tl-line"></div>' : ''}</div>
+      <div><div class="tl-stage">${STAGE_LABEL[s]}</div>${statusHTML}</div>
+    </div>`
+  }).join('')
+  document.getElementById('tab-timeline').innerHTML = `<div class="timeline">${items}</div>`
+}
+
+async function renderDetailSamples(a) {
+  const { data: masters } = await db.from('sample_masters').select(`*, tailors(name)`).eq('article_id', a.id)
+  const { data: vendors } = await db.from('sample_vendors').select('*').eq('article_id', a.id)
+  const { data: mockups } = await db.from('mockups').select('*').eq('article_id', a.id)
+
+  let html = ''
+  if (mockups?.length) {
+    html += `<div class="section-label">Mockups</div>
+    <table class="data-table"><thead><tr><th>Part</th><th>Assigned to</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>${mockups.map(m => `<tr><td>${esc(m.part)}</td><td>${esc(m.assigned_to || '—')}</td><td><span class="badge badge-${m.status === 'done' ? 'vendor' : m.status === 'revision' ? 'sewing' : 'design'}">${m.status}</span></td><td style="color:var(--ink-50)">${esc(m.notes || '—')}</td></tr>`).join('')}</tbody></table>`
+  }
+  if (masters?.length) {
+    html += `<div class="section-label" style="margin-top:16px">Sample master</div>
+    <table class="data-table"><thead><tr><th>Size</th><th>Color</th><th>Tailor</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>${masters.map(m => `<tr><td>${esc(m.size)}</td><td>${esc(m.color || '—')}</td><td>${esc(m.tailors?.name || '—')}</td><td><span class="badge badge-${m.status === 'approved' ? 'vendor' : m.status === 'revision' ? 'sewing' : 'master'}">${m.status}</span></td><td style="color:var(--ink-50)">${esc(m.notes || '—')}</td></tr>`).join('')}</tbody></table>`
+  }
+  if (vendors?.length) {
+    html += `<div class="section-label" style="margin-top:16px">Sample vendor</div>
+    <table class="data-table"><thead><tr><th>Vendor</th><th>Size</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>${vendors.map(v => `<tr><td>${esc(v.vendor_name)}</td><td>${esc(v.size || '—')}</td><td><span class="badge badge-${v.status === 'approved' ? 'final' : v.status === 'revision' ? 'sewing' : 'vendor'}">${v.status}</span></td><td style="color:var(--ink-50)">${esc(v.notes || '—')}</td></tr>`).join('')}</tbody></table>`
+  }
+  if (!html) html = '<div class="empty">No samples recorded yet.</div>'
+  document.getElementById('tab-samples').innerHTML = html
+}
+
+async function renderDetailRevisions(a) {
+  const { data: revs } = await db.from('revision_logs').select(`*, profiles(full_name)`).eq('article_id', a.id).order('created_at', { ascending: false })
+  const items = revs?.length ? revs.map(r => `
+    <div class="rev-item">
+      <div class="rev-meta"><span class="rev-date">${fmtDate(r.created_at)}</span><span class="rev-tag">${esc(r.stage)}</span><span style="font-size:10px;color:var(--ink-30)">${esc(r.profiles?.full_name || '—')}</span></div>
+      <div class="rev-desc">${esc(r.description)}</div>
+    </div>`).join('') : '<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:16px">No revisions logged yet.</div>'
+
+  document.getElementById('tab-revisions').innerHTML = items
+}
+
+async function renderDetailReadiness(a) {
+  const { data: masters } = await db.from('sample_masters').select('*').eq('article_id', a.id)
+  const { data: vendors } = await db.from('sample_vendors').select('*').eq('article_id', a.id)
+  const { data: matStatus } = await db.from('article_material_status').select('*').eq('article_id', a.id)
+  const { data: accessories } = await db.from('article_accessories').select('*').eq('article_id', a.id)
+  const { data: sizepack } = await db.from('size_packs').select('id').eq('article_id', a.id).single()
+  const { data: prodNotes } = await db.from('production_notes').select('id').eq('article_id', a.id).limit(1)
+
+  const masterApproved = masters?.every(m => m.status === 'approved') && masters?.length > 0
+  const vendorApproved = vendors?.every(v => v.status === 'approved') && vendors?.length > 0
+  const matReady = matStatus?.every(m => m.material_status === 'ready') && accessories?.every(a => a.material_status === 'ready')
+  const matMinOrder = matStatus?.every(m => ['ready','on_order'].includes(m.material_status)) && accessories?.every(a => ['ready','on_order'].includes(a.material_status))
+  const hasSize = !!sizepack
+  const hasProdNotes = prodNotes?.length > 0
+
+  const checkItem = (ok, warn, label) => `
+    <div class="check-item">
+      <div class="check-icon ${ok ? 'check-ok' : warn ? 'check-warn' : 'check-no'}">${ok ? '✓' : warn ? '!' : '✗'}</div>
+      <div style="font-size:12px">${label}</div>
+    </div>`
+
+  document.getElementById('tab-readiness').innerHTML = `
+    <div class="section-label">Checklist — Turun Produksi</div>
+    <div class="checklist">
+      ${checkItem(masterApproved, masters?.length > 0, `Sample master — ${masterApproved ? 'all approved' : masters?.length ? 'some pending' : 'none recorded'}`)}
+      ${checkItem(vendorApproved, vendors?.length > 0, `Sample vendor — ${vendorApproved ? 'all approved' : vendors?.length ? 'some pending' : 'none recorded'}`)}
+      ${checkItem(matReady, matMinOrder, `Material — ${matReady ? 'all ready' : matMinOrder ? 'some on order' : 'need to order'}`)}
+      ${checkItem(hasSize, false, `Size pack — ${hasSize ? 'filled' : 'not yet filled'}`)}
+      ${checkItem(hasProdNotes, false, `Production & QC notes — ${hasProdNotes ? 'available' : 'not yet added'}`)}
+    </div>`
+}
+
+// ── ARCHIVE ──
+function openArchiveConfirm(id) {
+  pendingArchiveId = id
+  document.getElementById('archive-reason').value = ''
+  openModal('modal-archive')
+}
+
+async function confirmArchive() {
+  const reason = document.getElementById('archive-reason').value.trim()
+  if (!reason) { notify('Please provide a reason.', 'error'); return }
+  const { error } = await db.from('articles').update({ status: 'archived', archive_reason: reason, archived_by: profile.id, archived_at: new Date().toISOString() }).eq('id', pendingArchiveId)
+  if (error) { notify('Failed to archive.', 'error'); return }
+  closeModal('modal-archive')
+  closeModal('modal-detail')
+  await loadAll()
+  notify('Article archived.', 'success')
+}
+
+async function restoreArticle(id) {
+  const { error } = await db.from('articles').update({ status: 'active', archive_reason: null, archived_by: null, archived_at: null }).eq('id', id)
+  if (error) { notify('Failed to restore.', 'error'); return }
+  await loadAll()
+  notify('Article restored.', 'success')
+}
+
+// ── PAGE NAV ──
+function showPage(name, el) {
+  ['overview','articles','archive','queue','sewing','readiness'].forEach(p => {
+    document.getElementById('page-' + p).style.display = p === name ? 'flex' : 'none'
+    document.getElementById('page-' + p).style.flexDirection = 'column'
+  })
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  if (el) el.classList.add('active')
+  if (name === 'queue') renderQueue()
+  if (name === 'sewing') renderSewing()
+}
+
+function switchTab(el, paneId) {
+  el.closest('.modal').querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+  el.classList.add('active')
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'))
+  document.getElementById(paneId).classList.add('active')
+}
+
+// Init pages
+;['articles','archive','queue','sewing','readiness'].forEach(p => {
+  document.getElementById('page-' + p).style.display = 'none'
+})
+
+init()
+</script>
+</body>
+</html>

@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jedda — Head Dashboard</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .articles-grid { display: grid; grid-template-columns: 2fr 1fr 1.5fr 1fr 1fr 90px; }
+  .material-flag { background: var(--gold-light); border-left: 2px solid var(--gold); padding: 10px 14px; border-radius: 0 2px 2px 0; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
+  .material-flag-name { font-size: 13px; font-weight: 400; }
+  .material-flag-meta { font-size: 11px; color: var(--ink-60); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Jedda</div>
+      <div class="brand-sub">Sample Room</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" onclick="showSection('dashboard', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="8" y="1" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="1" y="8" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="8" y="8" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-label">Articles</div>
+      <div class="nav-item" onclick="showSection('articles', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="10" rx="0.5" stroke="currentColor" stroke-width="1"/><line x1="4" y1="5" x2="10" y2="5" stroke="currentColor" stroke-width="1"/><line x1="4" y1="7.5" x2="10" y2="7.5" stroke="currentColor" stroke-width="1"/><line x1="4" y1="10" x2="7" y2="10" stroke="currentColor" stroke-width="1"/></svg>
+        All articles
+      </div>
+      <div class="nav-item" onclick="showSection('archive', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="4" width="12" height="9" rx="0.5" stroke="currentColor" stroke-width="1"/><path d="M1 4l2-3h8l2 3" stroke="currentColor" stroke-width="1"/><line x1="5" y1="7" x2="9" y2="7" stroke="currentColor" stroke-width="1"/></svg>
+        Archive
+      </div>
+      <div class="nav-label">Operations</div>
+      <div class="nav-item" onclick="showSection('queue', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><line x1="2" y1="3" x2="12" y2="3" stroke="currentColor" stroke-width="1"/><line x1="2" y1="7" x2="12" y2="7" stroke="currentColor" stroke-width="1"/><line x1="2" y1="11" x2="8" y2="11" stroke="currentColor" stroke-width="1"/></svg>
+        Pattern queue
+      </div>
+      <div class="nav-item" onclick="showSection('tailors', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="4" r="2.5" stroke="currentColor" stroke-width="1"/><path d="M2 12c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1"/></svg>
+        Tailor workload
+      </div>
+      <div class="nav-item" onclick="showSection('materials', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="0.5" stroke="currentColor" stroke-width="1"/><path d="M1 5h12M5 5v8" stroke="currentColor" stroke-width="1"/></svg>
+        Materials
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">Signed in as<span id="user-name">—</span></div>
+      <button class="btn-logout" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-content with-sidebar">
+
+    <!-- DASHBOARD -->
+    <div id="section-dashboard">
+      <div class="topbar">
+        <div class="topbar-title">Dashboard</div>
+        <div class="topbar-actions">
+          <span id="today-date" style="font-size:11px;color:var(--ink-30);letter-spacing:0.06em"></span>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stats-row" id="stats-row">
+          <div class="stat"><div class="stat-label">Active articles</div><div class="stat-val" id="stat-active">—</div></div>
+          <div class="stat"><div class="stat-label">In sewing</div><div class="stat-val" id="stat-sewing">—</div></div>
+          <div class="stat"><div class="stat-label">Sample master</div><div class="stat-val" id="stat-master">—</div></div>
+          <div class="stat"><div class="stat-label">Ready to produce</div><div class="stat-val" id="stat-ready">—</div></div>
+        </div>
+
+        <div class="two-col" style="margin-bottom:24px">
+          <!-- Pattern Queue Preview -->
+          <div class="card">
+            <div class="card-title">Pattern queue — Bu Oki</div>
+            <div id="queue-preview"></div>
+          </div>
+          <!-- Material flags -->
+          <div class="card">
+            <div class="card-title">Material attention needed</div>
+            <div id="material-flags"></div>
+          </div>
+        </div>
+
+        <!-- Active articles -->
+        <div class="section-row">
+          <div class="section-label">Active articles</div>
+        </div>
+        <div class="articles-grid list-header">
+          <div>Article</div><div>Category</div><div>Progress</div><div>Designer</div><div>Status</div><div></div>
+        </div>
+        <div id="dashboard-articles"></div>
+      </div>
+    </div>
+
+    <!-- ALL ARTICLES -->
+    <div id="section-articles" style="display:none">
+      <div class="topbar">
+        <div class="topbar-title">All articles</div>
+      </div>
+      <div class="content">
+        <div class="articles-grid list-header">
+          <div>Article</div><div>Category</div><div>Progress</div><div>Designer</div><div>Status</div><div></div>
+        </div>
+        <div id="all-articles"></div>
+      </div>
+    </div>
+
+    <!-- ARCHIVE -->
+    <div id="section-archive" style="display:none">
+      <div class="topbar"><div class="topbar-title">Archive</div></div>
+      <div class="content"><div id="archive-list"></div></div>
+    </div>
+
+    <!-- PATTERN QUEUE -->
+    <div id="section-queue" style="display:none">
+      <div class="topbar"><div class="topbar-title">Pattern queue</div></div>
+      <div class="content"><div id="queue-full"></div></div>
+    </div>
+
+    <!-- TAILOR WORKLOAD -->
+    <div id="section-tailors" style="display:none">
+      <div class="topbar"><div class="topbar-title">Tailor workload</div></div>
+      <div class="content"><div id="tailors-list"></div></div>
+    </div>
+
+    <!-- MATERIALS -->
+    <div id="section-materials" style="display:none">
+      <div class="topbar"><div class="topbar-title">Material status</div></div>
+      <div class="content"><div id="materials-list"></div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ARTICLE DETAIL MODAL -->
+<div class="overlay" id="modal-article">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-head-title" id="art-modal-name"></div>
+        <div class="modal-head-sub" id="art-modal-sub"></div>
+      </div>
+      <button class="close-btn" onclick="closeModal('modal-article')">×</button>
+    </div>
+    <div class="modal-tabs">
+      <div class="tab active" onclick="switchTab(this,'tab-spec')">Spec</div>
+      <div class="tab" onclick="switchTab(this,'tab-timeline')">Timeline</div>
+      <div class="tab" onclick="switchTab(this,'tab-samples')">Samples</div>
+      <div class="tab" onclick="switchTab(this,'tab-production')">Production</div>
+      <div class="tab" onclick="switchTab(this,'tab-revisions')">Revisions</div>
+      <div class="tab" onclick="switchTab(this,'tab-readiness')">Readiness</div>
+    </div>
+    <div class="modal-body">
+      <div class="tab-content active" id="tab-spec"></div>
+      <div class="tab-content" id="tab-timeline"></div>
+      <div class="tab-content" id="tab-samples"></div>
+      <div class="tab-content" id="tab-production"></div>
+      <div class="tab-content" id="tab-revisions"></div>
+      <div class="tab-content" id="tab-readiness"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHIVE CONFIRM MODAL -->
+<div class="overlay" id="modal-archive">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <div class="modal-head-title">Archive article</div>
+      <button class="close-btn" onclick="closeModal('modal-archive')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--ink-60);margin-bottom:14px;line-height:1.6">Article will be archived. Data is preserved and can be restored anytime.</p>
+      <div class="form-row">
+        <label class="form-label">Reason</label>
+        <textarea id="archive-reason" placeholder="e.g. Not approved at mockup — direction changed."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-archive')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmArchive()">Archive</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/utils.js"></script>
+<script>
+let currentArticleId = null;
+let pendingArchiveId = null;
+let allArticles = [];
+let tailors = [];
+
+// ── AUTH GUARD ──
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'index.html'; return; }
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== 'head') { window.location.href = 'index.html'; return; }
+  document.getElementById('user-name').textContent = profile.full_name;
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  await loadAll();
+}
+
+async function loadAll() {
+  await Promise.all([loadArticles(), loadTailors(), loadQueue()]);
+  renderDashboard();
+}
+
+async function loadArticles() {
+  const { data } = await db.from('articles')
+    .select(`*, profiles!articles_designer_id_fkey(full_name), article_fabrics(*), article_lining(*), article_interlining(*), article_accessories(*), article_material_status(*), sample_masters(*), sample_vendors(*), production_notes(*), size_packs(*), pattern_queue(*), sewing_assignments(*), mockups(*)`)
+    .order('created_at', { ascending: false });
+  allArticles = data || [];
+}
+
+async function loadTailors() {
+  const { data } = await db.from('tailors').select('*, sewing_assignments(*)').eq('is_active', true);
+  tailors = data || [];
+}
+
+async function loadQueue() {
+  // queue loaded within articles
+}
+
+// ── RENDER DASHBOARD ──
+function renderDashboard() {
+  const active = allArticles.filter(a => a.status === 'active');
+  document.getElementById('stat-active').textContent = active.length;
+  document.getElementById('stat-sewing').textContent = active.filter(a => a.stage === 'sewing').length;
+  document.getElementById('stat-master').textContent = active.filter(a => a.stage === 'sample_master').length;
+  document.getElementById('stat-ready').textContent = active.filter(a => isReadyToProduce(a)).length;
+
+  renderArticleList('dashboard-articles', active.slice(0, 10));
+  renderArticleList('all-articles', active);
+  renderArchive();
+  renderQueuePreview();
+  renderMaterialFlags();
+  renderQueueFull();
+  renderTailors();
+  renderMaterials();
+}
+
+function isReadyToProduce(a) {
+  const mastersOk = a.sample_masters?.every(s => s.status === 'approved');
+  const vendorsOk = a.sample_vendors?.every(s => s.status === 'approved');
+  const materialsOk = [...(a.article_material_status || []), ...(a.article_accessories || [])]
+    .every(m => m.material_status === 'ready');
+  const sizepackOk = a.size_packs?.length > 0;
+  const notesOk = a.production_notes?.length > 0;
+  return mastersOk && vendorsOk && materialsOk && sizepackOk && notesOk;
+}
+
+function renderArticleList(containerId, arts) {
+  const el = document.getElementById(containerId);
+  if (!arts.length) { el.innerHTML = '<div class="empty">No articles found.</div>'; return; }
+  el.innerHTML = arts.map(a => `
+    <div class="list-row articles-grid clickable" onclick="openArticle('${a.id}')">
+      <div>
+        <div style="font-size:13px;font-weight:400">${a.name}</div>
+        <div style="font-size:11px;color:var(--ink-60)">${a.category}${a.reference_source ? ' · ' + a.reference_source : ''}</div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-60)">${a.category}</div>
+      <div>
+        <div class="progress-dots">${progressDotsHTML(a.stage)}</div>
+        <div style="font-size:10px;color:var(--ink-30);margin-top:3px">${stageLabel(a.stage)}</div>
+      </div>
+      <div style="font-size:12px">${a.profiles?.full_name || '—'}</div>
+      <div><span class="badge ${stageBadgeClass(a.stage)}">${stageLabel(a.stage)}</span></div>
+      <div style="text-align:right;font-size:10px;color:var(--ink-30)">${fmtDate(a.date_created)}</div>
+    </div>`).join('');
+}
+
+function renderArchive() {
+  const archived = allArticles.filter(a => a.status === 'archived');
+  const el = document.getElementById('archive-list');
+  if (!archived.length) { el.innerHTML = '<div class="empty">No archived articles.</div>'; return; }
+  el.innerHTML = archived.map(a => `
+    <div class="archive-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:13px;font-weight:400">${a.name}</div>
+          <div style="font-size:11px;color:var(--ink-60)">${a.category} · ${a.profiles?.full_name || '—'} · Dropped at: ${stageLabel(a.stage)}</div>
+        </div>
+        <button class="btn btn-sage btn-sm" onclick="restoreArticle('${a.id}')">Restore</button>
+      </div>
+      <div class="arch-reason"><div class="arch-reason-label">Reason</div><div class="arch-reason-val">${a.archive_reason || '—'}</div></div>
+      <div style="font-size:10px;color:var(--ink-30)">Started ${fmtDate(a.date_created)}</div>
+    </div>`).join('');
+}
+
+function renderQueuePreview() {
+  const queued = allArticles
+    .filter(a => a.pattern_queue?.length > 0 && a.status === 'active')
+    .map(a => ({ ...a, q: a.pattern_queue[0] }))
+    .sort((a, b) => a.q.queue_order - b.q.queue_order)
+    .slice(0, 4);
+  const el = document.getElementById('queue-preview');
+  if (!queued.length) { el.innerHTML = '<div class="empty" style="padding:20px">No items in queue.</div>'; return; }
+  el.innerHTML = queued.map((a, i) => `
+    <div class="queue-item">
+      <div class="queue-num ${a.q.status === 'in_progress' ? 'current' : ''}">${i + 1}</div>
+      <div class="queue-info">
+        <div class="queue-name">${a.name}</div>
+        <div class="queue-meta">${a.q.status === 'in_progress' ? 'In progress' : 'Waiting'}${a.q.target_completion ? ' · Target: ' + fmtDateTime(a.q.target_completion) : ''}</div>
+      </div>
+      <span class="badge ${a.q.status === 'in_progress' ? 'badge-inprogress' : 'badge-waiting'}">${a.q.status === 'in_progress' ? 'Active' : 'Queue'}</span>
+    </div>`).join('');
+}
+
+function renderMaterialFlags() {
+  const flagged = allArticles.filter(a =>
+    a.status === 'active' && (a.stage === 'sample_master' || a.stage === 'sample_vendor') &&
+    ([...(a.article_material_status || []), ...(a.article_accessories || [])].some(m => m.material_status === 'need_to_order'))
+  );
+  const el = document.getElementById('material-flags');
+  if (!flagged.length) { el.innerHTML = '<div class="empty" style="padding:20px">All materials on track.</div>'; return; }
+  el.innerHTML = flagged.map(a => `
+    <div class="material-flag">
+      <div>
+        <div class="material-flag-name">${a.name}</div>
+        <div class="material-flag-meta">${stageLabel(a.stage)} · Some materials need to be ordered</div>
+      </div>
+      <button class="btn btn-sm" onclick="openArticle('${a.id}')">View</button>
+    </div>`).join('');
+}
+
+function renderQueueFull() {
+  const queued = allArticles
+    .filter(a => a.pattern_queue?.length > 0 && a.status === 'active')
+    .map(a => ({ ...a, q: a.pattern_queue[0] }))
+    .sort((a, b) => a.q.queue_order - b.q.queue_order);
+  const el = document.getElementById('queue-full');
+  if (!queued.length) { el.innerHTML = '<div class="empty">No items in pattern queue.</div>'; return; }
+  el.innerHTML = queued.map((a, i) => `
+    <div class="queue-item">
+      <div class="queue-num ${a.q.status === 'in_progress' ? 'current' : ''}">${i + 1}</div>
+      <div class="queue-info">
+        <div class="queue-name">${a.name}</div>
+        <div class="queue-meta">
+          ${a.q.status === 'in_progress' ? '<span style="color:var(--gold)">In progress</span>' : 'Waiting'}
+          ${a.q.target_completion ? ' · Target: ' + fmtDateTime(a.q.target_completion) : ''}
+          ${a.q.notes ? ' · ' + a.q.notes : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="badge ${a.q.status === 'in_progress' ? 'badge-inprogress' : 'badge-waiting'}">${a.q.status === 'in_progress' ? 'Active' : 'Queue'}</span>
+        ${i > 0 ? `<button class="btn btn-sm" onclick="moveQueueUp('${a.id}','${a.q.id}',${i},event)">↑</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+async function moveQueueUp(articleId, queueId, idx, e) {
+  e.stopPropagation();
+  // Swap with item above
+  const queued = allArticles
+    .filter(a => a.pattern_queue?.length > 0 && a.status === 'active')
+    .map(a => ({ ...a, q: a.pattern_queue[0] }))
+    .sort((a, b) => a.q.queue_order - b.q.queue_order);
+  const above = queued[idx - 1];
+  const current = queued[idx];
+  await db.from('pattern_queue').update({ queue_order: above.q.queue_order }).eq('id', current.q.id);
+  await db.from('pattern_queue').update({ queue_order: current.q.queue_order }).eq('id', above.q.id);
+  await loadAll();
+  toast('Queue order updated.');
+}
+
+function renderTailors() {
+  const el = document.getElementById('tailors-list');
+  el.innerHTML = tailors.map(t => {
+    const active = (t.sewing_assignments || []).filter(s => s.status === 'on_progress');
+    return `<div class="tailor-item">
+      <div>
+        <div class="tailor-name">${t.name}</div>
+        <div class="tailor-type-tag">${t.type === 'optional' ? 'Optional' : 'Regular'}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="tailor-load">${active.length} item${active.length !== 1 ? 's' : ''} active</div>
+        ${active.map(s => `<div style="font-size:10px;color:var(--ink-30);margin-top:2px">${allArticles.find(a => a.id === s.article_id)?.name || '—'}</div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderMaterials() {
+  const el = document.getElementById('materials-list');
+  const relevant = allArticles.filter(a => a.status === 'active' && (a.article_material_status?.length || a.article_accessories?.length));
+  if (!relevant.length) { el.innerHTML = '<div class="empty">No material data yet.</div>'; return; }
+  el.innerHTML = relevant.map(a => {
+    const mats = a.article_material_status || [];
+    const accs = a.article_accessories || [];
+    const allMats = [...mats, ...accs];
+    const allReady = allMats.every(m => m.material_status === 'ready');
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div style="font-size:14px;font-weight:400">${a.name}</div>
+          <div style="font-size:11px;color:var(--ink-60)">${stageLabel(a.stage)}</div>
+        </div>
+        ${allReady ? '<span class="badge badge-done">All ready</span>' : '<span class="badge badge-revision">Action needed</span>'}
+      </div>
+      ${allMats.map(m => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border);font-size:12px">
+          <div>${m.material_name || m.name} ${m.color ? '· ' + m.color : ''}</div>
+          ${availHTML(m.material_status)}
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ── ARTICLE DETAIL ──
+async function openArticle(id) {
+  currentArticleId = id;
+  const a = allArticles.find(x => x.id === id);
+  if (!a) return;
+
+  document.getElementById('art-modal-name').textContent = a.name;
+  document.getElementById('art-modal-sub').textContent = `${a.category} · ${a.profiles?.full_name || '—'} · Started ${fmtDate(a.date_created)}`;
+
+  document.querySelectorAll('#modal-article .tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+  document.querySelectorAll('#modal-article .tab-content').forEach((c, i) => c.classList.toggle('active', i === 0));
+
+  renderTabSpec(a);
+  renderTabTimeline(a);
+  renderTabSamples(a);
+  renderTabProduction(a);
+  renderTabRevisions(a);
+  renderTabReadiness(a);
+
+  openModal('modal-article');
+}
+
+function renderTabSpec(a) {
+  const fabrics = a.article_fabrics?.map(f => `${f.fabric_name} · ${f.color}`).join(', ') || '—';
+  const lining = a.article_lining?.[0];
+  const liningStr = !lining ? '—' : lining.lining_type === 'none' ? 'None' : lining.lining_type === 'dfc' ? 'DFC (Double Fabric Construction)' : lining.fabric_name || '—';
+  const ints = a.article_interlining?.map(i => i.interlining_name + (i.position ? ' · ' + i.position : '')).join('<br>') || '—';
+  const accs = a.article_accessories || [];
+
+  document.getElementById('tab-spec').innerHTML = `
+    <div class="spec-grid">
+      <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fabrics}</div></div>
+      <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${liningStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Size range</div><div class="spec-val">${a.size_range || '—'}</div></div>
+      <div class="spec-cell" style="grid-column:span 2"><div class="spec-label">Interlining</div><div class="spec-val">${ints}</div></div>
+      <div class="spec-cell"><div class="spec-label">Reference</div><div class="spec-val">${a.reference_source || '—'}</div><div class="spec-sub">${a.reference_notes || ''}</div></div>
+    </div>
+    <div class="section-row" style="margin-bottom:8px"><div class="section-label">Accessories</div></div>
+    ${accs.length ? accs.map(ac => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:12px">
+        <div><span style="font-weight:400">${ac.name}</span> · ${ac.supplier || '—'} · ${ac.code || '—'} · ${ac.color || '—'}</div>
+        ${availHTML(ac.material_status)}
+      </div>`).join('') : '<div class="empty" style="padding:16px">No accessories recorded.</div>'}
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:0.5px solid var(--border)">
+      <button class="btn btn-danger" onclick="openArchiveConfirm('${a.id}')">Archive</button>
+    </div>`;
+}
+
+function renderTabTimeline(a) {
+  const idx = stageIndex(a.stage);
+  document.getElementById('tab-timeline').innerHTML = `<div>` + STAGES.map((s, i) => `
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-dot ${i < idx ? 'done' : i === idx ? 'active' : 'pending'}"></div>
+        ${i < STAGES.length - 1 ? '<div class="tl-line"></div>' : ''}
+      </div>
+      <div class="tl-content">
+        <div class="tl-stage">${stageLabel(s)}</div>
+        <div class="tl-status ${i < idx ? 'done' : i === idx ? 'active' : 'pending'}">${i < idx ? 'Completed' : i === idx ? '— current stage' : 'Pending'}</div>
+      </div>
+    </div>`).join('') + `</div>`;
+}
+
+function renderTabSamples(a) {
+  const masters = a.sample_masters || [];
+  const vendors = a.sample_vendors || [];
+  const mockups = a.mockups || [];
+
+  document.getElementById('tab-samples').innerHTML = `
+    <div class="section-row"><div class="section-label">Mockups</div></div>
+    ${mockups.length ? mockups.map(m => `
+      <div style="padding:9px 12px;background:var(--cream);border-radius:2px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;font-weight:400">${m.part}</div><div style="font-size:11px;color:var(--ink-60)">${m.assigned_to || '—'}${m.notes ? ' · ' + m.notes : ''}</div></div>
+        <span class="badge ${m.status === 'done' ? 'badge-done' : m.status === 'revision' ? 'badge-revision' : 'badge-inprogress'}">${m.status}</span>
+      </div>`).join('') : '<div style="font-size:12px;color:var(--ink-30);margin-bottom:14px;font-style:italic">No mockups.</div>'}
+
+    <div class="section-row" style="margin-top:14px"><div class="section-label">Sample master</div></div>
+    ${masters.length ? masters.map(m => `
+      <div style="padding:9px 12px;background:var(--cream);border-radius:2px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;font-weight:400">Size ${m.size} · ${m.color || '—'}</div></div>
+        <span class="badge ${m.status === 'approved' ? 'badge-done' : m.status === 'revision' ? 'badge-revision' : 'badge-progress'}">${m.status}</span>
+      </div>`).join('') : '<div style="font-size:12px;color:var(--ink-30);font-style:italic">No sample master yet.</div>'}
+
+    <div class="section-row" style="margin-top:14px"><div class="section-label">Sample vendor</div></div>
+    ${vendors.length ? vendors.map(v => `
+      <div style="padding:9px 12px;background:var(--cream);border-radius:2px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;font-weight:400">${v.vendor_name} · Size ${v.size || '—'}</div></div>
+        <span class="badge ${v.status === 'approved' ? 'badge-done' : v.status === 'revision' ? 'badge-revision' : 'badge-progress'}">${v.status}</span>
+      </div>`).join('') : '<div style="font-size:12px;color:var(--ink-30);font-style:italic">No sample vendor yet.</div>'}`;
+}
+
+function renderTabProduction(a) {
+  const notes = a.production_notes || [];
+  const prod = notes.filter(n => n.note_type === 'production');
+  const qc = notes.filter(n => n.note_type === 'qc');
+  document.getElementById('tab-production').innerHTML = `
+    <div class="section-row"><div class="section-label">Production notes</div></div>
+    ${prod.length ? prod.map(n => `<div class="rev-item"><div class="rev-meta"><span class="rev-date">${fmtDate(n.created_at)}</span></div><div class="rev-desc">${n.content}</div></div>`).join('') : '<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:14px">No production notes yet.</div>'}
+    <div class="section-row" style="margin-top:14px"><div class="section-label">QC check points</div></div>
+    ${qc.length ? qc.map(n => `<div class="rev-item"><div class="rev-meta"><span class="rev-date">${fmtDate(n.created_at)}</span></div><div class="rev-desc">${n.content}</div></div>`).join('') : '<div style="font-size:12px;color:var(--ink-30);font-style:italic">No QC notes yet.</div>'}`;
+}
+
+function renderTabRevisions(a) {
+  const revs = a.revision_logs || [];
+  document.getElementById('tab-revisions').innerHTML = revs.length
+    ? revs.map(r => `<div class="rev-item"><div class="rev-meta"><span class="rev-date">${fmtDate(r.created_at)}</span><span class="rev-tag">${stageLabel(r.stage)}</span></div><div class="rev-desc">${r.description}</div></div>`).join('')
+    : '<div class="empty">No revisions logged.</div>';
+}
+
+function renderTabReadiness(a) {
+  const masters = a.sample_masters || [];
+  const vendors = a.sample_vendors || [];
+  const mats = [...(a.article_material_status || []), ...(a.article_accessories || [])];
+  const checks = [
+    { label: 'Sample master — all approved', ok: masters.length > 0 && masters.every(m => m.status === 'approved') },
+    { label: 'Sample vendor — all approved', ok: vendors.length > 0 && vendors.every(v => v.status === 'approved') },
+    { label: 'Materials — all ready', ok: mats.length > 0 && mats.every(m => m.material_status === 'ready') },
+    { label: 'Size pack filled', ok: (a.size_packs?.length || 0) > 0 },
+    { label: 'Production & QC notes added', ok: (a.production_notes?.length || 0) > 0 },
+  ];
+  const allOk = checks.every(c => c.ok);
+  document.getElementById('tab-readiness').innerHTML = `
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;color:${allOk ? 'var(--sage)' : 'var(--ink-60)'};margin-bottom:12px;font-weight:400">
+        ${allOk ? 'This article is ready to go into production.' : 'Complete all checklist items before proceeding to production.'}
+      </div>
+      ${checks.map(c => `<div class="checklist-item">
+        <div class="check-icon ${c.ok ? 'check-ok' : 'check-no'}">${c.ok ? '✓' : '✗'}</div>
+        <div style="font-size:12px;color:${c.ok ? 'var(--ink)' : 'var(--ink-60)'}">${c.label}</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+// ── ARCHIVE ──
+function openArchiveConfirm(id) {
+  pendingArchiveId = id;
+  document.getElementById('archive-reason').value = '';
+  closeModal('modal-article');
+  openModal('modal-archive');
+}
+
+async function confirmArchive() {
+  const reason = document.getElementById('archive-reason').value.trim();
+  if (!reason) { toast('Please provide a reason.'); return; }
+  const profile = await getCurrentProfile();
+  await db.from('articles').update({ status: 'archived', archive_reason: reason, archived_by: profile.id, archived_at: new Date().toISOString() }).eq('id', pendingArchiveId);
+  closeModal('modal-archive');
+  await loadAll();
+  toast('Article archived.');
+}
+
+async function restoreArticle(id) {
+  await db.from('articles').update({ status: 'active', archive_reason: null, archived_by: null, archived_at: null }).eq('id', id);
+  await loadAll();
+  toast('Article restored.');
+}
+
+async function doLogout() {
+  await db.auth.signOut();
+  window.location.href = 'index.html';
+}
+
+// ── NAVIGATION ──
+function showSection(name, el) {
+  document.querySelectorAll('[id^="section-"]').forEach(s => s.style.display = 'none');
+  document.getElementById('section-' + name).style.display = 'block';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function switchTab(el, tabId) {
+  el.closest('.modal').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  el.closest('.modal').querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>

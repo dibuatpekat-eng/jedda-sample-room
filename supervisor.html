@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jedda — Supervisor</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="shell">
+  <div class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Jedda</div>
+      <div class="brand-sub">Sample Room</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-label">Materials</div>
+      <div class="nav-item active" onclick="showSection('flags',this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="0.5" stroke="currentColor" stroke-width="1"/><path d="M1 5h12M5 5v8" stroke="currentColor" stroke-width="1"/></svg>
+        Action needed
+      </div>
+      <div class="nav-item" onclick="showSection('all-materials',this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="10" rx="0.5" stroke="currentColor" stroke-width="1"/><line x1="4" y1="5" x2="10" y2="5" stroke="currentColor" stroke-width="1"/><line x1="4" y1="7.5" x2="10" y2="7.5" stroke="currentColor" stroke-width="1"/></svg>
+        All material status
+      </div>
+      <div class="nav-label">Master lists</div>
+      <div class="nav-item" onclick="showSection('fabrics',this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M7 4v6M4 7h6" stroke="currentColor" stroke-width="1"/></svg>
+        Fabrics
+      </div>
+      <div class="nav-item" onclick="showSection('interlinings',this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="8" rx="0.5" stroke="currentColor" stroke-width="1"/><line x1="1" y1="6" x2="13" y2="6" stroke="currentColor" stroke-width="1"/></svg>
+        Interlinings
+      </div>
+      <div class="nav-item" onclick="showSection('vendors',this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><path d="M2 4h10l-1 7H3L2 4z" stroke="currentColor" stroke-width="1"/><path d="M5 4V3a2 2 0 014 0v1" stroke="currentColor" stroke-width="1"/></svg>
+        Vendors
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">Signed in as<span id="user-name">—</span></div>
+      <button class="btn-logout" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main-content with-sidebar">
+
+    <!-- ACTION NEEDED -->
+    <div id="section-flags">
+      <div class="topbar"><div class="topbar-title">Material — action needed</div></div>
+      <div class="content"><div id="flags-list"></div></div>
+    </div>
+
+    <!-- ALL MATERIALS -->
+    <div id="section-all-materials" style="display:none">
+      <div class="topbar"><div class="topbar-title">All material status</div></div>
+      <div class="content"><div id="all-materials-list"></div></div>
+    </div>
+
+    <!-- FABRICS -->
+    <div id="section-fabrics" style="display:none">
+      <div class="topbar">
+        <div class="topbar-title">Master fabrics</div>
+        <div class="topbar-actions"><button class="btn btn-dark" onclick="openModal('modal-new-fabric')">+ Add fabric</button></div>
+      </div>
+      <div class="content"><div id="fabrics-list"></div></div>
+    </div>
+
+    <!-- INTERLININGS -->
+    <div id="section-interlinings" style="display:none">
+      <div class="topbar">
+        <div class="topbar-title">Master interlinings</div>
+        <div class="topbar-actions"><button class="btn btn-dark" onclick="openModal('modal-new-interlining')">+ Add interlining</button></div>
+      </div>
+      <div class="content"><div id="interlinings-list"></div></div>
+    </div>
+
+    <!-- VENDORS -->
+    <div id="section-vendors" style="display:none">
+      <div class="topbar">
+        <div class="topbar-title">Master vendors</div>
+        <div class="topbar-actions"><button class="btn btn-dark" onclick="openModal('modal-new-vendor')">+ Add vendor</button></div>
+      </div>
+      <div class="content"><div id="vendors-list"></div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MATERIAL STATUS MODAL -->
+<div class="overlay" id="modal-material">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <div><div class="modal-head-title" id="mat-modal-title">Update material</div><div class="modal-head-sub" id="mat-modal-sub"></div></div>
+      <button class="close-btn" onclick="closeModal('modal-material')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Status</label>
+        <select id="mat-status" onchange="onMatStatusChange()">
+          <option value="ready">Ready</option>
+          <option value="on_order">On order</option>
+          <option value="need_to_order">Need to order</option>
+        </select>
+      </div>
+      <div id="mat-ready-fields">
+        <div class="form-row"><label class="form-label">Stock qty</label><input type="number" id="mat-stock" placeholder="e.g. 50"></div>
+      </div>
+      <div id="mat-order-fields" style="display:none">
+        <div class="form-row"><label class="form-label">Order date</label><input type="date" id="mat-order-date"></div>
+        <div class="form-row"><label class="form-label">Estimated arrival</label><input type="date" id="mat-arrival"></div>
+      </div>
+      <div class="form-row"><label class="form-label">Vendor / notes</label><input type="text" id="mat-vendor-notes" placeholder="Vendor name or notes"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-material')">Cancel</button>
+      <button class="btn btn-dark" onclick="saveMaterialStatus()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW FABRIC -->
+<div class="overlay" id="modal-new-fabric">
+  <div class="modal modal-sm">
+    <div class="modal-head"><div class="modal-head-title">Add fabric</div><button class="close-btn" onclick="closeModal('modal-new-fabric')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Name *</label><input type="text" id="fab-name" placeholder="e.g. George Breen"></div>
+      <div class="form-row"><label class="form-label">Vendor</label><input type="text" id="fab-vendor" placeholder="Supplier name"></div>
+      <div class="form-row"><label class="form-label">Availability</label><select id="fab-avail"><option value="ready">Ready</option><option value="on_order">On order</option><option value="need_to_order">Need to order</option></select></div>
+      <div class="form-row"><label class="form-label">Notes</label><textarea id="fab-notes" placeholder="Additional notes..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-new-fabric')">Cancel</button><button class="btn btn-dark" onclick="saveFabric()">Save</button></div>
+  </div>
+</div>
+
+<!-- NEW INTERLINING -->
+<div class="overlay" id="modal-new-interlining">
+  <div class="modal modal-sm">
+    <div class="modal-head"><div class="modal-head-title">Add interlining</div><button class="close-btn" onclick="closeModal('modal-new-interlining')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Name *</label><input type="text" id="int-name" placeholder="e.g. Maroko tipis"></div>
+      <div class="form-row"><label class="form-label">Vendor</label><input type="text" id="int-vendor" placeholder="Supplier name"></div>
+      <div class="form-row"><label class="form-label">Position</label><input type="text" id="int-pos" placeholder="e.g. collar, sleeve placket, full"></div>
+      <div class="form-row"><label class="form-label">Fusing type</label><select id="int-fusing"><option value="fusing">Fusing</option><option value="non_fusing">Non-fusing</option></select></div>
+      <div class="form-row"><label class="form-label">Availability</label><select id="int-avail"><option value="ready">Ready</option><option value="on_order">On order</option><option value="need_to_order">Need to order</option></select></div>
+      <div class="form-row"><label class="form-label">Notes</label><textarea id="int-notes" placeholder="Additional notes..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-new-interlining')">Cancel</button><button class="btn btn-dark" onclick="saveInterlining()">Save</button></div>
+  </div>
+</div>
+
+<!-- NEW VENDOR -->
+<div class="overlay" id="modal-new-vendor">
+  <div class="modal modal-sm">
+    <div class="modal-head"><div class="modal-head-title">Add vendor</div><button class="close-btn" onclick="closeModal('modal-new-vendor')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Name *</label><input type="text" id="ven-name" placeholder="e.g. Dunia Baru"></div>
+      <div class="form-row"><label class="form-label">Supply category</label><input type="text" id="ven-cat" placeholder="e.g. fabric, accessories, production"></div>
+      <div class="form-row"><label class="form-label">Contact</label><input type="text" id="ven-contact" placeholder="Phone / email"></div>
+      <div class="form-row"><label class="form-label">Notes</label><textarea id="ven-notes" placeholder="Additional notes..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-new-vendor')">Cancel</button><button class="btn btn-dark" onclick="saveVendor()">Save</button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/utils.js"></script>
+<script>
+let profile = null;
+let allArticles = [];
+let masterFabrics = [];
+let masterInterlinings = [];
+let masterVendors = [];
+let currentMatEdit = null; // { type, id, articleId }
+
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'index.html'; return; }
+  profile = await getCurrentProfile();
+  if (!profile || profile.role !== 'supervisor') { window.location.href = 'index.html'; return; }
+  document.getElementById('user-name').textContent = profile.full_name;
+  await loadAll();
+}
+
+async function loadAll() {
+  const [arts, fabs, ints, vens] = await Promise.all([
+    db.from('articles').select(`*, profiles!articles_designer_id_fkey(full_name), article_material_status(*), article_accessories(*), sample_masters(*)`).eq('status','active'),
+    db.from('master_fabrics').select('*').order('name'),
+    db.from('master_interlinings').select('*').order('name'),
+    db.from('master_vendors').select('*').order('name')
+  ]);
+  allArticles = arts.data||[];
+  masterFabrics = fabs.data||[];
+  masterInterlinings = ints.data||[];
+  masterVendors = vens.data||[];
+  renderAll();
+}
+
+function renderAll() {
+  renderFlags();
+  renderAllMaterials();
+  renderFabrics();
+  renderInterlinings();
+  renderVendors();
+}
+
+function renderFlags() {
+  // Articles that have sample_masters (triggered) but have need_to_order materials
+  const flagged = allArticles.filter(a => {
+    const hasMaster = a.sample_masters?.length > 0;
+    const mats = [...(a.article_material_status||[]), ...(a.article_accessories||[])];
+    const hasIssue = mats.some(m => !m.material_status || m.material_status === 'need_to_order');
+    return hasMaster && (hasIssue || mats.length === 0);
+  });
+
+  const el = document.getElementById('flags-list');
+  if (!flagged.length) { el.innerHTML = '<div class="empty">All materials are on track. No action needed.</div>'; return; }
+  el.innerHTML = flagged.map(a => {
+    const mats = [...(a.article_material_status||[]), ...(a.article_accessories||[])];
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div><div style="font-size:14px;font-weight:400">${a.name}</div><div style="font-size:11px;color:var(--ink-60)">${a.profiles?.full_name||'—'} · Sample master stage</div></div>
+        <span class="badge badge-revision">Needs attention</span>
+      </div>
+      ${mats.length ? mats.map(m => renderMatRow(m, a.id)).join('') : `<div style="font-size:12px;color:var(--ink-30);font-style:italic">No material data yet — <button class="btn btn-sm" onclick="openMatModal(null,'new',null,'${a.id}')">Add material status</button></div>`}
+    </div>`;
+  }).join('');
+}
+
+function renderAllMaterials() {
+  const relevant = allArticles.filter(a => (a.article_material_status?.length||0) + (a.article_accessories?.length||0) > 0);
+  const el = document.getElementById('all-materials-list');
+  if (!relevant.length) { el.innerHTML = '<div class="empty">No material data recorded yet.</div>'; return; }
+  el.innerHTML = relevant.map(a => {
+    const mats = [...(a.article_material_status||[]), ...(a.article_accessories||[])];
+    const allOk = mats.every(m=>m.material_status==='ready');
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div><div style="font-size:14px;font-weight:400">${a.name}</div><div style="font-size:11px;color:var(--ink-60)">${a.profiles?.full_name||'—'}</div></div>
+        ${allOk?'<span class="badge badge-done">All ready</span>':'<span class="badge badge-revision">Action needed</span>'}
+      </div>
+      ${mats.map(m=>renderMatRow(m,a.id)).join('')}
+    </div>`;
+  }).join('');
+}
+
+function renderMatRow(m, articleId) {
+  const name = m.material_name || m.name;
+  const status = m.material_status;
+  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:12px">
+    <div>${name}${m.color?' · '+m.color:''}</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      ${availHTML(status)}
+      <button class="btn btn-sm" onclick="openMatModal('${m.id}','${m.material_name?'material':'accessory'}','${name}','${articleId}','${status||''}')">Edit</button>
+    </div>
+  </div>`;
+}
+
+function openMatModal(id, type, name, articleId, currentStatus) {
+  currentMatEdit = { id, type, name, articleId };
+  document.getElementById('mat-modal-title').textContent = name || 'Update material';
+  document.getElementById('mat-modal-sub').textContent = type === 'new' ? 'Add new material status' : '';
+  document.getElementById('mat-status').value = currentStatus || 'need_to_order';
+  document.getElementById('mat-stock').value = '';
+  document.getElementById('mat-order-date').value = '';
+  document.getElementById('mat-arrival').value = '';
+  document.getElementById('mat-vendor-notes').value = '';
+  onMatStatusChange();
+  openModal('modal-material');
+}
+
+function onMatStatusChange() {
+  const s = document.getElementById('mat-status').value;
+  document.getElementById('mat-ready-fields').style.display = s === 'ready' ? 'block' : 'none';
+  document.getElementById('mat-order-fields').style.display = s === 'on_order' ? 'block' : 'none';
+}
+
+async function saveMaterialStatus() {
+  const status = document.getElementById('mat-status').value;
+  const data = {
+    material_status: status,
+    stock_qty: status === 'ready' ? parseInt(document.getElementById('mat-stock').value)||null : null,
+    order_date: status === 'on_order' ? document.getElementById('mat-order-date').value||null : null,
+    estimated_arrival: status === 'on_order' ? document.getElementById('mat-arrival').value||null : null,
+    vendor_notes: document.getElementById('mat-vendor-notes').value.trim()||null,
+    updated_by: profile.id,
+    updated_at: new Date().toISOString()
+  };
+
+  if (currentMatEdit.type === 'material') {
+    await db.from('article_material_status').update(data).eq('id', currentMatEdit.id);
+  } else if (currentMatEdit.type === 'accessory') {
+    await db.from('article_accessories').update(data).eq('id', currentMatEdit.id);
+  }
+  closeModal('modal-material');
+  await loadAll();
+  toast('Material status updated.');
+}
+
+function renderFabrics() {
+  const el = document.getElementById('fabrics-list');
+  if (!masterFabrics.length) { el.innerHTML = '<div class="empty">No fabrics in master list.</div>'; return; }
+  el.innerHTML = masterFabrics.map(f=>`
+    <div class="list-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+      <div style="font-size:13px;font-weight:400">${f.name}</div>
+      <div style="font-size:12px;color:var(--ink-60)">${f.vendor||'—'}</div>
+      <div>${availHTML(f.availability)}</div>
+      <div style="font-size:11px;color:var(--ink-30)">${f.notes||''}</div>
+    </div>`).join('');
+}
+
+function renderInterlinings() {
+  const el = document.getElementById('interlinings-list');
+  if (!masterInterlinings.length) { el.innerHTML = '<div class="empty">No interlinings in master list.</div>'; return; }
+  el.innerHTML = masterInterlinings.map(i=>`
+    <div class="list-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+      <div><div style="font-size:13px;font-weight:400">${i.name}</div><div style="font-size:11px;color:var(--ink-60)">${i.position||'—'}</div></div>
+      <div style="font-size:12px;color:var(--ink-60)">${i.vendor||'—'}</div>
+      <div style="font-size:12px;color:var(--ink-60)">${i.fusing_type?.replace('_',' ')||'—'}</div>
+      <div>${availHTML(i.availability)}</div>
+      <div style="font-size:11px;color:var(--ink-30)">${i.notes||''}</div>
+    </div>`).join('');
+}
+
+function renderVendors() {
+  const el = document.getElementById('vendors-list');
+  if (!masterVendors.length) { el.innerHTML = '<div class="empty">No vendors in master list.</div>'; return; }
+  el.innerHTML = masterVendors.map(v=>`
+    <div class="list-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+      <div style="font-size:13px;font-weight:400">${v.name}</div>
+      <div style="font-size:12px;color:var(--ink-60)">${v.supply_category||'—'}</div>
+      <div style="font-size:12px;color:var(--ink-60)">${v.contact||'—'}</div>
+      <div style="font-size:11px;color:var(--ink-30)">${v.notes||''}</div>
+    </div>`).join('');
+}
+
+async function saveFabric() {
+  const name = document.getElementById('fab-name').value.trim();
+  if (!name) { toast('Name is required.'); return; }
+  await db.from('master_fabrics').insert({ name, vendor: document.getElementById('fab-vendor').value.trim()||null, availability: document.getElementById('fab-avail').value, notes: document.getElementById('fab-notes').value.trim()||null });
+  closeModal('modal-new-fabric'); await loadAll(); toast('Fabric added.');
+}
+
+async function saveInterlining() {
+  const name = document.getElementById('int-name').value.trim();
+  if (!name) { toast('Name is required.'); return; }
+  await db.from('master_interlinings').insert({ name, vendor: document.getElementById('int-vendor').value.trim()||null, position: document.getElementById('int-pos').value.trim()||null, fusing_type: document.getElementById('int-fusing').value, availability: document.getElementById('int-avail').value, notes: document.getElementById('int-notes').value.trim()||null });
+  closeModal('modal-new-interlining'); await loadAll(); toast('Interlining added.');
+}
+
+async function saveVendor() {
+  const name = document.getElementById('ven-name').value.trim();
+  if (!name) { toast('Name is required.'); return; }
+  await db.from('master_vendors').insert({ name, supply_category: document.getElementById('ven-cat').value.trim()||null, contact: document.getElementById('ven-contact').value.trim()||null, notes: document.getElementById('ven-notes').value.trim()||null });
+  closeModal('modal-new-vendor'); await loadAll(); toast('Vendor added.');
+}
+
+function availHTML(status) {
+  const map = { ready:['avail-ready','Ready'], on_order:['avail-order','On order'], need_to_order:['avail-need','Need to order'] };
+  const [cls,label] = map[status]||['','—'];
+  return `<span class="avail ${cls}">${label}</span>`;
+}
+
+function showSection(name, el) {
+  document.querySelectorAll('[id^="section-"]').forEach(s=>s.style.display='none');
+  document.getElementById('section-'+name).style.display='block';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+}
+
+async function doLogout() { await db.auth.signOut(); window.location.href='index.html'; }
+
+init();
+</script>
+</body>
+</html>

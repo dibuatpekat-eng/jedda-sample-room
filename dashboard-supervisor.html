@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jedda — Supervisor</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+
+<div class="shell">
+  <div class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-name">Jedda</div>
+      <div class="sidebar-brand-sub">Sample Room</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section">Materials</div>
+      <div class="nav-item active" onclick="showPage('flags', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><path d="M2 2h10v7H2z"/><line x1="2" y1="12" x2="12" y2="12"/></svg>
+        Material flags
+      </div>
+      <div class="nav-section">Master lists</div>
+      <div class="nav-item" onclick="showPage('fabrics', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><rect x="1" y="3" width="12" height="8" rx="0.5"/><line x1="1" y1="6" x2="13" y2="6"/></svg>
+        Fabrics
+      </div>
+      <div class="nav-item" onclick="showPage('interlinings', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><rect x="1" y="3" width="12" height="8" rx="0.5"/><line x1="1" y1="7" x2="13" y2="7"/><line x1="5" y1="3" x2="5" y2="11"/></svg>
+        Interlinings
+      </div>
+      <div class="nav-item" onclick="showPage('vendors', this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><circle cx="7" cy="5" r="3"/><path d="M1 13c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+        Vendors
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="user-avatar">—</div>
+      <div>
+        <div class="sidebar-user-name" id="user-name">Loading...</div>
+        <div class="sidebar-user-role">Supervisor</div>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Sign out">↪</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- MATERIAL FLAGS PAGE -->
+    <div id="page-flags">
+      <div class="topbar">
+        <div class="page-title">Material flags</div>
+      </div>
+      <div class="content">
+        <p style="font-size:12px;color:var(--ink-50);margin-bottom:16px">Articles that have reached Sample Master stage — materials need to be prepared.</p>
+        <div id="flags-list"></div>
+      </div>
+    </div>
+
+    <!-- FABRICS PAGE -->
+    <div id="page-fabrics" style="display:none">
+      <div class="topbar">
+        <div class="page-title">Master fabrics</div>
+        <div class="topbar-actions">
+          <button class="btn btn-dark" onclick="openAddFabric()">+ Add fabric</button>
+        </div>
+      </div>
+      <div class="content">
+        <div id="fabrics-list"></div>
+      </div>
+    </div>
+
+    <!-- INTERLININGS PAGE -->
+    <div id="page-interlinings" style="display:none">
+      <div class="topbar">
+        <div class="page-title">Master interlinings</div>
+        <div class="topbar-actions">
+          <button class="btn btn-dark" onclick="openAddInterlining()">+ Add interlining</button>
+        </div>
+      </div>
+      <div class="content">
+        <div id="interlinings-list"></div>
+      </div>
+    </div>
+
+    <!-- VENDORS PAGE -->
+    <div id="page-vendors" style="display:none">
+      <div class="topbar">
+        <div class="page-title">Master vendors</div>
+        <div class="topbar-actions">
+          <button class="btn btn-dark" onclick="openAddVendor()">+ Add vendor</button>
+        </div>
+      </div>
+      <div class="content">
+        <div id="vendors-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MATERIAL STATUS MODAL -->
+<div class="overlay" id="modal-material">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="mat-article-name"></div>
+        <div class="modal-sub">Material status update</div>
+      </div>
+      <button class="close-btn" onclick="closeModal('modal-material')">×</button>
+    </div>
+    <div class="modal-body" id="mat-body"></div>
+  </div>
+</div>
+
+<!-- ADD/EDIT FABRIC MODAL -->
+<div class="overlay" id="modal-fabric">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <div class="modal-title" id="fabric-modal-title">Add fabric</div>
+      <button class="close-btn" onclick="closeModal('modal-fabric')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="fabric-edit-id">
+      <div class="form-row"><label class="form-label">Name *</label><input type="text" id="fabric-name" placeholder="e.g. George, Smith cotton nishinbo"></div>
+      <div class="form-row"><label class="form-label">Vendor</label><input type="text" id="fabric-vendor" placeholder="e.g. Dunia Baru, YKK"></div>
+      <div class="form-row"><label class="form-label">Availability</label>
+        <select id="fabric-avail"><option value="ready">Ready</option><option value="on_order">On order</option><option value="need_to_order">Need to order</option></select>
+      </div>
+      <div class="form-row"><label class="form-label">Notes</label><textarea id="fabric-notes" placeholder="Lead time, stock notes, etc." style="min-height:50px"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-fabric')">Cancel</button>
+      <button class="btn btn-dark" onclick="saveFabric()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT INTERLINING MODAL -->
+<div class="overlay" id="modal-interlining">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <div class="modal-title" id="inter-modal-title">Add interlining</div>
+      <button class="close-btn" onclick="closeModal('modal-interlining')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="inter-edit-id">
+      <div class="form-row"><label class="form-label">Name *</label><input type="text" id="inter-name" placeholder="e.g. Maroko tipis, TC68, 8505"></div>
+      <div class="form-row"><label class="form-label">Vendor</label><input type="text" id="inter-vendor" placeholder="Supplier name"></div>
+      <div class="form-row"><label class="form-label">Fusing type</label>
+        <select id="inter-fusing"><option value="fusing">Fusing</option><option value="non_fusing">Non-fusing</option></select>
+      </div>
+      <div class="form-row"><label class="form-label">Common position</label><input type="text" id="inter-position" placeholder="e.g. Collar, sleeve placket, cuff"></div>
+      <div class="form-row"><label class="form-label">Availability</label>
+        <select id="inter-avail"><option value="ready">Ready</option><option value="on_order">On order</option><option value="need_to_order">Need to order</option></select>
+      </div>
+      <div class="form-row"><label class="form-label">Notes</label><textarea id="inter-notes" placeholder="Lead time, stock notes, etc." style="min-height:50px"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-interlining')">Cancel</button>
+      <button class="btn btn-dark" onclick="saveInterlining()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD VENDOR MODAL -->
+<div class="overlay" id="modal-vendor">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <div class="modal-title" id="vendor-modal-title">Add vendor</div>
+      <button class="close-btn" onclick="closeModal('modal-vendor')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="vendor-edit-id">
+      <div class="form-row"><label class="form-label">Name *</label><input type="text" id="vendor-name" placeholder="e.g. Dunia Baru, YKK, Pak Tatang"></div>
+      <div class="form-row"><label class="form-label">Supply category</label><input type="text" id="vendor-cat" placeholder="e.g. fabric, accessories, production"></div>
+      <div class="form-row"><label class="form-label">Contact</label><input type="text" id="vendor-contact" placeholder="Phone or address"></div>
+      <div class="form-row"><label class="form-label">Notes</label><textarea id="vendor-notes" placeholder="Any notes..." style="min-height:50px"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-vendor')">Cancel</button>
+      <button class="btn btn-dark" onclick="saveVendor()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let profile = null
+let masterFabrics = []
+let masterInterlinings = []
+let masterVendors = []
+let currentMatArticleId = null
+
+async function init() {
+  profile = await requireAuth(['supervisor', 'head'])
+  if (!profile) return
+  document.getElementById('user-name').textContent = profile.full_name
+  document.getElementById('user-avatar').textContent = profile.full_name.charAt(0).toUpperCase()
+  await loadAll()
+}
+
+async function loadAll() {
+  const [f, i, v] = await Promise.all([
+    db.from('master_fabrics').select('*').order('name'),
+    db.from('master_interlinings').select('*').order('name'),
+    db.from('master_vendors').select('*').order('name')
+  ])
+  masterFabrics = f.data || []
+  masterInterlinings = i.data || []
+  masterVendors = v.data || []
+  await renderFlags()
+  renderFabrics()
+  renderInterlinings()
+  renderVendors()
+}
+
+async function renderFlags() {
+  // Articles that have at least one sample master — Siti needs to prepare materials
+  const { data: sampleMasters } = await db.from('sample_masters')
+    .select(`article_id, articles(id, name, category, stage, profiles!articles_designer_id_fkey(full_name))`)
+    .order('created_at')
+
+  const el = document.getElementById('flags-list')
+  if (!sampleMasters?.length) {
+    el.innerHTML = '<div class="empty">No articles flagged for material preparation yet.</div>'
+    return
+  }
+
+  // Deduplicate by article
+  const seen = new Set()
+  const articles = sampleMasters.filter(sm => {
+    if (seen.has(sm.article_id)) return false
+    seen.add(sm.article_id)
+    return true
+  })
+
+  el.innerHTML = articles.map(sm => {
+    const a = sm.articles
+    return `<div class="flag-card" style="cursor:pointer" onclick="openMaterialModal('${a.id}', '${esc(a.name)}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="flag-title">${esc(a.name)}</div>
+          <div class="flag-sub">${a.category} · ${a.profiles?.full_name || '—'} · Stage: ${a.stage}</div>
+        </div>
+        <button class="btn btn-sm">Update material status</button>
+      </div>
+    </div>`
+  }).join('')
+}
+
+async function openMaterialModal(articleId, articleName) {
+  currentMatArticleId = articleId
+  document.getElementById('mat-article-name').textContent = articleName
+
+  const { data: fabrics } = await db.from('article_fabrics').select('*').eq('article_id', articleId)
+  const { data: inters } = await db.from('article_interlining').select('*').eq('article_id', articleId)
+  const { data: accessories } = await db.from('article_accessories').select('*').eq('article_id', articleId)
+  const { data: matStatus } = await db.from('article_material_status').select('*').eq('article_id', articleId)
+  const vendorOpts = masterVendors.map(v => `<option value="${v.id}">${esc(v.name)}</option>`).join('')
+
+  const getMat = (type, refId) => matStatus?.find(m => m.material_type === type && m.material_ref_id === refId) || {}
+
+  let html = '<div class="section-label">Fabrics</div>'
+  html += fabrics?.map(f => {
+    const m = getMat('fabric', f.id)
+    return matRowHTML('fabric', f.id, f.fabric_name + (f.color ? ` — ${f.color}` : ''), m, vendorOpts)
+  }).join('') || '<div style="font-size:11px;color:var(--ink-30)">No fabrics.</div>'
+
+  if (inters?.length) {
+    html += '<div class="section-label" style="margin-top:16px">Interlinings</div>'
+    html += inters.map(i => {
+      const m = getMat('interlining', i.id)
+      return matRowHTML('interlining', i.id, i.interlining_name + (i.position ? ` · ${i.position}` : ''), m, vendorOpts)
+    }).join('')
+  }
+
+  if (accessories?.length) {
+    html += '<div class="section-label" style="margin-top:16px">Accessories</div>'
+    html += `<table class="data-table"><thead><tr><th>Item</th><th>Supplier</th><th>Status</th><th>Order date</th><th>ETA</th></tr></thead><tbody>`
+    html += accessories.map(ac => `<tr>
+      <td>${esc(ac.name)}</td><td>${esc(ac.supplier||'—')}</td>
+      <td>${materialStatusHTML(ac.material_status)}</td>
+      <td>${ac.order_date ? fmtDate(ac.order_date) : '—'}</td>
+      <td>${ac.estimated_arrival ? fmtDate(ac.estimated_arrival) : '—'}</td>
+    </tr>`).join('')
+    html += '</tbody></table>'
+  }
+
+  document.getElementById('mat-body').innerHTML = html
+  openModal('modal-material')
+}
+
+function matRowHTML(type, refId, label, m, vendorOpts) {
+  const statusOpts = ['ready','on_order','need_to_order'].map(s => `<option value="${s}" ${m.material_status === s ? 'selected' : ''}>${s === 'ready' ? 'Ready' : s === 'on_order' ? 'On order' : 'Need to order'}</option>`).join('')
+  return `<div class="card" style="margin-bottom:8px">
+    <div style="font-size:12px;font-weight:400;margin-bottom:10px">${esc(label)}</div>
+    <div class="form-grid-2">
+      <div class="form-row"><label class="form-label">Status</label>
+        <select id="ms-${refId}-status" onchange="toggleMatFields('${refId}')">${statusOpts}</select>
+      </div>
+      <div class="form-row"><label class="form-label">Vendor</label>
+        <select id="ms-${refId}-vendor"><option value="">Select vendor...</option>${vendorOpts}</select>
+      </div>
+      <div id="ms-${refId}-order-fields" class="form-grid-2" style="grid-column:span 2;display:${m.material_status === 'on_order' ? 'grid' : 'none'}">
+        <div class="form-row"><label class="form-label">Order date</label><input type="date" id="ms-${refId}-orderdate" value="${m.order_date || ''}"></div>
+        <div class="form-row"><label class="form-label">ETA</label><input type="date" id="ms-${refId}-eta" value="${m.estimated_arrival || ''}"></div>
+      </div>
+      <div id="ms-${refId}-need-fields" style="grid-column:span 2;display:${m.material_status === 'need_to_order' ? 'block' : 'none'}">
+        <div class="form-row"><label class="form-label">Notes (vendor search, etc.)</label><input type="text" id="ms-${refId}-neednotes" value="${esc(m.vendor_notes || '')}" placeholder="e.g. Masih cari vendor, atau sudah ada di Dunia Baru"></div>
+      </div>
+      <div style="grid-column:span 2">
+        <button class="btn btn-dark btn-sm" onclick="saveMaterialStatus('${type}', '${refId}', '${currentMatArticleId}')">Save</button>
+      </div>
+    </div>
+  </div>`
+}
+
+function toggleMatFields(refId) {
+  const status = document.getElementById(`ms-${refId}-status`)?.value
+  const orderF = document.getElementById(`ms-${refId}-order-fields`)
+  const needF = document.getElementById(`ms-${refId}-need-fields`)
+  if (orderF) orderF.style.display = status === 'on_order' ? 'grid' : 'none'
+  if (needF) needF.style.display = status === 'need_to_order' ? 'block' : 'none'
+}
+
+async function saveMaterialStatus(type, refId, articleId) {
+  const status = document.getElementById(`ms-${refId}-status`)?.value
+  const vendorId = document.getElementById(`ms-${refId}-vendor`)?.value || null
+  const orderDate = document.getElementById(`ms-${refId}-orderdate`)?.value || null
+  const eta = document.getElementById(`ms-${refId}-eta`)?.value || null
+  const vendorNotes = document.getElementById(`ms-${refId}-neednotes`)?.value?.trim() || null
+
+  // Get material name
+  let matName = refId
+  const { data: existing } = await db.from('article_material_status').select('id').eq('article_id', articleId).eq('material_ref_id', refId).single()
+
+  const payload = {
+    article_id: articleId, material_type: type, material_ref_id: refId,
+    material_name: matName, material_status: status,
+    vendor_id: vendorId || null, order_date: orderDate, estimated_arrival: eta,
+    vendor_notes: vendorNotes, updated_by: profile.id, updated_at: new Date().toISOString()
+  }
+
+  let error
+  if (existing) {
+    ({ error } = await db.from('article_material_status').update(payload).eq('id', existing.id))
+  } else {
+    ({ error } = await db.from('article_material_status').insert(payload))
+  }
+
+  if (error) { notify('Failed to save.', 'error'); console.error(error); return }
+  notify('Material status updated.', 'success')
+}
+
+// ── FABRICS ──
+function renderFabrics() {
+  const el = document.getElementById('fabrics-list')
+  if (!masterFabrics.length) { el.innerHTML = '<div class="empty">No fabrics in master list.</div>'; return }
+  el.innerHTML = `<table class="data-table"><thead><tr><th>Name</th><th>Vendor</th><th>Availability</th><th>Notes</th><th></th></tr></thead><tbody>` +
+    masterFabrics.map(f => `<tr>
+      <td style="font-weight:400">${esc(f.name)}</td>
+      <td>${esc(f.vendor || '—')}</td>
+      <td>${materialStatusHTML(f.availability)}</td>
+      <td style="color:var(--ink-50)">${esc(f.notes || '—')}</td>
+      <td><button class="btn btn-sm" onclick="openEditFabric('${f.id}')">Edit</button></td>
+    </tr>`).join('') + '</tbody></table>'
+}
+
+function openAddFabric() {
+  document.getElementById('fabric-modal-title').textContent = 'Add fabric'
+  document.getElementById('fabric-edit-id').value = ''
+  document.getElementById('fabric-name').value = ''
+  document.getElementById('fabric-vendor').value = ''
+  document.getElementById('fabric-avail').value = 'ready'
+  document.getElementById('fabric-notes').value = ''
+  openModal('modal-fabric')
+}
+
+function openEditFabric(id) {
+  const f = masterFabrics.find(x => x.id === id)
+  if (!f) return
+  document.getElementById('fabric-modal-title').textContent = 'Edit fabric'
+  document.getElementById('fabric-edit-id').value = f.id
+  document.getElementById('fabric-name').value = f.name
+  document.getElementById('fabric-vendor').value = f.vendor || ''
+  document.getElementById('fabric-avail').value = f.availability || 'ready'
+  document.getElementById('fabric-notes').value = f.notes || ''
+  openModal('modal-fabric')
+}
+
+async function saveFabric() {
+  const name = document.getElementById('fabric-name').value.trim()
+  if (!name) { notify('Name is required.', 'error'); return }
+  const payload = { name, vendor: document.getElementById('fabric-vendor').value.trim() || null, availability: document.getElementById('fabric-avail').value, notes: document.getElementById('fabric-notes').value.trim() || null }
+  const editId = document.getElementById('fabric-edit-id').value
+  const { error } = editId ? await db.from('master_fabrics').update(payload).eq('id', editId) : await db.from('master_fabrics').insert(payload)
+  if (error) { notify('Failed to save.', 'error'); return }
+  closeModal('modal-fabric')
+  const { data } = await db.from('master_fabrics').select('*').order('name')
+  masterFabrics = data || []
+  renderFabrics()
+  notify('Fabric saved.', 'success')
+}
+
+// ── INTERLININGS ──
+function renderInterlinings() {
+  const el = document.getElementById('interlinings-list')
+  if (!masterInterlinings.length) { el.innerHTML = '<div class="empty">No interlinings in master list.</div>'; return }
+  el.innerHTML = `<table class="data-table"><thead><tr><th>Name</th><th>Vendor</th><th>Fusing</th><th>Position</th><th>Availability</th><th></th></tr></thead><tbody>` +
+    masterInterlinings.map(i => `<tr>
+      <td style="font-weight:400">${esc(i.name)}</td>
+      <td>${esc(i.vendor || '—')}</td>
+      <td style="font-size:11px;color:var(--ink-50)">${i.fusing_type === 'fusing' ? 'Fusing' : 'Non-fusing'}</td>
+      <td style="color:var(--ink-50)">${esc(i.position || '—')}</td>
+      <td>${materialStatusHTML(i.availability)}</td>
+      <td><button class="btn btn-sm" onclick="openEditInterlining('${i.id}')">Edit</button></td>
+    </tr>`).join('') + '</tbody></table>'
+}
+
+function openAddInterlining() {
+  document.getElementById('inter-modal-title').textContent = 'Add interlining'
+  document.getElementById('inter-edit-id').value = ''
+  ;['inter-name','inter-vendor','inter-position','inter-notes'].forEach(id => document.getElementById(id).value = '')
+  document.getElementById('inter-avail').value = 'ready'
+  document.getElementById('inter-fusing').value = 'fusing'
+  openModal('modal-interlining')
+}
+
+function openEditInterlining(id) {
+  const i = masterInterlinings.find(x => x.id === id)
+  if (!i) return
+  document.getElementById('inter-modal-title').textContent = 'Edit interlining'
+  document.getElementById('inter-edit-id').value = i.id
+  document.getElementById('inter-name').value = i.name
+  document.getElementById('inter-vendor').value = i.vendor || ''
+  document.getElementById('inter-fusing').value = i.fusing_type || 'fusing'
+  document.getElementById('inter-position').value = i.position || ''
+  document.getElementById('inter-avail').value = i.availability || 'ready'
+  document.getElementById('inter-notes').value = i.notes || ''
+  openModal('modal-interlining')
+}
+
+async function saveInterlining() {
+  const name = document.getElementById('inter-name').value.trim()
+  if (!name) { notify('Name is required.', 'error'); return }
+  const payload = { name, vendor: document.getElementById('inter-vendor').value.trim() || null, fusing_type: document.getElementById('inter-fusing').value, position: document.getElementById('inter-position').value.trim() || null, availability: document.getElementById('inter-avail').value, notes: document.getElementById('inter-notes').value.trim() || null }
+  const editId = document.getElementById('inter-edit-id').value
+  const { error } = editId ? await db.from('master_interlinings').update(payload).eq('id', editId) : await db.from('master_interlinings').insert(payload)
+  if (error) { notify('Failed to save.', 'error'); return }
+  closeModal('modal-interlining')
+  const { data } = await db.from('master_interlinings').select('*').order('name')
+  masterInterlinings = data || []
+  renderInterlinings()
+  notify('Interlining saved.', 'success')
+}
+
+// ── VENDORS ──
+function renderVendors() {
+  const el = document.getElementById('vendors-list')
+  if (!masterVendors.length) { el.innerHTML = '<div class="empty">No vendors in master list.</div>'; return }
+  el.innerHTML = `<table class="data-table"><thead><tr><th>Name</th><th>Category</th><th>Contact</th><th>Notes</th><th></th></tr></thead><tbody>` +
+    masterVendors.map(v => `<tr>
+      <td style="font-weight:400">${esc(v.name)}</td>
+      <td style="color:var(--ink-50)">${esc(v.supply_category || '—')}</td>
+      <td>${esc(v.contact || '—')}</td>
+      <td style="color:var(--ink-50)">${esc(v.notes || '—')}</td>
+      <td><button class="btn btn-sm" onclick="openEditVendor('${v.id}')">Edit</button></td>
+    </tr>`).join('') + '</tbody></table>'
+}
+
+function openAddVendor() {
+  document.getElementById('vendor-modal-title').textContent = 'Add vendor'
+  document.getElementById('vendor-edit-id').value = ''
+  ;['vendor-name','vendor-cat','vendor-contact','vendor-notes'].forEach(id => document.getElementById(id).value = '')
+  openModal('modal-vendor')
+}
+
+function openEditVendor(id) {
+  const v = masterVendors.find(x => x.id === id)
+  if (!v) return
+  document.getElementById('vendor-modal-title').textContent = 'Edit vendor'
+  document.getElementById('vendor-edit-id').value = v.id
+  document.getElementById('vendor-name').value = v.name
+  document.getElementById('vendor-cat').value = v.supply_category || ''
+  document.getElementById('vendor-contact').value = v.contact || ''
+  document.getElementById('vendor-notes').value = v.notes || ''
+  openModal('modal-vendor')
+}
+
+async function saveVendor() {
+  const name = document.getElementById('vendor-name').value.trim()
+  if (!name) { notify('Name is required.', 'error'); return }
+  const payload = { name, supply_category: document.getElementById('vendor-cat').value.trim() || null, contact: document.getElementById('vendor-contact').value.trim() || null, notes: document.getElementById('vendor-notes').value.trim() || null }
+  const editId = document.getElementById('vendor-edit-id').value
+  const { error } = editId ? await db.from('master_vendors').update(payload).eq('id', editId) : await db.from('master_vendors').insert(payload)
+  if (error) { notify('Failed to save.', 'error'); return }
+  closeModal('modal-vendor')
+  const { data } = await db.from('master_vendors').select('*').order('name')
+  masterVendors = data || []
+  renderVendors()
+  notify('Vendor saved.', 'success')
+}
+
+function showPage(name, el) {
+  ['flags','fabrics','interlinings','vendors'].forEach(p => {
+    document.getElementById('page-' + p).style.display = p === name ? 'flex' : 'none'
+    document.getElementById('page-' + p).style.flexDirection = 'column'
+  })
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  if (el) el.classList.add('active')
+}
+
+;['fabrics','interlinings','vendors'].forEach(p => { document.getElementById('page-' + p).style.display = 'none' })
+init()
+</script>
+</body>
+</html>

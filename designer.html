@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jedda — Designer</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .articles-grid { display: grid; grid-template-columns: 2fr 1fr 1.5fr 1fr 1fr 90px; }
+  .fabric-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
+  .fabric-row input, .fabric-row select { flex: 1; }
+  .fabric-row .btn { flex-shrink: 0; margin-bottom: 0; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Jedda</div>
+      <div class="brand-sub">Sample Room</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" onclick="showSection('dashboard',this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="8" y="1" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="1" y="8" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="8" y="8" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-label">Articles</div>
+      <div class="nav-item" onclick="showSection('articles',this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="10" rx="0.5" stroke="currentColor" stroke-width="1"/><line x1="4" y1="5" x2="10" y2="5" stroke="currentColor" stroke-width="1"/><line x1="4" y1="7.5" x2="10" y2="7.5" stroke="currentColor" stroke-width="1"/></svg>
+        All articles
+      </div>
+      <div class="nav-label">Operations</div>
+      <div class="nav-item" onclick="showSection('queue',this)">
+        <svg class="nav-icon" viewBox="0 0 14 14" fill="none"><line x1="2" y1="3" x2="12" y2="3" stroke="currentColor" stroke-width="1"/><line x1="2" y1="7" x2="12" y2="7" stroke="currentColor" stroke-width="1"/><line x1="2" y1="11" x2="8" y2="11" stroke="currentColor" stroke-width="1"/></svg>
+        Pattern queue
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">Signed in as<span id="user-name">—</span></div>
+      <button class="btn-logout" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main-content with-sidebar">
+
+    <!-- DASHBOARD -->
+    <div id="section-dashboard">
+      <div class="topbar">
+        <div class="topbar-title">Dashboard</div>
+        <div class="topbar-actions">
+          <button class="btn btn-dark" onclick="openModal('modal-new-article')">+ New article</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stats-row">
+          <div class="stat"><div class="stat-label">My articles</div><div class="stat-val" id="stat-mine">—</div></div>
+          <div class="stat"><div class="stat-label">In progress</div><div class="stat-val" id="stat-inprog">—</div></div>
+          <div class="stat"><div class="stat-label">All active</div><div class="stat-val" id="stat-all">—</div></div>
+        </div>
+        <div class="section-row"><div class="section-label">My articles</div></div>
+        <div class="articles-grid list-header"><div>Article</div><div>Category</div><div>Progress</div><div>Designer</div><div>Status</div><div></div></div>
+        <div id="my-articles"></div>
+        <div class="section-row" style="margin-top:24px"><div class="section-label">All articles</div></div>
+        <div class="articles-grid list-header"><div>Article</div><div>Category</div><div>Progress</div><div>Designer</div><div>Status</div><div></div></div>
+        <div id="all-articles-dash"></div>
+      </div>
+    </div>
+
+    <!-- ALL ARTICLES -->
+    <div id="section-articles" style="display:none">
+      <div class="topbar">
+        <div class="topbar-title">All articles</div>
+        <div class="topbar-actions"><button class="btn btn-dark" onclick="openModal('modal-new-article')">+ New article</button></div>
+      </div>
+      <div class="content">
+        <div class="articles-grid list-header"><div>Article</div><div>Category</div><div>Progress</div><div>Designer</div><div>Status</div><div></div></div>
+        <div id="all-articles-page"></div>
+      </div>
+    </div>
+
+    <!-- QUEUE -->
+    <div id="section-queue" style="display:none">
+      <div class="topbar"><div class="topbar-title">Pattern queue</div></div>
+      <div class="content"><div id="queue-list"></div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- NEW ARTICLE MODAL -->
+<div class="overlay" id="modal-new-article">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-title">New article</div>
+      <button class="close-btn" onclick="closeModal('modal-new-article')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section">Article identity</div>
+      <div class="grid-2">
+        <div class="form-row"><label class="form-label">Article name *</label><input type="text" id="new-name" placeholder="e.g. Hika Outer"></div>
+        <div class="form-row"><label class="form-label">Reference</label><input type="text" id="new-ref" placeholder="e.g. COS, Reracs, Zara, Original"></div>
+        <div class="form-row"><label class="form-label">Category *</label>
+          <select id="new-cat"><option value="Outer">Outer</option><option value="Shirt">Shirt</option><option value="Pants">Pants</option><option value="Jacket">Jacket</option><option value="Dress">Dress</option><option value="Other">Other</option></select>
+        </div>
+        <div class="form-row"><label class="form-label">Date created</label><input type="date" id="new-date"></div>
+      </div>
+      <div class="form-row"><label class="form-label">Modification notes</label><input type="text" id="new-ref-notes" placeholder="e.g. inspired by COS but modified sleeve detail"></div>
+      <div class="form-row"><label class="form-label">Size range <span style="color:var(--ink-30);font-size:10px">(optional, can fill later)</span></label><input type="text" id="new-size" placeholder="e.g. S, M, L"></div>
+
+      <div class="form-section">Fabrics *</div>
+      <div id="fabric-rows">
+        <div class="fabric-row">
+          <select class="fabric-select"><option value="">Select fabric...</option></select>
+          <input type="text" class="fabric-custom" placeholder="Or type new fabric name">
+          <input type="text" class="fabric-color" placeholder="Color" style="max-width:120px">
+        </div>
+      </div>
+      <button class="btn btn-sm" onclick="addFabricRow()" style="margin-bottom:4px">+ Add fabric</button>
+
+      <div class="form-section" id="lining-section">Lining</div>
+      <div id="lining-wrap">
+        <div class="form-row">
+          <label class="form-label">Lining type</label>
+          <select id="new-lining-type" onchange="onLiningChange()">
+            <option value="none">None</option>
+            <option value="dfc">DFC — Double Fabric Construction</option>
+            <option value="fabric">Select fabric</option>
+          </select>
+        </div>
+        <div id="lining-fabric-row" style="display:none" class="grid-2">
+          <div class="form-row"><label class="form-label">Lining fabric</label><select id="new-lining-fabric"><option value="">Select...</option></select></div>
+          <div class="form-row"><label class="form-label">Or type</label><input type="text" id="new-lining-custom" placeholder="New fabric name"></div>
+        </div>
+      </div>
+
+      <div class="form-section" id="interlining-section">Interlining</div>
+      <div id="interlining-wrap">
+        <div class="form-row">
+          <label class="form-label">Interlining</label>
+          <select id="new-interlining"><option value="">Select...</option></select>
+        </div>
+        <div class="form-row"><label class="form-label">Or type new</label><input type="text" id="new-interlining-custom" placeholder="New interlining name"></div>
+        <div class="form-row"><label class="form-label">Position / placement</label><input type="text" id="new-interlining-pos" placeholder="e.g. collar, sleeve placket, cuff, full"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-new-article')">Cancel</button>
+      <button class="btn btn-dark" onclick="saveNewArticle()">Save article</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARTICLE DETAIL MODAL -->
+<div class="overlay" id="modal-article">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-head-title" id="art-name"></div>
+        <div class="modal-head-sub" id="art-sub"></div>
+      </div>
+      <button class="close-btn" onclick="closeModal('modal-article')">×</button>
+    </div>
+    <div class="modal-tabs">
+      <div class="tab active" onclick="switchTab(this,'dtab-spec')">Spec</div>
+      <div class="tab" onclick="switchTab(this,'dtab-timeline')">Timeline</div>
+      <div class="tab" onclick="switchTab(this,'dtab-mockups')">Mockups</div>
+      <div class="tab" onclick="switchTab(this,'dtab-sewing')">Sewing</div>
+      <div class="tab" onclick="switchTab(this,'dtab-samples')">Samples</div>
+      <div class="tab" onclick="switchTab(this,'dtab-production')">Production</div>
+      <div class="tab" onclick="switchTab(this,'dtab-revisions')">Revisions</div>
+    </div>
+    <div class="modal-body">
+      <div class="tab-content active" id="dtab-spec"></div>
+      <div class="tab-content" id="dtab-timeline"></div>
+      <div class="tab-content" id="dtab-mockups"></div>
+      <div class="tab-content" id="dtab-sewing"></div>
+      <div class="tab-content" id="dtab-samples"></div>
+      <div class="tab-content" id="dtab-production"></div>
+      <div class="tab-content" id="dtab-revisions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHIVE CONFIRM -->
+<div class="overlay" id="modal-archive">
+  <div class="modal modal-sm">
+    <div class="modal-head"><div class="modal-head-title">Archive article</div><button class="close-btn" onclick="closeModal('modal-archive')">×</button></div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--ink-60);margin-bottom:14px;line-height:1.6">Article will be archived. Data is preserved and can be restored by head.</p>
+      <div class="form-row"><label class="form-label">Reason</label><textarea id="arch-reason" placeholder="e.g. Not approved at mockup — direction changed."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-archive')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmArchive()">Archive</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/utils.js"></script>
+<script>
+let profile = null;
+let allArticles = [];
+let masterFabrics = [];
+let masterInterlinings = [];
+let tailors = [];
+let currentArticleId = null;
+let pendingArchiveId = null;
+
+const STAGES = ['design','pattern','sewing','sample_master','sample_vendor','production'];
+const STAGE_LABELS = { design:'Design', pattern:'Pattern / Pola', sewing:'Sewing', sample_master:'Sample Master', sample_vendor:'Sample Vendor', production:'Turun Produksi' };
+
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'index.html'; return; }
+  profile = await getCurrentProfile();
+  if (!profile || profile.role !== 'designer') { window.location.href = 'index.html'; return; }
+  document.getElementById('user-name').textContent = profile.full_name;
+  await loadAll();
+}
+
+async function loadAll() {
+  const [arts, fabrics, ints, tailList] = await Promise.all([
+    db.from('articles').select(`*, profiles!articles_designer_id_fkey(full_name), article_fabrics(*), article_lining(*), article_interlining(*), article_accessories(*), article_material_status(*), sample_masters(*), sample_vendors(*), production_notes(*), size_packs(*), pattern_queue(*), sewing_assignments(*,tailors(*)), mockups(*), revision_logs(*)`).eq('status','active').order('created_at',{ascending:false}),
+    db.from('master_fabrics').select('*').order('name'),
+    db.from('master_interlinings').select('*').order('name'),
+    db.from('tailors').select('*, sewing_assignments(article_id, status)').eq('is_active',true)
+  ]);
+  allArticles = arts.data || [];
+  masterFabrics = fabrics.data || [];
+  masterInterlinings = ints.data || [];
+  tailors = tailList.data || [];
+  renderAll();
+  populateFormDropdowns();
+}
+
+function renderAll() {
+  const mine = allArticles.filter(a => a.designer_id === profile.id);
+  document.getElementById('stat-mine').textContent = mine.length;
+  document.getElementById('stat-inprog').textContent = mine.filter(a => ['sewing','sample_master','sample_vendor'].includes(a.stage)).length;
+  document.getElementById('stat-all').textContent = allArticles.length;
+  renderList('my-articles', mine);
+  renderList('all-articles-dash', allArticles);
+  renderList('all-articles-page', allArticles);
+  renderQueue();
+}
+
+function renderList(id, arts) {
+  const el = document.getElementById(id);
+  if (!arts.length) { el.innerHTML = '<div class="empty">No articles.</div>'; return; }
+  el.innerHTML = arts.map(a => `
+    <div class="list-row articles-grid clickable" onclick="openArticle('${a.id}')">
+      <div><div style="font-size:13px;font-weight:400">${a.name}</div><div style="font-size:11px;color:var(--ink-60)">${a.category}${a.reference_source?' · '+a.reference_source:''}</div></div>
+      <div style="font-size:12px;color:var(--ink-60)">${a.category}</div>
+      <div><div class="progress-dots">${STAGES.map((s,i)=>`<div class="pdot ${i<STAGES.indexOf(a.stage)?'done':i===STAGES.indexOf(a.stage)?'active':''}"></div>`).join('')}</div><div style="font-size:10px;color:var(--ink-30);margin-top:3px">${STAGE_LABELS[a.stage]}</div></div>
+      <div style="font-size:12px">${a.profiles?.full_name||'—'}</div>
+      <div><span class="badge ${stageBadgeClass(a.stage)}">${STAGE_LABELS[a.stage]}</span></div>
+      <div style="text-align:right;font-size:10px;color:var(--ink-30)">${fmtDate(a.date_created)}</div>
+    </div>`).join('');
+}
+
+function stageBadgeClass(stage) {
+  if(stage==='production') return 'badge-final';
+  if(stage==='sample_vendor') return 'badge-vendor';
+  if(['sample_master','sewing'].includes(stage)) return 'badge-progress';
+  return 'badge-active';
+}
+
+function renderQueue() {
+  const queued = allArticles.filter(a=>a.pattern_queue?.length>0).map(a=>({...a,q:a.pattern_queue[0]})).sort((a,b)=>a.q.queue_order-b.q.queue_order);
+  const el = document.getElementById('queue-list');
+  if(!queued.length){el.innerHTML='<div class="empty">No items in pattern queue.</div>';return;}
+  el.innerHTML = queued.map((a,i)=>`
+    <div class="queue-item">
+      <div class="queue-num ${a.q.status==='in_progress'?'current':''}">${i+1}</div>
+      <div class="queue-info">
+        <div class="queue-name">${a.name}</div>
+        <div class="queue-meta">${a.q.status==='in_progress'?'<span style="color:var(--gold)">In progress</span>':'Waiting'}${a.q.target_completion?' · Target: '+fmtDateTime(a.q.target_completion):''}${a.q.notes?' · '+a.q.notes:''}</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="badge ${a.q.status==='in_progress'?'badge-inprogress':'badge-waiting'}">${a.q.status==='in_progress'?'Active':'Queue'}</span>
+        ${a.designer_id===profile.id&&i>0?`<button class="btn btn-sm" onclick="moveUp('${a.q.id}',${i},event)">↑</button>`:''}
+      </div>
+    </div>`).join('');
+}
+
+async function moveUp(qid, idx, e) {
+  e.stopPropagation();
+  const queued = allArticles.filter(a=>a.pattern_queue?.length>0).map(a=>({...a,q:a.pattern_queue[0]})).sort((a,b)=>a.q.queue_order-b.q.queue_order);
+  const above = queued[idx-1], current = queued[idx];
+  await db.from('pattern_queue').update({queue_order:above.q.queue_order}).eq('id',current.q.id);
+  await db.from('pattern_queue').update({queue_order:current.q.queue_order}).eq('id',above.q.id);
+  await loadAll(); toast('Queue updated.');
+}
+
+// ── FORM DROPDOWNS ──
+function populateFormDropdowns() {
+  const fabricOpts = masterFabrics.map(f=>`<option value="${f.id}">${f.name}</option>`).join('');
+  document.querySelectorAll('.fabric-select').forEach(s => s.innerHTML = '<option value="">Select fabric...</option>' + fabricOpts);
+  document.getElementById('new-lining-fabric').innerHTML = '<option value="">Select...</option>' + fabricOpts;
+  document.getElementById('new-interlining').innerHTML = '<option value="">Select...</option>' + masterInterlinings.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');
+  onCategoryChange();
+}
+
+function onCategoryChange() {
+  const cat = document.getElementById('new-cat').value;
+  const showLining = ['Outer','Jacket'].includes(cat);
+  const showInt = cat !== 'Pants';
+  document.getElementById('lining-section').style.display = showLining ? 'block' : 'none';
+  document.getElementById('lining-wrap').style.display = showLining ? 'block' : 'none';
+  document.getElementById('interlining-section').style.display = showInt ? 'block' : 'none';
+  document.getElementById('interlining-wrap').style.display = showInt ? 'block' : 'none';
+}
+
+function onLiningChange() {
+  const val = document.getElementById('new-lining-type').value;
+  document.getElementById('lining-fabric-row').style.display = val === 'fabric' ? 'grid' : 'none';
+}
+
+document.getElementById('new-cat').addEventListener('change', onCategoryChange);
+
+function addFabricRow() {
+  const fabricOpts = masterFabrics.map(f=>`<option value="${f.id}">${f.name}</option>`).join('');
+  const row = document.createElement('div');
+  row.className = 'fabric-row';
+  row.innerHTML = `<select class="fabric-select"><option value="">Select fabric...</option>${fabricOpts}</select><input type="text" class="fabric-custom" placeholder="Or type new fabric name"><input type="text" class="fabric-color" placeholder="Color" style="max-width:120px"><button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">×</button>`;
+  document.getElementById('fabric-rows').appendChild(row);
+}
+
+// ── SAVE NEW ARTICLE ──
+async function saveNewArticle() {
+  const name = document.getElementById('new-name').value.trim();
+  const cat = document.getElementById('new-cat').value;
+  if (!name) { toast('Article name is required.'); return; }
+
+  const fabricRows = document.querySelectorAll('.fabric-row');
+  const fabrics = [];
+  fabricRows.forEach((row, i) => {
+    const sel = row.querySelector('.fabric-select').value;
+    const custom = row.querySelector('.fabric-custom').value.trim();
+    const color = row.querySelector('.fabric-color').value.trim();
+    const fabricName = custom || (sel ? masterFabrics.find(f=>f.id===sel)?.name : '');
+    if (fabricName) fabrics.push({ fabric_id: custom ? null : sel || null, fabric_name: fabricName, color: color || '—', sort_order: i });
+  });
+
+  if (!fabrics.length) { toast('Please add at least one fabric.'); return; }
+
+  const { data: article, error } = await db.from('articles').insert({
+    name,
+    category: cat,
+    designer_id: profile.id,
+    date_created: document.getElementById('new-date').value || todayStr(),
+    reference_source: document.getElementById('new-ref').value.trim() || null,
+    reference_notes: document.getElementById('new-ref-notes').value.trim() || null,
+    size_range: document.getElementById('new-size').value.trim() || null,
+    stage: 'design',
+    status: 'active'
+  }).select().single();
+
+  if (error) { toast('Error saving article.'); console.error(error); return; }
+
+  // Save fabrics
+  if (fabrics.length) await db.from('article_fabrics').insert(fabrics.map(f=>({...f, article_id: article.id})));
+
+  // Save lining (Outer/Jacket only)
+  if (['Outer','Jacket'].includes(cat)) {
+    const ltype = document.getElementById('new-lining-type').value;
+    const lData = { article_id: article.id, lining_type: ltype };
+    if (ltype === 'fabric') {
+      const lsel = document.getElementById('new-lining-fabric').value;
+      const lcustom = document.getElementById('new-lining-custom').value.trim();
+      lData.fabric_id = lsel || null;
+      lData.fabric_name = lcustom || masterFabrics.find(f=>f.id===lsel)?.name || null;
+    }
+    await db.from('article_lining').insert(lData);
+  }
+
+  // Save interlining (not Pants)
+  if (cat !== 'Pants') {
+    const isel = document.getElementById('new-interlining').value;
+    const icustom = document.getElementById('new-interlining-custom').value.trim();
+    const iname = icustom || (isel ? masterInterlinings.find(i=>i.id===isel)?.name : '');
+    const ipos = document.getElementById('new-interlining-pos').value.trim();
+    if (iname) await db.from('article_interlining').insert({ article_id: article.id, interlining_id: icustom ? null : isel || null, interlining_name: iname, position: ipos || null });
+  }
+
+  // Add to pattern queue
+  const maxOrder = Math.max(0, ...allArticles.filter(a=>a.pattern_queue?.length>0).map(a=>a.pattern_queue[0].queue_order));
+  await db.from('pattern_queue').insert({ article_id: article.id, queue_order: maxOrder + 1, status: 'waiting' });
+
+  closeModal('modal-new-article');
+  await loadAll();
+  toast('Article created and added to pattern queue.');
+}
+
+// ── ARTICLE DETAIL ──
+async function openArticle(id) {
+  currentArticleId = id;
+  const a = allArticles.find(x=>x.id===id);
+  if(!a) return;
+  const isOwner = a.designer_id === profile.id;
+  document.getElementById('art-name').textContent = a.name;
+  document.getElementById('art-sub').textContent = `${a.category} · ${a.profiles?.full_name||'—'} · ${STAGE_LABELS[a.stage]}`;
+
+  document.querySelectorAll('#modal-article .tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.querySelectorAll('#modal-article .tab-content').forEach((c,i)=>c.classList.toggle('active',i===0));
+
+  renderDtabSpec(a, isOwner);
+  renderDtabTimeline(a, isOwner);
+  renderDtabMockups(a, isOwner);
+  renderDtabSewing(a, isOwner);
+  renderDtabSamples(a, isOwner);
+  renderDtabProduction(a, isOwner);
+  renderDtabRevisions(a, isOwner);
+  openModal('modal-article');
+}
+
+function renderDtabSpec(a, isOwner) {
+  const fabrics = a.article_fabrics?.map(f=>`${f.fabric_name} · ${f.color}`).join(', ')||'—';
+  const lining = a.article_lining?.[0];
+  const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':lining.fabric_name||'—';
+  const ints = a.article_interlining?.map(i=>i.interlining_name+(i.position?' · '+i.position:'')).join('<br>')||'—';
+  document.getElementById('dtab-spec').innerHTML = `
+    <div class="spec-grid">
+      <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fabrics}</div></div>
+      <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Size range</div><div class="spec-val">${a.size_range||'<span style="color:var(--ink-30);font-style:italic">Not set yet</span>'}</div></div>
+      <div class="spec-cell" style="grid-column:span 2"><div class="spec-label">Interlining</div><div class="spec-val">${ints}</div></div>
+      <div class="spec-cell"><div class="spec-label">Reference</div><div class="spec-val">${a.reference_source||'—'}</div><div class="spec-sub">${a.reference_notes||''}</div></div>
+    </div>
+    ${isOwner ? `<div style="display:flex;gap:8px;justify-content:flex-end;padding-top:14px;border-top:0.5px solid var(--border)"><button class="btn btn-danger" onclick="openArchiveModal('${a.id}')">Archive</button></div>` : ''}`;
+}
+
+function renderDtabTimeline(a, isOwner) {
+  const idx = STAGES.indexOf(a.stage);
+  let html = STAGES.map((s,i)=>`
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot ${i<idx?'done':i===idx?'active':'pending'}"></div>${i<STAGES.length-1?'<div class="tl-line"></div>':''}</div>
+      <div class="tl-content"><div class="tl-stage">${STAGE_LABELS[s]}</div><div class="tl-status ${i<idx?'done':i===idx?'active':'pending'}">${i<idx?'Completed':i===idx?'— current stage':'Pending'}</div></div>
+    </div>`).join('');
+  if (isOwner && idx < STAGES.length-1) {
+    html += `<div style="margin-top:16px;padding-top:14px;border-top:0.5px solid var(--border)">
+      <button class="btn btn-dark" onclick="advanceStage('${a.id}','${STAGES[idx+1]}')">Advance to: ${STAGE_LABELS[STAGES[idx+1]]}</button>
+    </div>`;
+  }
+  document.getElementById('dtab-timeline').innerHTML = html;
+}
+
+function renderDtabMockups(a, isOwner) {
+  const mockups = a.mockups || [];
+  let html = mockups.length ? mockups.map(m=>`
+    <div style="padding:9px 12px;background:var(--cream);border-radius:2px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:13px;font-weight:400">${m.part}</div><div style="font-size:11px;color:var(--ink-60)">${m.assigned_to||'—'}${m.notes?' · '+m.notes:''}</div></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="badge ${m.status==='done'?'badge-done':m.status==='revision'?'badge-revision':'badge-inprogress'}">${m.status}</span>
+        ${isOwner?`<select onchange="updateMockupStatus('${m.id}',this.value)" style="font-size:10px;padding:3px 6px;width:auto"><option ${m.status==='on_progress'?'selected':''}>on_progress</option><option ${m.status==='done'?'selected':''}>done</option><option ${m.status==='revision'?'selected':''}>revision</option></select>`:''}
+      </div>
+    </div>`).join('') : '<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:14px">No mockups yet.</div>';
+
+  if (isOwner) html += `
+    <div style="margin-top:12px;padding-top:12px;border-top:0.5px solid var(--border)">
+      <div class="form-section" style="margin-top:0">Add mockup</div>
+      <div class="grid-2">
+        <div class="form-row"><label class="form-label">Part</label><input type="text" id="new-mockup-part" placeholder="e.g. Kerah, Lengan, Placket"></div>
+        <div class="form-row"><label class="form-label">Assigned to</label><input type="text" id="new-mockup-assign" placeholder="e.g. Bu Oki, Pak Ajat"></div>
+      </div>
+      <div class="form-row"><label class="form-label">Notes</label><input type="text" id="new-mockup-notes" placeholder="Optional notes"></div>
+      <button class="btn btn-dark btn-sm" onclick="addMockup('${a.id}')">Add mockup</button>
+    </div>`;
+  document.getElementById('dtab-mockups').innerHTML = html;
+}
+
+function renderDtabSewing(a, isOwner) {
+  const sewings = a.sewing_assignments || [];
+  let html = sewings.length ? `
+    <div style="margin-bottom:14px">
+      ${sewings.map(s=>`<div style="padding:9px 12px;background:var(--cream);border-radius:2px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;font-weight:400">${s.tailors?.name||'—'} — Size ${s.size||'—'} · ${s.color||'—'}</div>${s.notes?`<div style="font-size:11px;color:var(--ink-60)">${s.notes}</div>`:''}</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="badge ${s.status==='done'?'badge-done':s.status==='revision'?'badge-revision':'badge-inprogress'}">${s.status}</span>
+          ${isOwner?`<select onchange="updateSewingStatus('${s.id}',this.value)" style="font-size:10px;padding:3px 6px;width:auto"><option ${s.status==='on_progress'?'selected':''}>on_progress</option><option ${s.status==='done'?'selected':''}>done</option><option ${s.status==='revision'?'selected':''}>revision</option></select>`:''}
+        </div>
+      </div>`).join('')}
+    </div>` : '<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:14px">No sewing assignments yet.</div>';
+
+  if (isOwner) {
+    const tailorOpts = tailors.map(t=>{
+      const active = (t.sewing_assignments||[]).filter(s=>s.status==='on_progress').length;
+      return `<option value="${t.id}">${t.name}${t.type==='optional'?' (optional)':''} — ${active} active</option>`;
+    }).join('');
+    html += `<div style="margin-top:12px;padding-top:12px;border-top:0.5px solid var(--border)">
+      <div class="form-section" style="margin-top:0">Assign sewing</div>
+      <div class="grid-2">
+        <div class="form-row"><label class="form-label">Tailor</label><select id="new-sewing-tailor"><option value="">Select tailor...</option>${tailorOpts}</select></div>
+        <div class="form-row"><label class="form-label">Size</label><input type="text" id="new-sewing-size" placeholder="e.g. S fit M"></div>
+        <div class="form-row"><label class="form-label">Color</label><input type="text" id="new-sewing-color" placeholder="e.g. Bistre"></div>
+        <div class="form-row"><label class="form-label">Notes for tailor</label><input type="text" id="new-sewing-notes" placeholder="Optional"></div>
+      </div>
+      <button class="btn btn-dark btn-sm" onclick="addSewing('${a.id}')">Assign</button>
+    </div>`;
+  }
+  document.getElementById('dtab-sewing').innerHTML = html;
+}
+
+function renderDtabSamples(a, isOwner) {
+  const masters = a.sample_masters||[];
+  const vendors = a.sample_vendors||[];
+  let html = `
+    <div class="section-row"><div class="section-label">Sample master</div></div>
+    ${masters.length ? masters.map(m=>`<div style="padding:9px 12px;background:var(--cream);border-radius:2px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px;font-weight:400">Size ${m.size} · ${m.color||'—'}</div></div><span class="badge ${m.status==='approved'?'badge-done':m.status==='revision'?'badge-revision':'badge-progress'}">${m.status}</span></div>`).join('') : '<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:10px">No sample master yet.</div>'}`;
+
+  if (isOwner) html += `
+    <div style="margin-top:8px;padding-top:10px;border-top:0.5px solid var(--border);margin-bottom:16px">
+      <div class="grid-2" style="margin-bottom:8px">
+        <div class="form-row"><label class="form-label">Size</label><input type="text" id="new-sm-size" placeholder="e.g. S fit M"></div>
+        <div class="form-row"><label class="form-label">Color</label><input type="text" id="new-sm-color" placeholder="e.g. Bistre"></div>
+      </div>
+      <button class="btn btn-sm btn-dark" onclick="addSampleMaster('${a.id}')">Add sample master</button>
+    </div>`;
+
+  html += `<div class="section-row" style="margin-top:8px"><div class="section-label">Sample vendor</div></div>
+    ${vendors.length ? vendors.map(v=>`<div style="padding:9px 12px;background:var(--cream);border-radius:2px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:13px;font-weight:400">${v.vendor_name} · Size ${v.size||'—'}</div></div><span class="badge ${v.status==='approved'?'badge-done':v.status==='revision'?'badge-revision':'badge-progress'}">${v.status}</span></div>`).join('') : '<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:10px">No sample vendor yet.</div>'}`;
+
+  if (isOwner) html += `
+    <div style="margin-top:8px;padding-top:10px;border-top:0.5px solid var(--border)">
+      <div class="grid-2" style="margin-bottom:8px">
+        <div class="form-row"><label class="form-label">Vendor name</label><input type="text" id="new-sv-vendor" placeholder="e.g. Pak Tatang"></div>
+        <div class="form-row"><label class="form-label">Size</label><input type="text" id="new-sv-size" placeholder="e.g. M"></div>
+      </div>
+      <button class="btn btn-sm btn-dark" onclick="addSampleVendor('${a.id}')">Add sample vendor</button>
+    </div>`;
+
+  document.getElementById('dtab-samples').innerHTML = html;
+}
+
+function renderDtabProduction(a, isOwner) {
+  const notes = a.production_notes||[];
+  const prod = notes.filter(n=>n.note_type==='production');
+  const qc = notes.filter(n=>n.note_type==='qc');
+  let html = `
+    <div class="section-row"><div class="section-label">Production notes</div></div>
+    ${prod.length?prod.map(n=>`<div class="rev-item"><div class="rev-meta"><span class="rev-date">${fmtDate(n.created_at)}</span></div><div class="rev-desc">${n.content}</div></div>`).join(''):'<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:10px">No production notes yet.</div>'}`;
+  if (isOwner) html += `<div class="form-row"><textarea id="new-prod-note" placeholder="Add production note..."></textarea></div><button class="btn btn-sm" onclick="addNote('${a.id}','production')">Add note</button>`;
+
+  html += `<div class="section-row" style="margin-top:16px"><div class="section-label">QC checkpoints</div></div>
+    ${qc.length?qc.map(n=>`<div class="rev-item"><div class="rev-meta"><span class="rev-date">${fmtDate(n.created_at)}</span></div><div class="rev-desc">${n.content}</div></div>`).join(''):'<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:10px">No QC notes yet.</div>'}`;
+  if (isOwner) html += `<div class="form-row"><textarea id="new-qc-note" placeholder="Add QC checkpoint..."></textarea></div><button class="btn btn-sm" onclick="addNote('${a.id}','qc')">Add checkpoint</button>`;
+
+  document.getElementById('dtab-production').innerHTML = html;
+}
+
+function renderDtabRevisions(a, isOwner) {
+  const revs = a.revision_logs||[];
+  let html = revs.length ? revs.map(r=>`<div class="rev-item"><div class="rev-meta"><span class="rev-date">${fmtDate(r.created_at)}</span><span class="rev-tag">${STAGE_LABELS[r.stage]||r.stage}</span></div><div class="rev-desc">${r.description}</div></div>`).join('') : '<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:14px">No revisions logged.</div>';
+  if (isOwner) html += `
+    <div style="margin-top:12px;padding-top:12px;border-top:0.5px solid var(--border)">
+      <div class="form-row"><textarea id="new-rev" placeholder="Describe what was revised..."></textarea></div>
+      <button class="btn btn-sm btn-dark" onclick="addRevision('${a.id}','${a.stage}')">Log revision</button>
+    </div>`;
+  document.getElementById('dtab-revisions').innerHTML = html;
+}
+
+// ── ACTIONS ──
+async function advanceStage(id, nextStage) {
+  await db.from('articles').update({ stage: nextStage }).eq('id', id);
+  await loadAll();
+  const a = allArticles.find(x=>x.id===id);
+  if(a) { renderDtabTimeline(a, a.designer_id===profile.id); }
+  toast(`Stage advanced to: ${STAGE_LABELS[nextStage]}`);
+}
+
+async function addMockup(articleId) {
+  const part = document.getElementById('new-mockup-part').value.trim();
+  if (!part) { toast('Part name is required.'); return; }
+  await db.from('mockups').insert({ article_id: articleId, part, assigned_to: document.getElementById('new-mockup-assign').value.trim()||null, notes: document.getElementById('new-mockup-notes').value.trim()||null, status: 'on_progress', created_by: profile.id });
+  await loadAll(); openArticle(articleId); toast('Mockup added.');
+}
+
+async function updateMockupStatus(id, status) {
+  await db.from('mockups').update({status}).eq('id',id);
+  await loadAll(); toast('Status updated.');
+}
+
+async function addSewing(articleId) {
+  const tailorId = document.getElementById('new-sewing-tailor').value;
+  if (!tailorId) { toast('Please select a tailor.'); return; }
+  await db.from('sewing_assignments').insert({ article_id: articleId, tailor_id: tailorId, size: document.getElementById('new-sewing-size').value.trim()||null, color: document.getElementById('new-sewing-color').value.trim()||null, notes: document.getElementById('new-sewing-notes').value.trim()||null, status: 'on_progress', assigned_by: profile.id });
+  await loadAll(); openArticle(articleId); toast('Sewing assigned.');
+}
+
+async function updateSewingStatus(id, status) {
+  await db.from('sewing_assignments').update({status}).eq('id',id);
+  await loadAll(); toast('Status updated.');
+}
+
+async function addSampleMaster(articleId) {
+  const size = document.getElementById('new-sm-size').value.trim();
+  if (!size) { toast('Size is required.'); return; }
+  await db.from('sample_masters').insert({ article_id: articleId, size, color: document.getElementById('new-sm-color').value.trim()||null, status: 'in_progress' });
+  await loadAll(); openArticle(articleId); toast('Sample master added.');
+}
+
+async function addSampleVendor(articleId) {
+  const vendor = document.getElementById('new-sv-vendor').value.trim();
+  if (!vendor) { toast('Vendor name is required.'); return; }
+  await db.from('sample_vendors').insert({ article_id: articleId, vendor_name: vendor, size: document.getElementById('new-sv-size').value.trim()||null, status: 'sent' });
+  await loadAll(); openArticle(articleId); toast('Sample vendor added.');
+}
+
+async function addNote(articleId, type) {
+  const content = document.getElementById(`new-${type==='production'?'prod':'qc'}-note`).value.trim();
+  if (!content) { toast('Note cannot be empty.'); return; }
+  await db.from('production_notes').insert({ article_id: articleId, note_type: type, content, added_by: profile.id });
+  await loadAll(); openArticle(articleId); toast('Note added.');
+}
+
+async function addRevision(articleId, stage) {
+  const desc = document.getElementById('new-rev').value.trim();
+  if (!desc) { toast('Please describe the revision.'); return; }
+  await db.from('revision_logs').insert({ article_id: articleId, stage, description: desc, logged_by: profile.id });
+  await loadAll(); openArticle(articleId); toast('Revision logged.');
+}
+
+function openArchiveModal(id) {
+  pendingArchiveId = id;
+  document.getElementById('arch-reason').value = '';
+  closeModal('modal-article');
+  openModal('modal-archive');
+}
+
+async function confirmArchive() {
+  const reason = document.getElementById('arch-reason').value.trim();
+  if (!reason) { toast('Please provide a reason.'); return; }
+  await db.from('articles').update({ status: 'archived', archive_reason: reason, archived_by: profile.id, archived_at: new Date().toISOString() }).eq('id', pendingArchiveId);
+  closeModal('modal-archive');
+  await loadAll(); toast('Article archived.');
+}
+
+function showSection(name, el) {
+  document.querySelectorAll('[id^="section-"]').forEach(s=>s.style.display='none');
+  document.getElementById('section-'+name).style.display='block';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function switchTab(el, tabId) {
+  el.closest('.modal').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  el.closest('.modal').querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+}
+
+async function doLogout() { await db.auth.signOut(); window.location.href='index.html'; }
+
+init();
+</script>
+</body>
+</html>
