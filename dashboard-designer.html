@@ -841,6 +841,50 @@ function stageBadgeHTML(stage, status) {
   return `<span class="badge ${cls}">${labels[stage] || stage}</span>`
 }
 
+async function openAddToQueue() {
+  const notInQueue = allArticles.filter(a => {
+    // check if already in queue by fetching
+    return true
+  })
+  const opts = allArticles.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('')
+  const sel = `<select id="queue-article-sel"><option value="">Select article...</option>${opts}</select>`
+  const html = `<div style="padding:16px">
+    <div class="form-row"><label class="form-label">Article</label>${sel}</div>
+    <div class="form-row"><label class="form-label">Notes</label><input type="text" id="queue-notes" placeholder="Optional"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal('modal-queue-add')">Cancel</button>
+      <button class="btn btn-dark" onclick="saveAddToQueue()">Add to queue</button>
+    </div>
+  </div>`
+  let m = document.getElementById('modal-queue-add')
+  if (!m) {
+    m = document.createElement('div')
+    m.className = 'overlay'
+    m.id = 'modal-queue-add'
+    m.innerHTML = `<div class="modal modal-sm"><div class="modal-head"><div class="modal-title">Add to pola queue</div><button class="close-btn" onclick="closeModal('modal-queue-add')">×</button></div><div class="modal-body" id="queue-add-body"></div></div>`
+    document.body.appendChild(m)
+  }
+  document.getElementById('queue-add-body').innerHTML = html
+  openModal('modal-queue-add')
+}
+
+async function saveAddToQueue() {
+  const articleId = document.getElementById('queue-article-sel')?.value
+  if (!articleId) { notify('Please select an article.', 'error'); return }
+  const { data: existing } = await db.from('pattern_queue').select('queue_order').order('queue_order', { ascending: false }).limit(1)
+  const maxOrder = existing?.[0]?.queue_order || 0
+  const { error } = await db.from('pattern_queue').insert({
+    article_id: articleId,
+    queue_order: maxOrder + 1,
+    status: 'waiting',
+    notes: document.getElementById('queue-notes')?.value?.trim() || null
+  })
+  if (error) { notify('Failed to add to queue.', 'error'); return }
+  closeModal('modal-queue-add')
+  await renderQueue()
+  notify('Added to pola queue.', 'success')
+}
+
 ;['queue','sewing'].forEach(p => { document.getElementById('page-' + p).style.display = 'none' })
 init()
 </script>
