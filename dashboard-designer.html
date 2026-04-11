@@ -832,6 +832,15 @@ function switchTab(el, paneId) {
   document.getElementById(paneId).classList.add('active')
 }
 
+function notify(msg, type) { toast(msg) }
+
+function stageBadgeHTML(stage, status) {
+  const labels = { design:'Design', pattern:'Pola', sewing:'Sewing', sample_master:'Sample Master', sample_vendor:'Sample Vendor', production:'Turun Produksi' }
+  const classes = { production:'badge-final', sample_vendor:'badge-vendor', sample_master:'badge-progress', sewing:'badge-progress' }
+  const cls = classes[stage] || 'badge-active'
+  return `<span class="badge ${cls}">${labels[stage] || stage}</span>`
+}
+
 ;['queue','sewing'].forEach(p => { document.getElementById('page-' + p).style.display = 'none' })
 init()
 </script>
