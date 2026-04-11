@@ -117,13 +117,19 @@
 
       <div class="form-section">Fabric *</div>
       <div id="fabric-rows">
-        <div class="fabric-row form-grid-2" style="margin-bottom:8px">
-          <div class="form-row" style="margin:0"><label class="form-label">Fabric</label>
-            <select id="fab-0-id" onchange="handleFabricSelect(0)"><option value="">Select fabric...</option></select>
+        <div class="fabric-row-wrap" style="margin-bottom:8px">
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
+            <div class="form-row" style="margin:0"><label class="form-label">Fabric</label>
+              <select id="fab-0-id" onchange="handleFabricSelect(0)"><option value="">Select fabric...</option></select>
+            </div>
+            <div class="form-row" style="margin:0"><label class="form-label">Color</label><input type="text" id="fab-0-color" placeholder="e.g. Bistre, Steel, Navy"></div>
+            <button class="btn btn-sm btn-danger" onclick="removeFabricRow(this)" style="margin-bottom:0;align-self:flex-end">×</button>
           </div>
-          <div class="form-row" style="margin:0"><label class="form-label">Color</label><input type="text" id="fab-0-color" placeholder="e.g. Bistre, Steel, Navy"></div>
+          <div id="fab-0-new-wrap" style="display:none;margin-top:6px">
+            <input type="text" id="fab-0-new-name" placeholder="Type new fabric name" style="width:100%">
+          </div>
+          <input type="hidden" id="fab-0-name">
         </div>
-        <input type="hidden" id="fab-0-name">
       </div>
       <div style="margin-top:8px">
         <button class="btn btn-sm" onclick="addFabricRow()" type="button">+ Add fabric</button>
@@ -316,24 +322,32 @@ function populateInterDropdowns() {
 function handleFabricSelect(idx) {
   const sel = document.getElementById(`fab-${idx}-id`)
   const nameInput = document.getElementById(`fab-${idx}-name`)
+  const newWrap = document.getElementById(`fab-${idx}-new-wrap`)
   if (sel.value === '__new__') {
-    const name = prompt('Enter new fabric name:')
-    if (name) nameInput.value = name
-    else sel.value = ''
+    if (newWrap) newWrap.style.display = 'block'
+    nameInput.value = ''
   } else {
+    if (newWrap) newWrap.style.display = 'none'
     const opt = sel.options[sel.selectedIndex]
     nameInput.value = opt.dataset.name || ''
   }
 }
 
+function removeFabricRow(btn) {
+  const wrap = btn.closest('.fabric-row-wrap')
+  if (document.querySelectorAll('.fabric-row-wrap').length <= 1) { notify('At least one fabric is required.', 'error'); return }
+  wrap.remove()
+}
+
 function handleInterSelect(idx) {
   const sel = document.getElementById(`int-${idx}-id`)
   const nameInput = document.getElementById(`int-${idx}-name`)
+  const newWrap = document.getElementById(`int-${idx}-new-wrap`)
   if (sel.value === '__new__') {
-    const name = prompt('Enter new interlining name:')
-    if (name) nameInput.value = name
-    else sel.value = ''
+    if (newWrap) newWrap.style.display = 'block'
+    nameInput.value = ''
   } else {
+    if (newWrap) newWrap.style.display = 'none'
     const opt = sel.options[sel.selectedIndex]
     nameInput.value = opt.dataset.name || ''
   }
@@ -345,12 +359,19 @@ function addFabricRow() {
     ...masterFabrics.map(f => `<option value="${f.id}" data-name="${esc(f.name)}">${esc(f.name)}</option>`),
     '<option value="__new__">+ Add new fabric</option>'
   ].join('')
-  const row = document.createElement('div')
-  row.innerHTML = `<div class="fabric-row form-grid-2" style="margin-bottom:8px">
+  const wrap = document.createElement('div')
+  wrap.className = 'fabric-row-wrap'
+  wrap.style.marginBottom = '8px'
+  wrap.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
     <div class="form-row" style="margin:0"><select id="fab-${idx}-id" onchange="handleFabricSelect(${idx})">${opts}</select></div>
     <div class="form-row" style="margin:0"><input type="text" id="fab-${idx}-color" placeholder="Color"></div>
-  </div><input type="hidden" id="fab-${idx}-name">`
-  document.getElementById('fabric-rows').appendChild(row)
+    <button class="btn btn-sm btn-danger" onclick="removeFabricRow(this)" style="margin-bottom:0;align-self:flex-end">×</button>
+  </div>
+  <div id="fab-${idx}-new-wrap" style="display:none;margin-top:6px">
+    <input type="text" id="fab-${idx}-new-name" placeholder="Type new fabric name" style="width:100%">
+  </div>
+  <input type="hidden" id="fab-${idx}-name">`
+  document.getElementById('fabric-rows').appendChild(wrap)
 }
 
 function addInterRow() {
@@ -399,13 +420,19 @@ async function saveNewArticle() {
   const fabrics = []
   for (let i = 0; i < fabricRowCount; i++) {
     const sel = document.getElementById(`fab-${i}-id`)
+    if (!sel) continue
     const nameEl = document.getElementById(`fab-${i}-name`)
+    const newNameEl = document.getElementById(`fab-${i}-new-name`)
     const color = document.getElementById(`fab-${i}-color`)?.value?.trim()
-    if (!sel || (!sel.value && !nameEl?.value)) continue
+    // If __new__ selected, get name from text input
+    const fabricName = sel.value === '__new__'
+      ? (newNameEl?.value?.trim() || '')
+      : (nameEl?.value || sel.options[sel.selectedIndex]?.dataset?.name || '')
+    if (!fabricName && !sel.value) continue
     fabrics.push({
       article_id: art.id,
       fabric_id: sel.value && sel.value !== '__new__' ? sel.value : null,
-      fabric_name: nameEl?.value || sel.options[sel.selectedIndex]?.dataset?.name || '',
+      fabric_name: fabricName,
       color: color || '',
       sort_order: i
     })
