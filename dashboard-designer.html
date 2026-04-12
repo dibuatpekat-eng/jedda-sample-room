@@ -20,16 +20,16 @@
     </div>
     <div class="sidebar-nav">
       <div class="nav-section">Overview</div>
-      <div class="nav-item active" onclick="showPage('articles', this)">
+      <div class="nav-item active" onclick="showPage('articles',this)">
         <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><rect x="1" y="2" width="12" height="10" rx="0.5"/><line x1="4" y1="5" x2="10" y2="5"/><line x1="4" y1="7.5" x2="10" y2="7.5"/><line x1="4" y1="10" x2="7" y2="10"/></svg>
         All articles
       </div>
       <div class="nav-section">Production</div>
-      <div class="nav-item" onclick="showPage('queue', this)">
+      <div class="nav-item" onclick="showPage('queue',this)">
         <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><line x1="1" y1="4" x2="13" y2="4"/><line x1="1" y1="7" x2="13" y2="7"/><line x1="1" y1="10" x2="13" y2="10"/></svg>
         Pola queue
       </div>
-      <div class="nav-item" onclick="showPage('sewing', this)">
+      <div class="nav-item" onclick="showPage('sewing',this)">
         <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><circle cx="7" cy="7" r="5"/><circle cx="7" cy="7" r="2"/></svg>
         Sewing workload
       </div>
@@ -45,7 +45,6 @@
   </div>
 
   <div class="main">
-    <!-- ARTICLES PAGE -->
     <div id="page-articles">
       <div class="topbar">
         <div class="page-title">Articles</div>
@@ -61,152 +60,188 @@
       </div>
     </div>
 
-    <!-- POLA QUEUE PAGE -->
     <div id="page-queue" style="display:none">
-      <div class="topbar">
-        <div class="page-title">Pola queue</div>
-      </div>
+      <div class="topbar"><div class="page-title">Pola queue</div></div>
       <div class="content">
-        <p style="font-size:12px;color:var(--ink-50);margin-bottom:16px">Set queue order for Bu Oki. Drag to reorder or use the buttons.</p>
+        <p style="font-size:12px;color:var(--ink-60);margin-bottom:16px">Antrian Bu Oki — semua iterasi yang perlu dibuat polanya.</p>
         <div id="queue-list"></div>
-        <div style="margin-top:12px">
-          <button class="btn btn-dark btn-sm" onclick="openAddToQueue()">+ Add article to queue</button>
-        </div>
       </div>
     </div>
 
-    <!-- SEWING PAGE -->
     <div id="page-sewing" style="display:none">
-      <div class="topbar">
-        <div class="page-title">Sewing workload</div>
-      </div>
-      <div class="content">
-        <div id="sewing-list"></div>
-      </div>
+      <div class="topbar"><div class="page-title">Sewing workload</div></div>
+      <div class="content"><div id="sewing-list"></div></div>
     </div>
   </div>
 </div>
 
 <!-- NEW ARTICLE MODAL -->
-<div class="overlay" id="modal-new">
+<div class="overlay" id="modal-new-article">
   <div class="modal">
     <div class="modal-head">
       <div class="modal-title">New article</div>
-      <button class="close-btn" onclick="closeModal('modal-new')">×</button>
+      <button class="close-btn" onclick="closeModal('modal-new-article')">×</button>
     </div>
     <div class="modal-body">
       <div class="form-section">Article identity</div>
       <div class="form-grid-2">
-        <div class="form-row"><label class="form-label">Article name *</label><input type="text" id="new-name" placeholder="e.g. Hika Outer"></div>
+        <div class="form-row"><label class="form-label">Article name *</label><input type="text" id="na-name" placeholder="e.g. Dami Blazer"></div>
         <div class="form-row"><label class="form-label">Category *</label>
-          <select id="new-cat" onchange="handleCategoryChange()">
+          <select id="na-cat" onchange="onNaCatChange()">
             <option value="Outer">Outer</option><option value="Shirt">Shirt</option>
             <option value="Pants">Pants</option><option value="Jacket">Jacket</option>
             <option value="Dress">Dress</option><option value="Other">Other</option>
           </select>
         </div>
-        <div class="form-row"><label class="form-label">Date created *</label><input type="date" id="new-date"></div>
-        <div class="form-row"><label class="form-label">Size range <span style="color:var(--ink-30)">(optional)</span></label><input type="text" id="new-size" placeholder="e.g. S, M, L"></div>
+        <div class="form-row"><label class="form-label">Date created</label><input type="date" id="na-date"></div>
+        <div class="form-row"><label class="form-label">Size range <span style="color:var(--ink-30)">(optional)</span></label><input type="text" id="na-size" placeholder="e.g. S, M, L"></div>
       </div>
+      <div class="form-row"><label class="form-label">Reference source *</label><input type="text" id="na-ref-source" placeholder="e.g. COS, Pinterest, Original design"></div>
+      <div class="form-row"><label class="form-label">Modification notes</label><input type="text" id="na-ref-notes" placeholder="e.g. Modified sleeve detail"></div>
 
-      <div class="form-section">Reference</div>
-      <div class="form-grid-2">
-        <div class="form-row"><label class="form-label">Source *</label><input type="text" id="new-ref-source" placeholder="e.g. COS, Pinterest, Original design"></div>
-        <div class="form-row"><label class="form-label">Modification notes</label><input type="text" id="new-ref-notes" placeholder="e.g. Terinspirasi tapi modifikasi bagian lengan"></div>
-      </div>
+      <div class="form-section">Fabric — Initial version *</div>
+      <div id="na-fabric-rows"></div>
+      <button class="btn btn-sm" onclick="addNaFabricRow()" type="button" style="margin-bottom:4px">+ Add fabric</button>
 
-      <div class="form-section">Fabric *</div>
-      <div id="fabric-rows">
-        <div class="fabric-row-wrap" style="margin-bottom:8px">
-          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
-            <div class="form-row" style="margin:0"><label class="form-label">Fabric</label>
-              <select id="fab-0-id" onchange="handleFabricSelect(0)"><option value="">Select fabric...</option></select>
-            </div>
-            <div class="form-row" style="margin:0"><label class="form-label">Color</label><input type="text" id="fab-0-color" placeholder="e.g. Bistre, Steel, Navy"></div>
-            <button class="btn btn-sm btn-danger" onclick="removeFabricRow(this)" style="margin-bottom:0;align-self:flex-end">×</button>
-          </div>
-          <div id="fab-0-new-wrap" style="display:none;margin-top:6px">
-            <input type="text" id="fab-0-new-name" placeholder="Type new fabric name" style="width:100%">
-          </div>
-          <input type="hidden" id="fab-0-name">
-        </div>
-      </div>
-      <div style="margin-top:8px">
-        <button class="btn btn-sm" onclick="addFabricRow()" type="button">+ Add fabric</button>
-      </div>
-
-      <!-- LINING — only for Outer/Jacket/Dress -->
-      <div id="lining-section">
-        <div class="form-section">Lining *</div>
-        <div class="form-row">
-          <label class="form-label">Lining type</label>
-          <select id="new-lining-type" onchange="handleLiningChange()">
+      <div id="na-lining-section">
+        <div class="form-section">Lining</div>
+        <div class="form-row"><label class="form-label">Lining type</label>
+          <select id="na-lining-type" onchange="onNaLiningChange()">
             <option value="none">None</option>
             <option value="dfc">DFC — Double Fabric Construction</option>
             <option value="fabric">Select fabric</option>
           </select>
         </div>
-        <div id="lining-fabric-row" style="display:none">
-          <div class="form-grid-2">
-            <div class="form-row"><label class="form-label">Lining fabric</label>
-              <select id="new-lining-fabric"><option value="">Select fabric...</option></select>
-            </div>
+        <div id="na-lining-fabric-row" style="display:none">
+          <div class="form-row"><label class="form-label">Lining fabric</label>
+            <select id="na-lining-fabric"><option value="">Select...</option></select>
           </div>
         </div>
       </div>
 
-      <!-- INTERLINING — not for Pants -->
-      <div id="interlining-section">
-        <div class="form-section">Interlining *</div>
-        <div id="interlining-rows">
-          <div class="form-grid-2" style="margin-bottom:8px">
-            <div class="form-row" style="margin:0"><label class="form-label">Interlining</label>
-              <select id="int-0-id" onchange="handleInterSelect(0)"><option value="">Select interlining...</option></select>
-            </div>
-            <div class="form-row" style="margin:0"><label class="form-label">Position</label><input type="text" id="int-0-pos" placeholder="e.g. Collar, sleeve placket, cuff"></div>
-          </div>
-          <input type="hidden" id="int-0-name">
-        </div>
-        <div style="margin-top:8px">
-          <button class="btn btn-sm" onclick="addInterRow()" type="button">+ Add interlining</button>
-        </div>
+      <div id="na-interlining-section">
+        <div class="form-section">Interlining</div>
+        <div id="na-interlining-rows"></div>
+        <button class="btn btn-sm" onclick="addNaInterliningRow()" type="button" style="margin-bottom:4px">+ Add interlining</button>
       </div>
-
     </div>
     <div class="modal-footer">
-      <button class="btn" onclick="closeModal('modal-new')">Cancel</button>
+      <button class="btn" onclick="closeModal('modal-new-article')">Cancel</button>
       <button class="btn btn-dark" onclick="saveNewArticle()">Save article</button>
     </div>
   </div>
 </div>
 
-<!-- ARTICLE DETAIL MODAL -->
-<div class="overlay" id="modal-detail">
+<!-- NEW ITERATION MODAL -->
+<div class="overlay" id="modal-new-iteration">
   <div class="modal">
     <div class="modal-head">
       <div>
-        <div class="modal-title" id="detail-name"></div>
-        <div class="modal-sub" id="detail-sub"></div>
+        <div class="modal-title">New iteration</div>
+        <div class="modal-sub" id="ni-article-sub"></div>
       </div>
-      <button class="close-btn" onclick="closeModal('modal-detail')">×</button>
-    </div>
-    <div class="modal-tabs">
-      <div class="tab active" onclick="switchTab(this,'dtab-spec')">Spec</div>
-      <div class="tab" onclick="switchTab(this,'dtab-timeline')">Timeline</div>
-      <div class="tab" onclick="switchTab(this,'dtab-mockups')">Mockups</div>
-      <div class="tab" onclick="switchTab(this,'dtab-sewing')">Sewing</div>
-      <div class="tab" onclick="switchTab(this,'dtab-samples')">Samples</div>
-      <div class="tab" onclick="switchTab(this,'dtab-notes')">Prod. notes</div>
-      <div class="tab" onclick="switchTab(this,'dtab-revisions')">Revisions</div>
+      <button class="close-btn" onclick="closeModal('modal-new-iteration')">×</button>
     </div>
     <div class="modal-body">
-      <div class="tab-pane active" id="dtab-spec"></div>
-      <div class="tab-pane" id="dtab-timeline"></div>
-      <div class="tab-pane" id="dtab-mockups"></div>
-      <div class="tab-pane" id="dtab-sewing"></div>
+      <div class="form-section">Iteration type</div>
+      <div class="form-grid-2">
+        <div class="form-row"><label class="form-label">Type *</label>
+          <select id="ni-type" onchange="onNiTypeChange()">
+            <option value="full">Revision total — full garment</option>
+            <option value="mockup">Mockup — partial</option>
+          </select>
+        </div>
+        <div class="form-row"><label class="form-label">Label *</label>
+          <input type="text" id="ni-label" placeholder="e.g. Revision 1, Mockup Kerah">
+        </div>
+      </div>
+      <div class="form-row" id="ni-part-row" style="display:none">
+        <label class="form-label">Part (mockup) *</label>
+        <input type="text" id="ni-part" placeholder="e.g. Kerah, Tangan, Placket">
+      </div>
+      <div class="form-row"><label class="form-label">Notes</label>
+        <textarea id="ni-notes" placeholder="What's being revised or tested..."></textarea>
+      </div>
+
+      <div class="form-section">Spec — fabric for this iteration *</div>
+      <div id="ni-fabric-rows"></div>
+      <button class="btn btn-sm" onclick="addNiFabricRow()" type="button" style="margin-bottom:4px">+ Add fabric</button>
+
+      <div id="ni-lining-section">
+        <div class="form-section">Lining</div>
+        <div class="form-row"><label class="form-label">Lining type</label>
+          <select id="ni-lining-type" onchange="onNiLiningChange()">
+            <option value="none">None</option>
+            <option value="dfc">DFC — Double Fabric Construction</option>
+            <option value="fabric">Select fabric</option>
+          </select>
+        </div>
+        <div id="ni-lining-fabric-row" style="display:none">
+          <div class="form-row"><label class="form-label">Lining fabric</label>
+            <select id="ni-lining-fabric"><option value="">Select...</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div id="ni-interlining-section">
+        <div class="form-section">Interlining</div>
+        <div id="ni-interlining-rows"></div>
+        <button class="btn btn-sm" onclick="addNiInterliningRow()" type="button" style="margin-bottom:4px">+ Add interlining</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-new-iteration')">Cancel</button>
+      <button class="btn btn-dark" onclick="saveNewIteration()">Save & add to pola queue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARTICLE DETAIL MODAL -->
+<div class="overlay" id="modal-article">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="art-title"></div>
+        <div class="modal-sub" id="art-sub"></div>
+      </div>
+      <button class="close-btn" onclick="closeModal('modal-article')">×</button>
+    </div>
+    <div class="modal-tabs">
+      <div class="tab active" onclick="switchTab(this,'dtab-iterations')">Iterations</div>
+      <div class="tab" onclick="switchTab(this,'dtab-spec')">Spec & Size</div>
+      <div class="tab" onclick="switchTab(this,'dtab-samples')">Samples</div>
+      <div class="tab" onclick="switchTab(this,'dtab-notes')">Prod. notes</div>
+    </div>
+    <div class="modal-body">
+      <div class="tab-pane active" id="dtab-iterations"></div>
+      <div class="tab-pane" id="dtab-spec"></div>
       <div class="tab-pane" id="dtab-samples"></div>
       <div class="tab-pane" id="dtab-notes"></div>
-      <div class="tab-pane" id="dtab-revisions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ITERATION DETAIL MODAL -->
+<div class="overlay" id="modal-iteration">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="iter-title"></div>
+        <div class="modal-sub" id="iter-sub"></div>
+      </div>
+      <button class="close-btn" onclick="closeModal('modal-iteration')">×</button>
+    </div>
+    <div class="modal-tabs">
+      <div class="tab active" onclick="switchTab(this,'itab-spec')">Spec</div>
+      <div class="tab" onclick="switchTab(this,'itab-timeline')">Timeline</div>
+      <div class="tab" onclick="switchTab(this,'itab-sewing')">Sewing</div>
+      <div class="tab" onclick="switchTab(this,'itab-revisions')">Revisions</div>
+    </div>
+    <div class="modal-body">
+      <div class="tab-pane active" id="itab-spec"></div>
+      <div class="tab-pane" id="itab-timeline"></div>
+      <div class="tab-pane" id="itab-sewing"></div>
+      <div class="tab-pane" id="itab-revisions"></div>
     </div>
   </div>
 </div>
@@ -216,8 +251,8 @@
   <div class="modal modal-sm">
     <div class="modal-head"><div class="modal-title">Archive article</div><button class="close-btn" onclick="closeModal('modal-archive')">×</button></div>
     <div class="modal-body">
-      <p style="font-size:12px;color:var(--ink-50);margin-bottom:14px;line-height:1.6">Article will be archived. Data is preserved and can be restored.</p>
-      <div class="form-row"><label class="form-label">Reason *</label><textarea id="archive-reason" placeholder="e.g. Not approved — direction changed."></textarea></div>
+      <p style="font-size:12px;color:var(--ink-60);margin-bottom:14px;line-height:1.6">Article and all iterations will be archived. Data is preserved.</p>
+      <div class="form-row"><label class="form-label">Reason *</label><textarea id="archive-reason" placeholder="e.g. Direction changed."></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('modal-archive')">Cancel</button>
@@ -232,30 +267,27 @@ let allArticles = []
 let masterFabrics = []
 let masterInterlinings = []
 let tailors = []
-let fabricRowCount = 1
-let interRowCount = 1
+let currentArticleId = null
+let currentIterationId = null
 let pendingArchiveId = null
-let currentDetailId = null
+let naFabCount = 0, naIntCount = 0, niFabCount = 0, niIntCount = 0
 
 const STAGE_ORDER = ['design','pattern','sewing','sample_master','sample_vendor','production']
 const STAGE_LABEL = { design:'Design', pattern:'Pola', sewing:'Sewing', sample_master:'Sample Master', sample_vendor:'Sample Vendor', production:'Turun Produksi' }
 
 async function init() {
-  profile = await requireAuth(['designer', 'head'])
+  profile = await requireAuth(['designer','head'])
   if (!profile) return
   document.getElementById('user-name').textContent = profile.full_name
   document.getElementById('user-avatar').textContent = profile.full_name.charAt(0).toUpperCase()
-  await loadMasterData()
-  await loadArticles()
-  populateFabricDropdowns()
-  populateInterDropdowns()
+  await Promise.all([loadMasterData(), loadArticles()])
 }
 
 async function loadMasterData() {
-  const [f, i, t] = await Promise.all([
+  const [f,i,t] = await Promise.all([
     db.from('master_fabrics').select('*').order('name'),
     db.from('master_interlinings').select('*').order('name'),
-    db.from('tailors').select('*').eq('is_active', true)
+    db.from('tailors').select('*').eq('is_active',true)
   ])
   masterFabrics = f.data || []
   masterInterlinings = i.data || []
@@ -264,495 +296,675 @@ async function loadMasterData() {
 
 async function loadArticles() {
   const { data } = await db.from('articles')
-    .select(`*, profiles!articles_designer_id_fkey(full_name)`)
-    .eq('status', 'active')
+    .select('*, profiles!articles_designer_id_fkey(full_name), article_iterations(*)')
+    .eq('status','active')
     .order('created_at', { ascending: false })
   allArticles = data || []
   renderArticles()
 }
 
+// ─── ARTICLES LIST ───
 function renderArticles() {
   const el = document.getElementById('articles-list')
   if (!allArticles.length) { el.innerHTML = '<div class="empty">No active articles. Create one to begin.</div>'; return }
   el.innerHTML = allArticles.map(a => {
-    const stageIdx = STAGE_ORDER.indexOf(a.stage)
-    const dots = STAGE_ORDER.map((s, i) => `<div class="prog-dot ${i < stageIdx ? 'done' : i === stageIdx ? 'active' : ''}"></div>`).join('')
+    const iters = (a.article_iterations || []).sort((x,y) => new Date(y.created_at) - new Date(x.created_at))
+    const latest = iters[0]
+    const stage = latest?.stage || 'design'
+    const stageIdx = STAGE_ORDER.indexOf(stage)
+    const dots = STAGE_ORDER.map((s,i) => `<div class="prog-dot ${i<stageIdx?'done':i===stageIdx?'active':''}"></div>`).join('')
     const isOwn = a.designer_id === profile.id
-    return `<div class="list-row" style="grid-template-columns:2fr 1fr 1.5fr 1fr 1fr" onclick="openDetail('${a.id}')">
-      <div><div class="art-name">${esc(a.name)}${isOwn ? '' : ''}</div><div class="art-sub">${esc(a.reference_source || '—')}</div></div>
-      <div style="font-size:12px;color:var(--ink-50)">${a.category}</div>
-      <div><div class="prog-dots">${dots}</div><div style="font-size:10px;color:var(--ink-30);margin-top:3px">${STAGE_LABEL[a.stage]}</div></div>
-      <div style="font-size:12px">${a.profiles?.full_name || '—'}${isOwn ? ' <span style="font-size:9px;color:var(--ink-30)">(you)</span>' : ''}</div>
-      <div>${stageBadgeHTML(a.stage, a.status)}</div>
+    return `<div class="list-row" style="grid-template-columns:2fr 1fr 1.5fr 1fr 1fr" onclick="openArticle('${a.id}')">
+      <div>
+        <div class="art-name">${esc(a.name)}</div>
+        <div class="art-sub">${esc(a.reference_source||'—')} · <span style="color:var(--ink-30)">${iters.length} iteration${iters.length!==1?'s':''}</span></div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-60)">${a.category}</div>
+      <div><div class="prog-dots">${dots}</div><div style="font-size:10px;color:var(--ink-30);margin-top:3px">${STAGE_LABEL[stage]}</div></div>
+      <div style="font-size:12px">${a.profiles?.full_name||'—'}${isOwn?' <span style="font-size:9px;color:var(--ink-30)">(you)</span>':''}</div>
+      <div>${stageBadge(stage)}</div>
     </div>`
   }).join('')
 }
 
-// ── NEW ARTICLE FORM ──
-function handleCategoryChange() {
-  const cat = document.getElementById('new-cat').value
-  const showLining = ['Outer', 'Jacket', 'Dress'].includes(cat)
-  const showInter = cat !== 'Pants'
-  document.getElementById('lining-section').style.display = showLining ? 'block' : 'none'
-  document.getElementById('interlining-section').style.display = showInter ? 'block' : 'none'
+function stageBadge(stage) {
+  const cls = {production:'badge-final',sample_vendor:'badge-vendor',sample_master:'badge-progress',sewing:'badge-sewing',pattern:'badge-pattern'}[stage]||'badge-active'
+  return `<span class="badge ${cls}">${STAGE_LABEL[stage]||stage}</span>`
 }
 
-function handleLiningChange() {
-  const type = document.getElementById('new-lining-type').value
-  document.getElementById('lining-fabric-row').style.display = type === 'fabric' ? 'block' : 'none'
+// ─── ARTICLE DETAIL ───
+async function openArticle(id) {
+  currentArticleId = id
+  const a = allArticles.find(x => x.id === id)
+  if (!a) return
+  const isOwn = a.designer_id === profile.id
+  document.getElementById('art-title').textContent = a.name
+  document.getElementById('art-sub').textContent = `${a.category} · ${a.reference_source||'—'} · ${a.profiles?.full_name||'—'}`
+  document.querySelectorAll('#modal-article .tab').forEach((t,i) => t.classList.toggle('active',i===0))
+  document.querySelectorAll('#modal-article .tab-pane').forEach((p,i) => p.classList.toggle('active',i===0))
+  await Promise.all([renderIterTab(a,isOwn), renderSpecTab(a,isOwn), renderSamplesTab(a,isOwn), renderNotesTab(a,isOwn)])
+  openModal('modal-article')
 }
 
-function populateFabricDropdowns() {
-  const opts = ['<option value="">Select fabric...</option>',
-    ...masterFabrics.map(f => `<option value="${f.id}" data-name="${esc(f.name)}">${esc(f.name)}</option>`),
-    '<option value="__new__">+ Add new fabric</option>'
-  ].join('')
-  document.querySelectorAll('select[id^="fab-"]').forEach(s => { s.innerHTML = opts })
-  document.getElementById('new-lining-fabric').innerHTML = opts
+async function renderIterTab(a, isOwn) {
+  const { data: iters } = await db.from('article_iterations').select('*').eq('article_id',a.id).order('created_at',{ascending:true})
+  let html = ''
+  if (isOwn) html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:11px;color:var(--ink-60)">${iters?.length||0} iteration${(iters?.length||0)!==1?'s':''}</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-dark btn-sm" onclick="openNewIteration('${a.id}','${esc(a.name)}','${a.category}')">+ New iteration</button>
+      <button class="btn btn-danger btn-sm" onclick="openArchiveConfirm('${a.id}')">Archive article</button>
+    </div>
+  </div>`
+  if (!iters?.length) { html += '<div class="empty">No iterations yet.</div>' }
+  else html += iters.map(iter => {
+    const typeLabel = iter.type==='mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : 'Full garment'
+    return `<div class="iter-card" onclick="openIteration('${iter.id}','${a.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="iter-label">${esc(iter.label)}</div><div class="iter-meta">${typeLabel}${iter.notes?' · '+esc(iter.notes):''}</div></div>
+        ${stageBadge(iter.stage)}
+      </div>
+      <div style="font-size:10px;color:var(--ink-30);margin-top:8px">${fmtDate(iter.created_at)}</div>
+    </div>`
+  }).join('')
+  document.getElementById('dtab-iterations').innerHTML = html
 }
 
-function populateInterDropdowns() {
-  const opts = ['<option value="">Select interlining...</option>',
-    ...masterInterlinings.map(i => `<option value="${i.id}" data-name="${esc(i.name)}">${esc(i.name)}</option>`),
-    '<option value="__new__">+ Add new interlining</option>'
-  ].join('')
-  document.querySelectorAll('select[id^="int-"]').forEach(s => { if (s.id.endsWith('-id')) s.innerHTML = opts })
+async function renderSpecTab(a, isOwn) {
+  document.getElementById('dtab-spec').innerHTML = `
+    <div class="spec-grid">
+      <div class="spec-cell span-2">
+        <div class="spec-label">Size range</div>
+        <div class="spec-val">${esc(a.size_range||'Not set yet')}</div>
+        ${isOwn?`<div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <input type="text" id="spec-size-input" value="${esc(a.size_range||'')}" placeholder="e.g. S, M, L, XL" style="flex:1">
+          <button class="btn btn-sm btn-dark" onclick="updateSizeRange('${a.id}')">Save</button>
+        </div>`:''}
+      </div>
+      <div class="spec-cell span-2">
+        <div class="spec-label">Reference</div>
+        <div class="spec-val">${esc(a.reference_source||'—')}</div>
+        ${a.reference_notes?`<div class="spec-sub">${esc(a.reference_notes)}</div>`:''}
+      </div>
+    </div>`
 }
 
-function handleFabricSelect(idx) {
-  const sel = document.getElementById(`fab-${idx}-id`)
-  const nameInput = document.getElementById(`fab-${idx}-name`)
-  const newWrap = document.getElementById(`fab-${idx}-new-wrap`)
-  if (sel.value === '__new__') {
-    if (newWrap) newWrap.style.display = 'block'
-    nameInput.value = ''
-  } else {
-    if (newWrap) newWrap.style.display = 'none'
-    const opt = sel.options[sel.selectedIndex]
-    nameInput.value = opt.dataset.name || ''
+async function renderSamplesTab(a, isOwn) {
+  const [{ data: masters },{ data: vendors }] = await Promise.all([
+    db.from('sample_masters').select('*').eq('article_id',a.id).order('created_at'),
+    db.from('sample_vendors').select('*').eq('article_id',a.id).order('created_at')
+  ])
+  let html = `<div class="section-label">Sample master</div>`
+  html += masters?.length
+    ? `<table class="data-table"><thead><tr><th>Size</th><th>Color</th><th>Status</th></tr></thead><tbody>${masters.map(m=>`<tr><td>${esc(m.size)}</td><td>${esc(m.color||'—')}</td><td><span class="badge badge-master">${m.status}</span></td></tr>`).join('')}</tbody></table>`
+    : '<div class="empty-sm">None yet.</div>'
+  if (isOwn) html += `<div style="padding:12px;background:var(--cream);border-radius:2px;margin:10px 0 16px">
+    <div class="form-grid-2" style="margin-bottom:8px">
+      <div class="form-row" style="margin:0"><label class="form-label">Size</label><input type="text" id="sm-size" placeholder="e.g. S, M"></div>
+      <div class="form-row" style="margin:0"><label class="form-label">Color</label><input type="text" id="sm-color" placeholder="e.g. Bistre"></div>
+    </div>
+    <button class="btn btn-dark btn-sm" onclick="addSampleMaster('${a.id}')">Add sample master</button>
+  </div>`
+  html += `<div class="section-label">Sample vendor</div>`
+  html += vendors?.length
+    ? `<table class="data-table"><thead><tr><th>Vendor</th><th>Size</th><th>Status</th></tr></thead><tbody>${vendors.map(v=>`<tr><td>${esc(v.vendor_name)}</td><td>${esc(v.size||'—')}</td><td><span class="badge badge-vendor">${v.status}</span></td></tr>`).join('')}</tbody></table>`
+    : '<div class="empty-sm">None yet.</div>'
+  if (isOwn) html += `<div style="padding:12px;background:var(--cream);border-radius:2px;margin-top:10px">
+    <div class="form-grid-2" style="margin-bottom:8px">
+      <div class="form-row" style="margin:0"><label class="form-label">Vendor</label><input type="text" id="sv-vendor" placeholder="e.g. Pak Tatang"></div>
+      <div class="form-row" style="margin:0"><label class="form-label">Size</label><input type="text" id="sv-size" placeholder="e.g. M"></div>
+    </div>
+    <button class="btn btn-dark btn-sm" onclick="addSampleVendor('${a.id}')">Add sample vendor</button>
+  </div>`
+  document.getElementById('dtab-samples').innerHTML = html
+}
+
+async function renderNotesTab(a, isOwn) {
+  const { data: notes } = await db.from('production_notes').select('*').eq('article_id',a.id).order('created_at',{ascending:false})
+  const prod = notes?.filter(n=>n.note_type==='production')||[]
+  const qc = notes?.filter(n=>n.note_type==='qc')||[]
+  let html = `<div class="section-label">Production notes</div>`
+  html += prod.length ? prod.map(n=>`<div class="rev-item"><div class="rev-meta"><span class="rev-date">${fmtDate(n.created_at)}</span></div><div class="rev-desc">${esc(n.content)}</div></div>`).join('') : '<div class="empty-sm">None yet.</div>'
+  html += `<div class="section-label" style="margin-top:16px">QC notes</div>`
+  html += qc.length ? qc.map(n=>`<div class="rev-item"><div class="rev-meta"><span class="rev-date">${fmtDate(n.created_at)}</span></div><div class="rev-desc">${esc(n.content)}</div></div>`).join('') : '<div class="empty-sm">None yet.</div>'
+  if (isOwn) html += `<div style="border-top:0.5px solid var(--border);padding-top:14px;margin-top:14px">
+    <div class="form-section" style="margin-top:0">Add note</div>
+    <div class="form-row"><label class="form-label">Type</label>
+      <select id="note-type"><option value="production">Production</option><option value="qc">QC</option></select>
+    </div>
+    <div class="form-row"><textarea id="note-content" placeholder="Add note..."></textarea></div>
+    <button class="btn btn-dark btn-sm" onclick="addNote('${a.id}')">Add note</button>
+  </div>`
+  document.getElementById('dtab-notes').innerHTML = html
+}
+
+// ─── ITERATION DETAIL ───
+async function openIteration(iterId, articleId) {
+  currentIterationId = iterId
+  currentArticleId = articleId
+  const a = allArticles.find(x=>x.id===articleId)
+  const { data: iter } = await db.from('article_iterations').select('*').eq('id',iterId).single()
+  if (!iter) return
+  const isOwn = a?.designer_id === profile.id
+  const typeLabel = iter.type==='mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : 'Full garment'
+  document.getElementById('iter-title').textContent = `${esc(a?.name||'')} — ${esc(iter.label)}`
+  document.getElementById('iter-sub').textContent = `${typeLabel} · ${fmtDate(iter.created_at)}`
+  document.querySelectorAll('#modal-iteration .tab').forEach((t,i) => t.classList.toggle('active',i===0))
+  document.querySelectorAll('#modal-iteration .tab-pane').forEach((p,i) => p.classList.toggle('active',i===0))
+  await Promise.all([renderIterSpec(iter,isOwn), renderIterTimeline(iter), renderIterSewing(iter,isOwn), renderIterRevisions(iter,isOwn)])
+  openModal('modal-iteration')
+}
+
+async function renderIterSpec(iter, isOwn) {
+  const [{ data: fabs },{ data: lins },{ data: ints }] = await Promise.all([
+    db.from('iteration_fabrics').select('*').eq('iteration_id',iter.id),
+    db.from('iteration_lining').select('*').eq('iteration_id',iter.id),
+    db.from('iteration_interlining').select('*').eq('iteration_id',iter.id)
+  ])
+  const lining = lins?.[0]||null
+  const fabricStr = fabs?.map(f=>`${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>')||'—'
+  const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':esc(lining.fabric_name||'—')
+  const intStr = ints?.map(i=>`${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>')||'—'
+
+  let html = `<div class="spec-grid">
+    <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fabricStr}</div></div>
+    <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
+    <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
+    ${iter.notes?`<div class="spec-cell span-2"><div class="spec-label">Notes</div><div class="spec-val">${esc(iter.notes)}</div></div>`:''}
+  </div>`
+
+  if (isOwn) {
+    const nextIdx = STAGE_ORDER.indexOf(iter.stage)+1
+    const nextStage = STAGE_ORDER[nextIdx]
+    html += `<div style="margin-top:16px;padding-top:14px;border-top:0.5px solid var(--border)">`
+    if (nextStage) {
+      if (nextStage==='sewing') {
+        html += `<button class="btn btn-dark btn-sm" onclick="showSewingForm()">Advance to: Sewing — assign tailor ↓</button>`
+      } else {
+        html += `<button class="btn btn-dark btn-sm" onclick="advanceStage('${iter.id}','${nextStage}')">Advance to: ${STAGE_LABEL[nextStage]}</button>`
+      }
+    } else {
+      html += `<span style="font-size:11px;color:var(--sage)">Final stage reached</span>`
+    }
+    html += `</div>`
+    html += `<div id="sewing-form" style="display:none;margin-top:12px;padding:14px;background:var(--cream);border-radius:2px">
+      <div class="form-section" style="margin-top:0">Assign to tailor</div>
+      <div style="font-size:11px;color:var(--ink-60);margin-bottom:10px;padding:8px;background:var(--warm-white);border-radius:2px;border:0.5px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-30);margin-bottom:4px">Spec bahan</div>
+        ${fabricStr}${lStr!=='—'?`<br>Lining: ${lStr}`:''}${intStr!=='—'?`<br>Interlining: ${intStr}`:''}
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label class="form-label">Tailor *</label>
+          <select id="adv-tailor"><option value="">Select tailor...</option>${tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (optional)':''}</option>`).join('')}</select>
+        </div>
+        <div class="form-row"><label class="form-label">Size</label><input type="text" id="adv-size" placeholder="e.g. S fit M"></div>
+        <div class="form-row"><label class="form-label">Color</label><input type="text" id="adv-color" placeholder="e.g. Bistre, Steel"></div>
+        <div class="form-row"><label class="form-label">Notes for tailor</label><input type="text" id="adv-notes" placeholder="Optional"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-dark btn-sm" onclick="confirmSewing('${iter.id}')">Confirm & assign</button>
+        <button class="btn btn-sm" onclick="document.getElementById('sewing-form').style.display='none'">Cancel</button>
+      </div>
+    </div>`
   }
+  document.getElementById('itab-spec').innerHTML = html
 }
 
-function removeFabricRow(btn) {
-  const wrap = btn.closest('.fabric-row-wrap')
-  if (document.querySelectorAll('.fabric-row-wrap').length <= 1) { notify('At least one fabric is required.', 'error'); return }
-  wrap.remove()
+function showSewingForm() {
+  const f = document.getElementById('sewing-form')
+  if (f) f.style.display = f.style.display==='none'?'block':'none'
 }
 
-function handleInterSelect(idx) {
-  const sel = document.getElementById(`int-${idx}-id`)
-  const nameInput = document.getElementById(`int-${idx}-name`)
-  const newWrap = document.getElementById(`int-${idx}-new-wrap`)
-  if (sel.value === '__new__') {
-    if (newWrap) newWrap.style.display = 'block'
-    nameInput.value = ''
-  } else {
-    if (newWrap) newWrap.style.display = 'none'
-    const opt = sel.options[sel.selectedIndex]
-    nameInput.value = opt.dataset.name || ''
+async function confirmSewing(iterId) {
+  const tailorId = document.getElementById('adv-tailor')?.value
+  if (!tailorId) { toast('Please select a tailor.'); return }
+  const [stageRes, sewRes] = await Promise.all([
+    db.from('article_iterations').update({stage:'sewing'}).eq('id',iterId),
+    db.from('sewing_assignments').insert({
+      article_id: currentArticleId, iteration_id: iterId, tailor_id: tailorId,
+      size: document.getElementById('adv-size')?.value?.trim()||null,
+      color: document.getElementById('adv-color')?.value?.trim()||null,
+      notes: document.getElementById('adv-notes')?.value?.trim()||null,
+      status: 'on_progress', assigned_by: profile.id
+    })
+  ])
+  if (stageRes.error||sewRes.error) { toast('Failed. Please try again.'); return }
+  await db.from('pattern_queue').update({status:'done'}).eq('iteration_id',iterId)
+  await loadArticles()
+  const { data: iter } = await db.from('article_iterations').select('*').eq('id',iterId).single()
+  const a = allArticles.find(x=>x.id===currentArticleId)
+  await Promise.all([renderIterSpec(iter, a?.designer_id===profile.id), renderIterSewing(iter, a?.designer_id===profile.id), renderIterTimeline(iter)])
+  toast('Advanced to sewing. Tailor assigned.')
+}
+
+async function advanceStage(iterId, nextStage) {
+  const { error } = await db.from('article_iterations').update({stage:nextStage}).eq('id',iterId)
+  if (error) { toast('Failed to advance.'); return }
+  if (nextStage==='pattern') await db.from('pattern_queue').update({status:'in_progress'}).eq('iteration_id',iterId)
+  await loadArticles()
+  const { data: iter } = await db.from('article_iterations').select('*').eq('id',iterId).single()
+  const a = allArticles.find(x=>x.id===currentArticleId)
+  await Promise.all([renderIterSpec(iter, a?.designer_id===profile.id), renderIterTimeline(iter)])
+  toast(`Advanced to: ${STAGE_LABEL[nextStage]}`)
+}
+
+async function renderIterTimeline(iter) {
+  const idx = STAGE_ORDER.indexOf(iter.stage)
+  document.getElementById('itab-timeline').innerHTML = `<div class="timeline">${STAGE_ORDER.map((s,i)=>`
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-dot ${i<idx?'done':i===idx?'active':'pending'}"></div>
+        ${i<STAGE_ORDER.length-1?'<div class="tl-line"></div>':''}
+      </div>
+      <div>
+        <div class="tl-stage">${STAGE_LABEL[s]}</div>
+        <div class="tl-status ${i<idx?'tl-done':i===idx?'tl-active':'tl-pending'}">${i<idx?'Completed':i===idx?'Current stage':'Pending'}</div>
+      </div>
+    </div>`).join('')}</div>`
+}
+
+async function renderIterSewing(iter, isOwn) {
+  const { data: assigns } = await db.from('sewing_assignments')
+    .select('*, tailors(name,type)')
+    .eq('iteration_id',iter.id)
+    .order('created_at',{ascending:false})
+  let html = assigns?.length
+    ? `<table class="data-table"><thead><tr><th>Tailor</th><th>Size</th><th>Color</th><th>Status</th><th>Notes</th></tr></thead><tbody>`+
+      assigns.map(w=>`<tr>
+        <td>${esc(w.tailors?.name||'—')}${w.tailors?.type==='optional'?' <span style="font-size:9px;color:var(--ink-30)">(opt)</span>':''}</td>
+        <td>${esc(w.size||'—')}</td><td>${esc(w.color||'—')}</td>
+        <td><span class="badge badge-${w.status==='done'?'vendor':w.status==='revision'?'danger':'sewing'}">${w.status}</span></td>
+        <td style="color:var(--ink-60)">${esc(w.notes||'—')}</td>
+      </tr>`).join('')+`</tbody></table>`
+    : '<div class="empty-sm">No sewing assignments yet.</div>'
+  if (isOwn && iter.stage==='sewing') {
+    html += `<div style="border-top:0.5px solid var(--border);padding-top:14px;margin-top:14px">
+      <div class="form-section" style="margin-top:0">Add sewing assignment</div>
+      <div class="form-grid-2">
+        <div class="form-row"><label class="form-label">Tailor *</label>
+          <select id="sew-tailor"><option value="">Select...</option>${tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (optional)':''}</option>`).join('')}</select>
+        </div>
+        <div class="form-row"><label class="form-label">Size</label><input type="text" id="sew-size" placeholder="e.g. S fit M"></div>
+        <div class="form-row"><label class="form-label">Color</label><input type="text" id="sew-color" placeholder="e.g. Bistre"></div>
+        <div class="form-row"><label class="form-label">Notes</label><input type="text" id="sew-notes" placeholder="Optional"></div>
+      </div>
+      <button class="btn btn-dark btn-sm" onclick="addSewingAssign('${iter.id}')">Assign</button>
+    </div>`
   }
+  document.getElementById('itab-sewing').innerHTML = html
 }
 
-function addFabricRow() {
-  const idx = fabricRowCount++
-  const opts = ['<option value="">Select fabric...</option>',
-    ...masterFabrics.map(f => `<option value="${f.id}" data-name="${esc(f.name)}">${esc(f.name)}</option>`),
-    '<option value="__new__">+ Add new fabric</option>'
-  ].join('')
+async function addSewingAssign(iterId) {
+  const tailorId = document.getElementById('sew-tailor')?.value
+  if (!tailorId) { toast('Please select a tailor.'); return }
+  const { error } = await db.from('sewing_assignments').insert({
+    article_id: currentArticleId, iteration_id: iterId, tailor_id: tailorId,
+    size: document.getElementById('sew-size')?.value?.trim()||null,
+    color: document.getElementById('sew-color')?.value?.trim()||null,
+    notes: document.getElementById('sew-notes')?.value?.trim()||null,
+    status: 'on_progress', assigned_by: profile.id
+  })
+  if (error) { toast('Failed to assign.'); return }
+  const { data: iter } = await db.from('article_iterations').select('*').eq('id',iterId).single()
+  const a = allArticles.find(x=>x.id===currentArticleId)
+  await renderIterSewing(iter, a?.designer_id===profile.id)
+  toast('Tailor assigned.')
+}
+
+async function renderIterRevisions(iter, isOwn) {
+  const { data: revs } = await db.from('revision_logs')
+    .select('*').eq('iteration_id',iter.id).order('created_at',{ascending:false})
+  let html = revs?.length
+    ? revs.map(r=>`<div class="rev-item">
+        <div class="rev-meta"><span class="rev-date">${fmtDate(r.created_at)}</span><span class="rev-tag">${STAGE_LABEL[r.stage]||r.stage}</span></div>
+        <div class="rev-desc">${esc(r.description)}</div>
+      </div>`).join('')
+    : '<div class="empty-sm">No revisions logged.</div>'
+  if (isOwn) html += `<div style="border-top:0.5px solid var(--border);padding-top:14px;margin-top:14px">
+    <div class="form-section" style="margin-top:0">Log revision</div>
+    <div class="form-row"><textarea id="rev-desc" placeholder="Describe what was revised..."></textarea></div>
+    <button class="btn btn-dark btn-sm" onclick="addRevision('${iter.id}','${iter.stage}')">Log revision</button>
+  </div>`
+  document.getElementById('itab-revisions').innerHTML = html
+}
+
+async function addRevision(iterId, stage) {
+  const desc = document.getElementById('rev-desc')?.value?.trim()
+  if (!desc) { toast('Please describe the revision.'); return }
+  const { error } = await db.from('revision_logs').insert({
+    article_id: currentArticleId, iteration_id: iterId,
+    stage, description: desc, logged_by: profile.id
+  })
+  if (error) { toast('Failed.'); return }
+  const { data: iter } = await db.from('article_iterations').select('*').eq('id',iterId).single()
+  const a = allArticles.find(x=>x.id===currentArticleId)
+  await renderIterRevisions(iter, a?.designer_id===profile.id)
+  toast('Revision logged.')
+}
+
+// ─── NEW ARTICLE FORM ───
+function openNewArticle() {
+  naFabCount=0; naIntCount=0
+  ;['na-name','na-size','na-ref-source','na-ref-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value='' })
+  document.getElementById('na-date').value = new Date().toISOString().split('T')[0]
+  document.getElementById('na-lining-type').value = 'none'
+  document.getElementById('na-lining-fabric-row').style.display = 'none'
+  document.getElementById('na-fabric-rows').innerHTML = ''
+  document.getElementById('na-interlining-rows').innerHTML = ''
+  addNaFabricRow()
+  onNaCatChange()
+  fillSelect('na-lining-fabric', masterFabrics)
+  openModal('modal-new-article')
+}
+
+function onNaCatChange() {
+  const cat = document.getElementById('na-cat').value
+  document.getElementById('na-lining-section').style.display = ['Outer','Jacket','Dress'].includes(cat)?'block':'none'
+  document.getElementById('na-interlining-section').style.display = cat!=='Pants'?'block':'none'
+}
+
+function onNaLiningChange() {
+  document.getElementById('na-lining-fabric-row').style.display = document.getElementById('na-lining-type').value==='fabric'?'block':'none'
+}
+
+function addNaFabricRow() {
+  const i = naFabCount++
+  addFabRow('na-fabric-rows', `na-fab-${i}`, `na-col-${i}`, `na-fab-new-${i}`, `na-fab-newname-${i}`, masterFabrics, 'Fabric')
+}
+
+function addNaInterliningRow() {
+  const i = naIntCount++
+  addIntRow('na-interlining-rows', `na-int-${i}`, `na-ipos-${i}`, `na-int-new-${i}`, `na-int-newname-${i}`, masterInterlinings)
+}
+
+// ─── NEW ITERATION FORM ───
+function openNewIteration(articleId, articleName, articleCat) {
+  niFabCount=0; niIntCount=0
+  currentArticleId = articleId
+  document.getElementById('ni-article-sub').textContent = articleName
+  ;['ni-label','ni-part','ni-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value='' })
+  document.getElementById('ni-type').value = 'full'
+  document.getElementById('ni-part-row').style.display = 'none'
+  document.getElementById('ni-lining-type').value = 'none'
+  document.getElementById('ni-lining-fabric-row').style.display = 'none'
+  document.getElementById('ni-fabric-rows').innerHTML = ''
+  document.getElementById('ni-interlining-rows').innerHTML = ''
+  addNiFabricRow()
+  document.getElementById('ni-lining-section').style.display = ['Outer','Jacket','Dress'].includes(articleCat)?'block':'none'
+  document.getElementById('ni-interlining-section').style.display = articleCat!=='Pants'?'block':'none'
+  fillSelect('ni-lining-fabric', masterFabrics)
+  openModal('modal-new-iteration')
+}
+
+function onNiTypeChange() {
+  document.getElementById('ni-part-row').style.display = document.getElementById('ni-type').value==='mockup'?'block':'none'
+}
+
+function onNiLiningChange() {
+  document.getElementById('ni-lining-fabric-row').style.display = document.getElementById('ni-lining-type').value==='fabric'?'block':'none'
+}
+
+function addNiFabricRow() {
+  const i = niFabCount++
+  addFabRow('ni-fabric-rows', `ni-fab-${i}`, `ni-col-${i}`, `ni-fab-new-${i}`, `ni-fab-newname-${i}`, masterFabrics, 'Fabric')
+}
+
+function addNiInterliningRow() {
+  const i = niIntCount++
+  addIntRow('ni-interlining-rows', `ni-int-${i}`, `ni-ipos-${i}`, `ni-int-new-${i}`, `ni-int-newname-${i}`, masterInterlinings)
+}
+
+// ─── SHARED FORM HELPERS ───
+function addFabRow(containerId, selId, colId, newWrapId, newNameId, items, label) {
   const wrap = document.createElement('div')
   wrap.className = 'fabric-row-wrap'
   wrap.style.marginBottom = '8px'
   wrap.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
-    <div class="form-row" style="margin:0"><select id="fab-${idx}-id" onchange="handleFabricSelect(${idx})">${opts}</select></div>
-    <div class="form-row" style="margin:0"><input type="text" id="fab-${idx}-color" placeholder="Color"></div>
-    <button class="btn btn-sm btn-danger" onclick="removeFabricRow(this)" style="margin-bottom:0;align-self:flex-end">×</button>
+    <div class="form-row" style="margin:0"><label class="form-label">${label}</label>
+      <select id="${selId}" onchange="onSelChange('${selId}','${newWrapId}')">
+        <option value="">Select ${label.toLowerCase()}...</option>
+        ${items.map(f=>`<option value="${f.id}" data-name="${esc(f.name)}">${esc(f.name)}</option>`).join('')}
+        <option value="__new__">+ Type new</option>
+      </select>
+    </div>
+    <div class="form-row" style="margin:0"><label class="form-label">Color</label><input type="text" id="${colId}" placeholder="e.g. Bistre"></div>
+    <button class="btn btn-sm btn-danger" onclick="this.closest('.fabric-row-wrap').remove()" style="align-self:flex-end">×</button>
   </div>
-  <div id="fab-${idx}-new-wrap" style="display:none;margin-top:6px">
-    <input type="text" id="fab-${idx}-new-name" placeholder="Type new fabric name" style="width:100%">
+  <div id="${newWrapId}" style="display:none;margin-top:6px">
+    <input type="text" id="${newNameId}" placeholder="Type new ${label.toLowerCase()} name" style="width:100%">
+  </div>`
+  document.getElementById(containerId).appendChild(wrap)
+}
+
+function addIntRow(containerId, selId, posId, newWrapId, newNameId, items) {
+  const wrap = document.createElement('div')
+  wrap.className = 'fabric-row-wrap'
+  wrap.style.marginBottom = '8px'
+  wrap.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
+    <div class="form-row" style="margin:0"><label class="form-label">Interlining</label>
+      <select id="${selId}" onchange="onSelChange('${selId}','${newWrapId}')">
+        <option value="">Select interlining...</option>
+        ${items.map(i=>`<option value="${i.id}" data-name="${esc(i.name)}">${esc(i.name)}</option>`).join('')}
+        <option value="__new__">+ Type new</option>
+      </select>
+    </div>
+    <div class="form-row" style="margin:0"><label class="form-label">Position</label><input type="text" id="${posId}" placeholder="e.g. Collar, Full"></div>
+    <button class="btn btn-sm btn-danger" onclick="this.closest('.fabric-row-wrap').remove()" style="align-self:flex-end">×</button>
   </div>
-  <input type="hidden" id="fab-${idx}-name">`
-  document.getElementById('fabric-rows').appendChild(wrap)
+  <div id="${newWrapId}" style="display:none;margin-top:6px">
+    <input type="text" id="${newNameId}" placeholder="Type new interlining name" style="width:100%">
+  </div>`
+  document.getElementById(containerId).appendChild(wrap)
 }
 
-function addInterRow() {
-  const idx = interRowCount++
-  const opts = ['<option value="">Select interlining...</option>',
-    ...masterInterlinings.map(i => `<option value="${i.id}" data-name="${esc(i.name)}">${esc(i.name)}</option>`),
-    '<option value="__new__">+ Add new interlining</option>'
-  ].join('')
-  const row = document.createElement('div')
-  row.innerHTML = `<div class="form-grid-2" style="margin-bottom:8px">
-    <div class="form-row" style="margin:0"><select id="int-${idx}-id" onchange="handleInterSelect(${idx})">${opts}</select></div>
-    <div class="form-row" style="margin:0"><input type="text" id="int-${idx}-pos" placeholder="Position"></div>
-  </div><input type="hidden" id="int-${idx}-name">`
-  document.getElementById('interlining-rows').appendChild(row)
+function onSelChange(selId, newWrapId) {
+  const sel = document.getElementById(selId)
+  const wrap = document.getElementById(newWrapId)
+  if (sel && wrap) wrap.style.display = sel.value==='__new__'?'block':'none'
 }
 
-function openNewArticle() {
-  document.getElementById('new-date').value = new Date().toISOString().split('T')[0]
-  document.getElementById('new-name').value = ''
-  document.getElementById('new-size').value = ''
-  document.getElementById('new-ref-source').value = ''
-  document.getElementById('new-ref-notes').value = ''
-  handleCategoryChange()
-  openModal('modal-new')
+function fillSelect(selId, items) {
+  const sel = document.getElementById(selId)
+  if (!sel) return
+  sel.innerHTML = `<option value="">Select...</option>` +
+    items.map(f=>`<option value="${f.id}" data-name="${esc(f.name)}">${esc(f.name)}</option>`).join('') +
+    `<option value="__new__">+ Type new</option>`
 }
 
+function collectFabrics(prefix, count) {
+  const out = []
+  for (let i=0; i<count; i++) {
+    const sel = document.getElementById(`${prefix}-fab-${i}`)
+    if (!sel) continue
+    const newName = document.getElementById(`${prefix}-fab-newname-${i}`)?.value?.trim()
+    const name = sel.value==='__new__' ? newName : (sel.options[sel.selectedIndex]?.dataset?.name||'')
+    if (!name) continue
+    const color = document.getElementById(`${prefix}-col-${i}`)?.value?.trim()||''
+    out.push({ fabric_id: sel.value&&sel.value!=='__new__'?sel.value:null, fabric_name:name, color, sort_order:i })
+  }
+  return out
+}
+
+function collectInterlinings(prefix, count) {
+  const out = []
+  for (let i=0; i<count; i++) {
+    const sel = document.getElementById(`${prefix}-int-${i}`)
+    if (!sel) continue
+    const newName = document.getElementById(`${prefix}-int-newname-${i}`)?.value?.trim()
+    const name = sel.value==='__new__' ? newName : (sel.options[sel.selectedIndex]?.dataset?.name||'')
+    if (!name) continue
+    const pos = document.getElementById(`${prefix}-ipos-${i}`)?.value?.trim()||null
+    out.push({ interlining_id: sel.value&&sel.value!=='__new__'?sel.value:null, interlining_name:name, position:pos })
+  }
+  return out
+}
+
+async function getLiningData(prefix) {
+  const typeEl = document.getElementById(`${prefix}-lining-type`)
+  if (!typeEl) return null
+  const liningType = typeEl.value
+  const fabSel = document.getElementById(`${prefix}-lining-fabric`)
+  return {
+    lining_type: liningType,
+    fabric_id: liningType==='fabric'&&fabSel?.value&&fabSel.value!=='__new__'?fabSel.value:null,
+    fabric_name: liningType==='fabric'?(fabSel?.options[fabSel.selectedIndex]?.dataset?.name||''):null
+  }
+}
+
+// ─── SAVE NEW ARTICLE ───
 async function saveNewArticle() {
-  const name = document.getElementById('new-name').value.trim()
-  const refSource = document.getElementById('new-ref-source').value.trim()
-  if (!name || !refSource) { notify('Article name and reference source are required.', 'error'); return }
+  const name = document.getElementById('na-name').value.trim()
+  const refSource = document.getElementById('na-ref-source').value.trim()
+  if (!name||!refSource) { toast('Article name and reference source are required.'); return }
+  const cat = document.getElementById('na-cat').value
+  const fabrics = collectFabrics('na', naFabCount)
+  if (!fabrics.length) { toast('Please add at least one fabric.'); return }
 
-  const cat = document.getElementById('new-cat').value
-  const { data: art, error } = await db.from('articles').insert({
-    name, category: cat,
-    designer_id: profile.id,
-    date_created: document.getElementById('new-date').value,
-    size_range: document.getElementById('new-size').value.trim() || null,
+  const { data: art, error: artErr } = await db.from('articles').insert({
+    name, category: cat, designer_id: profile.id,
+    date_created: document.getElementById('na-date').value,
+    size_range: document.getElementById('na-size').value.trim()||null,
     reference_source: refSource,
-    reference_notes: document.getElementById('new-ref-notes').value.trim() || null,
+    reference_notes: document.getElementById('na-ref-notes').value.trim()||null,
     stage: 'design', status: 'active'
   }).select().single()
+  if (artErr) { toast('Failed to create article.'); console.error(artErr); return }
 
-  if (error) { notify('Failed to create article.', 'error'); console.error(error); return }
+  const { data: iter, error: iterErr } = await db.from('article_iterations').insert({
+    article_id: art.id, label: 'Initial', type: 'full',
+    stage: 'design', status: 'active', created_by: profile.id
+  }).select().single()
+  if (iterErr) { toast('Failed to create iteration.'); console.error(iterErr); return }
 
-  // Save fabrics
-  const fabrics = []
-  for (let i = 0; i < fabricRowCount; i++) {
-    const sel = document.getElementById(`fab-${i}-id`)
-    if (!sel) continue
-    const nameEl = document.getElementById(`fab-${i}-name`)
-    const newNameEl = document.getElementById(`fab-${i}-new-name`)
-    const color = document.getElementById(`fab-${i}-color`)?.value?.trim()
-    // If __new__ selected, get name from text input
-    const fabricName = sel.value === '__new__'
-      ? (newNameEl?.value?.trim() || '')
-      : (nameEl?.value || sel.options[sel.selectedIndex]?.dataset?.name || '')
-    if (!fabricName && !sel.value) continue
-    fabrics.push({
-      article_id: art.id,
-      fabric_id: sel.value && sel.value !== '__new__' ? sel.value : null,
-      fabric_name: fabricName,
-      color: color || '',
-      sort_order: i
-    })
-  }
-  if (fabrics.length) await db.from('article_fabrics').insert(fabrics)
+  const saveFabs = db.from('iteration_fabrics').insert(fabrics.map(f=>({...f, iteration_id:iter.id})))
+  const saveOldFabs = db.from('article_fabrics').insert(fabrics.map(f=>({...f, article_id:art.id})))
+  await Promise.all([saveFabs, saveOldFabs])
 
-  // Save lining (only for outer/jacket/dress)
-  if (['Outer', 'Jacket', 'Dress'].includes(cat)) {
-    const liningType = document.getElementById('new-lining-type').value
-    const liningFabricSel = document.getElementById('new-lining-fabric')
-    await db.from('article_lining').insert({
-      article_id: art.id,
-      lining_type: liningType,
-      fabric_id: liningType === 'fabric' && liningFabricSel.value && liningFabricSel.value !== '__new__' ? liningFabricSel.value : null,
-      fabric_name: liningType === 'fabric' ? (liningFabricSel.options[liningFabricSel.selectedIndex]?.dataset?.name || '') : null
-    })
-  }
-
-  // Save interlining (not for pants)
-  if (cat !== 'Pants') {
-    const inters = []
-    for (let i = 0; i < interRowCount; i++) {
-      const sel = document.getElementById(`int-${i}-id`)
-      const nameEl = document.getElementById(`int-${i}-name`)
-      const pos = document.getElementById(`int-${i}-pos`)?.value?.trim()
-      if (!sel || (!sel.value && !nameEl?.value)) continue
-      inters.push({
-        article_id: art.id,
-        interlining_id: sel.value && sel.value !== '__new__' ? sel.value : null,
-        interlining_name: nameEl?.value || '',
-        position: pos || null
-      })
+  if (['Outer','Jacket','Dress'].includes(cat)) {
+    const lData = await getLiningData('na')
+    if (lData) {
+      await Promise.all([
+        db.from('iteration_lining').insert({...lData, iteration_id:iter.id}),
+        db.from('article_lining').insert({...lData, article_id:art.id})
+      ])
     }
-    if (inters.length) await db.from('article_interlining').insert(inters)
   }
 
-  // Auto-add to pattern queue
-  const { data: queueData } = await db.from('pattern_queue').select('queue_order').order('queue_order', { ascending: false }).limit(1)
-  const maxOrder = queueData?.[0]?.queue_order || 0
-  await db.from('pattern_queue').insert({ article_id: art.id, queue_order: maxOrder + 1, status: 'waiting' })
-
-  closeModal('modal-new')
-  await loadArticles()
-  notify('Article created and added to pola queue.', 'success')
-}
-
-// ── DETAIL MODAL ──
-async function openDetail(id) {
-  currentDetailId = id
-  const a = allArticles.find(x => x.id === id)
-  if (!a) return
-  const isOwn = a.designer_id === profile.id
-
-  document.getElementById('detail-name').textContent = a.name
-  document.getElementById('detail-sub').textContent = `${a.category} · ${a.reference_source || '—'} · ${a.profiles?.full_name || '—'} · Started ${fmtDate(a.date_created)}`
-
-  document.querySelectorAll('#modal-detail .tab').forEach((t, i) => t.classList.toggle('active', i === 0))
-  document.querySelectorAll('#modal-detail .tab-pane').forEach((p, i) => p.classList.toggle('active', i === 0))
-
-  await renderDSpec(a, isOwn)
-  await renderDTimeline(a, isOwn)
-  await renderDMockups(a, isOwn)
-  await renderDSewing(a, isOwn)
-  await renderDSamples(a, isOwn)
-  await renderDNotes(a, isOwn)
-  await renderDRevisions(a, isOwn)
-  openModal('modal-detail')
-}
-
-async function renderDSpec(a, isOwn) {
-  const { data: fabrics } = await db.from('article_fabrics').select('*').eq('article_id', a.id)
-  const { data: linings } = await db.from('article_lining').select('*').eq('article_id', a.id)
-  const lining = linings?.[0] || null
-  const { data: inters } = await db.from('article_interlining').select('*').eq('article_id', a.id)
-
-  const fabricStr = fabrics?.map(f => `${esc(f.fabric_name)} — ${esc(f.color)}`).join('<br>') || '—'
-  const lStr = !lining ? '—' : lining.lining_type === 'none' ? 'None' : lining.lining_type === 'dfc' ? 'DFC' : esc(lining.fabric_name || '—')
-  const intStr = inters?.map(i => `${esc(i.interlining_name)}${i.position ? ' · ' + esc(i.position) : ''}`).join('<br>') || '—'
-
-  document.getElementById('dtab-spec').innerHTML = `
-    <div class="spec-grid">
-      <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fabricStr}</div></div>
-      <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
-      <div class="spec-cell"><div class="spec-label">Size range</div><div class="spec-val">${esc(a.size_range || 'TBD')}</div></div>
-      <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
-      <div class="spec-cell"><div class="spec-label">Reference</div><div class="spec-val">${esc(a.reference_source || '—')}</div><div class="spec-sub">${esc(a.reference_notes || '')}</div></div>
-    </div>
-    ${isOwn ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:0.5px solid var(--border)">
-      <div style="display:flex;gap:8px">
-        ${STAGE_ORDER.indexOf(a.stage) < STAGE_ORDER.length - 1 ? `<button class="btn btn-dark btn-sm" onclick="advanceStage('${a.id}')">Advance to: ${STAGE_LABEL[STAGE_ORDER[STAGE_ORDER.indexOf(a.stage)+1]]}</button>` : '<span style="font-size:11px;color:var(--sage)">Final stage</span>'}
-      </div>
-      <button class="btn btn-danger btn-sm" onclick="openArchiveConfirm('${a.id}')">Archive</button>
-    </div>` : ''}
-  `
-}
-
-async function renderDTimeline(a) {
-  const stageIdx = STAGE_ORDER.indexOf(a.stage)
-  document.getElementById('dtab-timeline').innerHTML = `<div class="timeline">${STAGE_ORDER.map((s, i) => `
-    <div class="tl-item">
-      <div class="tl-left"><div class="tl-dot ${i < stageIdx ? 'done' : i === stageIdx ? 'active' : 'pending'}"></div>${i < STAGE_ORDER.length - 1 ? '<div class="tl-line"></div>' : ''}</div>
-      <div><div class="tl-stage">${STAGE_LABEL[s]}</div><div class="tl-status ${i < stageIdx ? 'tl-done' : i === stageIdx ? 'tl-active' : 'tl-pending'}">${i < stageIdx ? 'Completed' : i === stageIdx ? 'Current stage' : 'Pending'}</div></div>
-    </div>`).join('')}</div>`
-}
-
-async function renderDMockups(a, isOwn) {
-  const { data: mockups } = await db.from('mockups').select('*').eq('article_id', a.id).order('created_at')
-  let html = mockups?.length ? `<table class="data-table"><thead><tr><th>Part</th><th>Assigned to</th><th>Status</th><th>Notes</th></tr></thead>
-    <tbody>${mockups.map(m => `<tr>
-      <td>${esc(m.part)}</td><td>${esc(m.assigned_to || '—')}</td>
-      <td><span class="badge badge-${m.status === 'done' ? 'vendor' : m.status === 'revision' ? 'sewing' : 'design'}">${m.status}</span></td>
-      <td style="color:var(--ink-50)">${esc(m.notes || '—')}</td>
-    </tr>`).join('')}</tbody></table>` : '<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:16px">No mockups yet.</div>'
-
-  if (isOwn) {
-    html += `<div style="border-top:0.5px solid var(--border);padding-top:14px;margin-top:14px">
-      <div class="form-section" style="margin-top:0">Add mockup</div>
-      <div class="form-grid-2">
-        <div class="form-row"><label class="form-label">Part</label><input type="text" id="mock-part" placeholder="e.g. Kerah, Lengan, Placket"></div>
-        <div class="form-row"><label class="form-label">Assigned to</label><input type="text" id="mock-assign" placeholder="e.g. Bu Oki, Pak Ato"></div>
-      </div>
-      <div class="form-row"><label class="form-label">Notes</label><textarea id="mock-notes" placeholder="Details..." style="min-height:50px"></textarea></div>
-      <button class="btn btn-dark btn-sm" onclick="addMockup('${a.id}')">Add mockup</button>
-    </div>`
-  }
-  document.getElementById('dtab-mockups').innerHTML = html
-}
-
-async function renderDSewing(a, isOwn) {
-  const { data: assignments } = await db.from('sewing_assignments')
-    .select(`*, tailors(name, type)`).eq('article_id', a.id).order('assigned_at')
-
-  let html = assignments?.length ? `<table class="data-table"><thead><tr><th>Tailor</th><th>Size</th><th>Color</th><th>Status</th><th>Notes</th></tr></thead>
-    <tbody>${assignments.map(w => `<tr>
-      <td>${esc(w.tailors?.name || '—')}${w.tailors?.type === 'optional' ? ' <span style="font-size:9px;color:var(--ink-30)">(optional)</span>' : ''}</td>
-      <td>${esc(w.size || '—')}</td><td>${esc(w.color || '—')}</td>
-      <td><span class="badge badge-${w.status === 'done' ? 'vendor' : w.status === 'revision' ? 'sewing' : 'design'}">${w.status}</span></td>
-      <td style="color:var(--ink-50)">${esc(w.notes || '—')}</td>
-    </tr>`).join('')}</tbody></table>` : '<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:16px">No sewing assignments yet.</div>'
-
-  if (isOwn) {
-    const tailorOpts = tailors.map(t => `<option value="${t.id}">${esc(t.name)}${t.type === 'optional' ? ' (optional)' : ''}</option>`).join('')
-    html += `<div style="border-top:0.5px solid var(--border);padding-top:14px;margin-top:14px">
-      <div class="form-section" style="margin-top:0">Assign sewing</div>
-      <div class="form-grid-2">
-        <div class="form-row"><label class="form-label">Tailor</label><select id="sew-tailor"><option value="">Select tailor...</option>${tailorOpts}</select></div>
-        <div class="form-row"><label class="form-label">Size</label><input type="text" id="sew-size" placeholder="e.g. S, M, L fit XL"></div>
-        <div class="form-row"><label class="form-label">Color</label><input type="text" id="sew-color" placeholder="e.g. Bistre, Clay"></div>
-        <div class="form-row"><label class="form-label">Notes for tailor</label><input type="text" id="sew-notes" placeholder="Optional"></div>
-      </div>
-      <button class="btn btn-dark btn-sm" onclick="assignSewing('${a.id}')">Assign</button>
-    </div>`
-  }
-  document.getElementById('dtab-sewing').innerHTML = html
-}
-
-async function renderDSamples(a, isOwn) {
-  const { data: masters } = await db.from('sample_masters').select(`*, tailors(name)`).eq('article_id', a.id)
-  const { data: vendors } = await db.from('sample_vendors').select('*').eq('article_id', a.id)
-
-  let html = ''
-  html += `<div class="section-label">Sample master</div>`
-  html += masters?.length ? `<table class="data-table"><thead><tr><th>Size</th><th>Color</th><th>Tailor</th><th>Status</th><th>Notes</th></tr></thead>
-    <tbody>${masters.map(m => `<tr><td>${esc(m.size)}</td><td>${esc(m.color||'—')}</td><td>${esc(m.tailors?.name||'—')}</td>
-    <td><span class="badge badge-master">${m.status}</span></td><td style="color:var(--ink-50)">${esc(m.notes||'—')}</td></tr>`).join('')}</tbody></table>` : '<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-bottom:12px">None yet.</div>'
-
-  if (isOwn) {
-    const tailorOpts = tailors.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('')
-    html += `<div style="margin-top:10px;padding:12px;background:var(--cream);border-radius:2px">
-      <div class="form-grid-2" style="margin-bottom:8px">
-        <div class="form-row" style="margin:0"><label class="form-label">Size</label><input type="text" id="sm-size" placeholder="e.g. S, M, L"></div>
-        <div class="form-row" style="margin:0"><label class="form-label">Color</label><input type="text" id="sm-color" placeholder="e.g. Bistre"></div>
-        <div class="form-row" style="margin:0"><label class="form-label">Tailor</label><select id="sm-tailor"><option value="">Select...</option>${tailorOpts}</select></div>
-        <div class="form-row" style="margin:0"><label class="form-label">Notes</label><input type="text" id="sm-notes" placeholder="Optional"></div>
-      </div>
-      <button class="btn btn-dark btn-sm" onclick="addSampleMaster('${a.id}')">Add sample master</button>
-    </div>`
+  if (cat!=='Pants') {
+    const inters = collectInterlinings('na', naIntCount)
+    if (inters.length) {
+      await Promise.all([
+        db.from('iteration_interlining').insert(inters.map(i=>({...i, iteration_id:iter.id}))),
+        db.from('article_interlining').insert(inters.map(i=>({...i, article_id:art.id})))
+      ])
+    }
   }
 
-  html += `<div class="section-label" style="margin-top:16px">Sample vendor</div>`
-  html += vendors?.length ? `<table class="data-table"><thead><tr><th>Vendor</th><th>Size</th><th>Status</th><th>Notes</th></tr></thead>
-    <tbody>${vendors.map(v => `<tr><td>${esc(v.vendor_name)}</td><td>${esc(v.size||'—')}</td>
-    <td><span class="badge badge-vendor">${v.status}</span></td><td style="color:var(--ink-50)">${esc(v.notes||'—')}</td></tr>`).join('')}</tbody></table>` : '<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-bottom:12px">None yet.</div>'
-
-  document.getElementById('dtab-samples').innerHTML = html
-}
-
-async function renderDNotes(a, isOwn) {
-  const { data: notes } = await db.from('production_notes').select(`*, profiles(full_name)`).eq('article_id', a.id).order('created_at', { ascending: false })
-
-  const prodNotes = notes?.filter(n => n.note_type === 'production') || []
-  const qcNotes = notes?.filter(n => n.note_type === 'qc') || []
-
-  let html = `<div class="section-label">Production notes</div>`
-  html += prodNotes.length ? prodNotes.map(n => `<div class="rev-item">
-    <div class="rev-meta"><span class="rev-date">${fmtDate(n.created_at)}</span><span class="rev-tag">Production</span><span style="font-size:10px;color:var(--ink-30)">${esc(n.profiles?.full_name||'—')}</span></div>
-    <div class="rev-desc">${esc(n.content)}</div></div>`).join('') : '<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-bottom:12px">None yet.</div>'
-
-  html += `<div class="section-label">QC notes</div>`
-  html += qcNotes.length ? qcNotes.map(n => `<div class="rev-item">
-    <div class="rev-meta"><span class="rev-date">${fmtDate(n.created_at)}</span><span class="rev-tag">QC</span><span style="font-size:10px;color:var(--ink-30)">${esc(n.profiles?.full_name||'—')}</span></div>
-    <div class="rev-desc">${esc(n.content)}</div></div>`).join('') : '<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-bottom:12px">None yet.</div>'
-
-  if (isOwn) {
-    html += `<div style="border-top:0.5px solid var(--border);padding-top:14px;margin-top:14px">
-      <div class="form-section" style="margin-top:0">Add note</div>
-      <div class="form-row"><label class="form-label">Type</label>
-        <select id="note-type"><option value="production">Production</option><option value="qc">QC</option></select>
-      </div>
-      <div class="form-row"><textarea id="note-content" placeholder="Add production instruction or QC checkpoint..."></textarea></div>
-      <button class="btn btn-dark btn-sm" onclick="addNote('${a.id}')">Add note</button>
-    </div>`
-  }
-  document.getElementById('dtab-notes').innerHTML = html
-}
-
-async function renderDRevisions(a, isOwn) {
-  const { data: revs } = await db.from('revision_logs').select(`*, profiles(full_name)`).eq('article_id', a.id).order('created_at', { ascending: false })
-  const a2 = allArticles.find(x => x.id === a.id)
-  let html = revs?.length ? revs.map(r => `<div class="rev-item">
-    <div class="rev-meta"><span class="rev-date">${fmtDate(r.created_at)}</span><span class="rev-tag">${esc(r.stage)}</span><span style="font-size:10px;color:var(--ink-30)">${esc(r.profiles?.full_name||'—')}</span></div>
-    <div class="rev-desc">${esc(r.description)}</div></div>`).join('') : '<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:16px">No revisions yet.</div>'
-
-  if (isOwn) {
-    html += `<div style="border-top:0.5px solid var(--border);padding-top:14px;margin-top:8px">
-      <div class="form-section" style="margin-top:0">Log revision</div>
-      <div class="form-row"><textarea id="rev-desc" placeholder="Describe what was revised..."></textarea></div>
-      <button class="btn btn-dark btn-sm" onclick="addRevision('${a.id}')">Add revision</button>
-    </div>`
-  }
-  document.getElementById('dtab-revisions').innerHTML = html
-}
-
-// ── ACTIONS ──
-async function advanceStage(id) {
-  const a = allArticles.find(x => x.id === id)
-  if (!a) return
-  const nextIdx = STAGE_ORDER.indexOf(a.stage) + 1
-  if (nextIdx >= STAGE_ORDER.length) return
-  const { error } = await db.from('articles').update({ stage: STAGE_ORDER[nextIdx] }).eq('id', id)
-  if (error) { notify('Failed to advance stage.', 'error'); return }
-  await loadArticles()
-  const updated = allArticles.find(x => x.id === id)
-  if (updated) { await renderDSpec(updated, true); await renderDTimeline(updated) }
-  notify(`Advanced to: ${STAGE_LABEL[STAGE_ORDER[nextIdx]]}`, 'success')
-}
-
-async function addMockup(articleId) {
-  const part = document.getElementById('mock-part')?.value?.trim()
-  if (!part) { notify('Part name is required.', 'error'); return }
-  const { error } = await db.from('mockups').insert({
-    article_id: articleId, part,
-    assigned_to: document.getElementById('mock-assign')?.value?.trim() || null,
-    notes: document.getElementById('mock-notes')?.value?.trim() || null,
-    status: 'on_progress', created_by: profile.id
+  const { data: qd } = await db.from('pattern_queue').select('queue_order').order('queue_order',{ascending:false}).limit(1)
+  await db.from('pattern_queue').insert({
+    article_id: art.id, iteration_id: iter.id,
+    queue_order: (qd?.[0]?.queue_order||0)+1,
+    status: 'waiting', label: `${name} — Initial`
   })
-  if (error) { notify('Failed to add mockup.', 'error'); return }
-  const a = allArticles.find(x => x.id === articleId)
-  await renderDMockups(a, true)
-  notify('Mockup added.', 'success')
+
+  closeModal('modal-new-article')
+  await loadArticles()
+  toast('Article created and added to pola queue.')
 }
 
-async function assignSewing(articleId) {
-  const tailorId = document.getElementById('sew-tailor')?.value
-  if (!tailorId) { notify('Please select a tailor.', 'error'); return }
-  const { error } = await db.from('sewing_assignments').insert({
-    article_id: articleId, tailor_id: tailorId,
-    size: document.getElementById('sew-size')?.value?.trim() || null,
-    color: document.getElementById('sew-color')?.value?.trim() || null,
-    notes: document.getElementById('sew-notes')?.value?.trim() || null,
-    status: 'on_progress', assigned_by: profile.id
+// ─── SAVE NEW ITERATION ───
+async function saveNewIteration() {
+  const label = document.getElementById('ni-label').value.trim()
+  const type = document.getElementById('ni-type').value
+  const part = document.getElementById('ni-part').value.trim()
+  if (!label) { toast('Label is required.'); return }
+  if (type==='mockup'&&!part) { toast('Part name is required for mockup.'); return }
+  const fabrics = collectFabrics('ni', niFabCount)
+  if (!fabrics.length) { toast('Please add at least one fabric.'); return }
+
+  const { data: iter, error } = await db.from('article_iterations').insert({
+    article_id: currentArticleId, label, type,
+    part: type==='mockup'?part:null,
+    notes: document.getElementById('ni-notes').value.trim()||null,
+    stage: 'design', status: 'active', created_by: profile.id
+  }).select().single()
+  if (error) { toast('Failed to create iteration.'); console.error(error); return }
+
+  await db.from('iteration_fabrics').insert(fabrics.map(f=>({...f, iteration_id:iter.id})))
+
+  const liningType = document.getElementById('ni-lining-type')?.value
+  if (liningType&&liningType!=='none') {
+    const lData = await getLiningData('ni')
+    if (lData) await db.from('iteration_lining').insert({...lData, iteration_id:iter.id})
+  }
+
+  const inters = collectInterlinings('ni', niIntCount)
+  if (inters.length) await db.from('iteration_interlining').insert(inters.map(i=>({...i, iteration_id:iter.id})))
+
+  const a = allArticles.find(x=>x.id===currentArticleId)
+  const { data: qd } = await db.from('pattern_queue').select('queue_order').order('queue_order',{ascending:false}).limit(1)
+  await db.from('pattern_queue').insert({
+    article_id: currentArticleId, iteration_id: iter.id,
+    queue_order: (qd?.[0]?.queue_order||0)+1,
+    status: 'waiting', label: `${a?.name||''} — ${label}`
   })
-  if (error) { notify('Failed to assign.', 'error'); return }
-  const a = allArticles.find(x => x.id === articleId)
-  await renderDSewing(a, true)
-  notify('Tailor assigned.', 'success')
+
+  closeModal('modal-new-iteration')
+  await loadArticles()
+  const updatedA = allArticles.find(x=>x.id===currentArticleId)
+  if (updatedA) await renderIterTab(updatedA, updatedA.designer_id===profile.id)
+  toast(`Iteration "${label}" created and added to pola queue.`)
+}
+
+// ─── ARTICLE ACTIONS ───
+async function updateSizeRange(articleId) {
+  const val = document.getElementById('spec-size-input')?.value?.trim()
+  await db.from('articles').update({size_range:val||null}).eq('id',articleId)
+  await loadArticles()
+  const a = allArticles.find(x=>x.id===articleId)
+  if (a) await renderSpecTab(a, a.designer_id===profile.id)
+  toast('Size range updated.')
 }
 
 async function addSampleMaster(articleId) {
   const size = document.getElementById('sm-size')?.value?.trim()
-  if (!size) { notify('Size is required.', 'error'); return }
-  const tailorId = document.getElementById('sm-tailor')?.value || null
+  if (!size) { toast('Size is required.'); return }
   const { error } = await db.from('sample_masters').insert({
-    article_id: articleId, size,
-    color: document.getElementById('sm-color')?.value?.trim() || null,
-    tailor_id: tailorId || null,
-    notes: document.getElementById('sm-notes')?.value?.trim() || null,
-    status: 'in_progress'
+    article_id:articleId, size,
+    color:document.getElementById('sm-color')?.value?.trim()||null,
+    status:'in_progress'
   })
-  if (error) { notify('Failed to add sample master.', 'error'); return }
-  const a = allArticles.find(x => x.id === articleId)
-  await renderDSamples(a, true)
-  notify('Sample master added.', 'success')
+  if (error) { toast('Failed.'); return }
+  const a = allArticles.find(x=>x.id===articleId)
+  if (a) await renderSamplesTab(a, a.designer_id===profile.id)
+  toast('Sample master added.')
+}
+
+async function addSampleVendor(articleId) {
+  const vendor = document.getElementById('sv-vendor')?.value?.trim()
+  if (!vendor) { toast('Vendor name is required.'); return }
+  const { error } = await db.from('sample_vendors').insert({
+    article_id:articleId, vendor_name:vendor,
+    size:document.getElementById('sv-size')?.value?.trim()||null,
+    status:'sent'
+  })
+  if (error) { toast('Failed.'); return }
+  const a = allArticles.find(x=>x.id===articleId)
+  if (a) await renderSamplesTab(a, a.designer_id===profile.id)
+  toast('Sample vendor added.')
 }
 
 async function addNote(articleId) {
   const content = document.getElementById('note-content')?.value?.trim()
-  if (!content) { notify('Note content is required.', 'error'); return }
+  if (!content) { toast('Note cannot be empty.'); return }
   const { error } = await db.from('production_notes').insert({
-    article_id: articleId,
-    note_type: document.getElementById('note-type')?.value,
-    content, added_by: profile.id
+    article_id:articleId, note_type:document.getElementById('note-type')?.value,
+    content, added_by:profile.id
   })
-  if (error) { notify('Failed to add note.', 'error'); return }
-  const a = allArticles.find(x => x.id === articleId)
-  await renderDNotes(a, true)
-  notify('Note added.', 'success')
-}
-
-async function addRevision(articleId) {
-  const desc = document.getElementById('rev-desc')?.value?.trim()
-  if (!desc) { notify('Description is required.', 'error'); return }
-  const a = allArticles.find(x => x.id === articleId)
-  const { error } = await db.from('revision_logs').insert({
-    article_id: articleId, stage: STAGE_LABEL[a.stage],
-    description: desc, logged_by: profile.id
-  })
-  if (error) { notify('Failed to log revision.', 'error'); return }
-  await renderDRevisions(a, true)
-  notify('Revision logged.', 'success')
+  if (error) { toast('Failed.'); return }
+  const a = allArticles.find(x=>x.id===articleId)
+  if (a) await renderNotesTab(a, a.designer_id===profile.id)
+  toast('Note added.')
 }
 
 function openArchiveConfirm(id) {
@@ -763,135 +975,91 @@ function openArchiveConfirm(id) {
 
 async function confirmArchive() {
   const reason = document.getElementById('archive-reason').value.trim()
-  if (!reason) { notify('Please provide a reason.', 'error'); return }
-  const { error } = await db.from('articles').update({ status: 'archived', archive_reason: reason, archived_by: profile.id, archived_at: new Date().toISOString() }).eq('id', pendingArchiveId)
-  if (error) { notify('Failed to archive.', 'error'); return }
+  if (!reason) { toast('Please provide a reason.'); return }
+  await db.from('articles').update({
+    status:'archived', archive_reason:reason,
+    archived_by:profile.id, archived_at:new Date().toISOString()
+  }).eq('id',pendingArchiveId)
   closeModal('modal-archive')
-  closeModal('modal-detail')
+  closeModal('modal-article')
   await loadArticles()
-  notify('Article archived.', 'success')
+  toast('Article archived.')
 }
 
+// ─── POLA QUEUE ───
 async function renderQueue() {
-  const { data } = await db.from('pattern_queue').select(`*, articles(name, category)`).order('queue_order')
+  const { data } = await db.from('pattern_queue')
+    .select('*, articles(name,category)')
+    .order('queue_order')
   const el = document.getElementById('queue-list')
-  if (!data?.length) { el.innerHTML = '<div class="empty">No articles in pola queue.</div>'; return }
-  el.innerHTML = data.map((q, i) => `
-    <div class="queue-item ${q.status === 'in_progress' ? 'queue-current' : q.status === 'done' ? 'queue-done' : ''}">
-      <div class="queue-num">${i + 1}</div>
+  if (!data?.length) { el.innerHTML = '<div class="empty">No items in pola queue.</div>'; return }
+  el.innerHTML = data.map((q,i) => {
+    const cls = q.status==='in_progress'?'badge-sewing':q.status==='done'?'badge-vendor':'badge-active'
+    const lbl = q.status==='in_progress'?'In progress':q.status==='done'?'Done':'Waiting'
+    return `<div class="queue-item ${q.status==='in_progress'?'queue-current':q.status==='done'?'queue-done':''}">
+      <div class="queue-num">${i+1}</div>
       <div style="flex:1">
-        <div style="font-size:12px;font-weight:400">${esc(q.articles?.name || '—')}</div>
-        <div style="font-size:11px;color:var(--ink-50)">${q.articles?.category || '—'}${q.target_completion ? ' · Target: ' + fmtDateTime(q.target_completion) : ''}</div>
-        ${q.notes ? `<div style="font-size:11px;color:var(--ink-30);font-style:italic">${esc(q.notes)}</div>` : ''}
+        <div style="font-size:13px;font-weight:400">${esc(q.label||q.articles?.name||'—')}</div>
+        <div style="font-size:11px;color:var(--ink-60)">${q.articles?.category||'—'}</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
-        <span class="badge badge-${q.status === 'in_progress' ? 'sewing' : q.status === 'done' ? 'vendor' : 'design'}">${q.status === 'in_progress' ? 'In progress' : q.status === 'done' ? 'Done' : 'Waiting'}</span>
-        ${i > 0 ? `<button class="btn btn-sm" onclick="moveQueue('${q.id}', -1)">↑</button>` : ''}
-        ${i < data.length - 1 ? `<button class="btn btn-sm" onclick="moveQueue('${q.id}', 1)">↓</button>` : ''}
+        <span class="badge ${cls}">${lbl}</span>
+        ${i>0?`<button class="btn btn-sm" onclick="moveQueue('${q.id}',-1)">↑</button>`:''}
+        ${i<data.length-1?`<button class="btn btn-sm" onclick="moveQueue('${q.id}',1)">↓</button>`:''}
       </div>
-    </div>`).join('')
-}
-
-async function moveQueue(queueId, dir) {
-  const { data } = await db.from('pattern_queue').select('*').order('queue_order')
-  const idx = data.findIndex(q => q.id === queueId)
-  const newIdx = idx + dir
-  if (newIdx < 0 || newIdx >= data.length) return
-  await db.from('pattern_queue').update({ queue_order: data[newIdx].queue_order }).eq('id', data[idx].id)
-  await db.from('pattern_queue').update({ queue_order: data[idx].queue_order }).eq('id', data[newIdx].id)
-  await renderQueue()
-}
-
-async function renderSewing() {
-  const { data: tailorList } = await db.from('tailors').select('*').eq('is_active', true)
-  const { data: assignments } = await db.from('sewing_assignments').select(`*, articles(name), tailors(name, type)`).eq('status', 'on_progress')
-  const el = document.getElementById('sewing-list')
-  if (!tailorList?.length) { el.innerHTML = '<div class="empty">No tailors found.</div>'; return }
-  el.innerHTML = tailorList.map(t => {
-    const works = (assignments || []).filter(a => a.tailor_id === t.id)
-    return `<div class="card" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <div style="font-size:13px;font-weight:400">${esc(t.name)}</div>
-        ${t.type === 'optional' ? '<span style="font-size:9px;color:var(--ink-30)">(optional)</span>' : ''}
-        <span style="margin-left:auto;font-size:11px;color:var(--ink-50)">${works.length} active</span>
-      </div>
-      ${works.map(w => `<div style="padding:6px 0;border-top:0.5px solid var(--border);font-size:12px">${esc(w.articles?.name||'—')} · ${esc(w.size||'—')} · ${esc(w.color||'—')}</div>`).join('') || '<div style="font-size:11px;color:var(--ink-30)">No active assignments.</div>'}
     </div>`
   }).join('')
 }
 
+async function moveQueue(queueId, dir) {
+  const { data } = await db.from('pattern_queue').select('*').order('queue_order')
+  const idx = data.findIndex(q=>q.id===queueId)
+  const newIdx = idx+dir
+  if (newIdx<0||newIdx>=data.length) return
+  await Promise.all([
+    db.from('pattern_queue').update({queue_order:data[newIdx].queue_order}).eq('id',data[idx].id),
+    db.from('pattern_queue').update({queue_order:data[idx].queue_order}).eq('id',data[newIdx].id)
+  ])
+  await renderQueue()
+}
+
+// ─── SEWING WORKLOAD ───
+async function renderSewing() {
+  const [{ data: tailorList },{ data: assigns }] = await Promise.all([
+    db.from('tailors').select('*').eq('is_active',true),
+    db.from('sewing_assignments').select('*, articles(name), tailors(name,type), article_iterations(label)').eq('status','on_progress')
+  ])
+  const el = document.getElementById('sewing-list')
+  if (!tailorList?.length) { el.innerHTML = '<div class="empty">No tailors.</div>'; return }
+  el.innerHTML = tailorList.map(t => {
+    const works = (assigns||[]).filter(a=>a.tailor_id===t.id)
+    return `<div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:400">${esc(t.name)}</div>
+        ${t.type==='optional'?'<span style="font-size:9px;color:var(--ink-30)">(optional)</span>':''}
+        <span style="margin-left:auto;font-size:11px;color:var(--ink-60)">${works.length} active</span>
+      </div>
+      ${works.map(w=>`<div style="padding:6px 0;border-top:0.5px solid var(--border);font-size:12px">
+        ${esc(w.articles?.name||'—')}${w.article_iterations?.label?' — '+esc(w.article_iterations.label):''}
+        ${w.size?' · '+esc(w.size):''}${w.color?' · '+esc(w.color):''}
+      </div>`).join()||'<div style="font-size:11px;color:var(--ink-30)">No active assignments.</div>'}
+    </div>`
+  }).join('')
+}
+
+// ─── PAGE NAV ───
 function showPage(name, el) {
   ['articles','queue','sewing'].forEach(p => {
-    document.getElementById('page-' + p).style.display = p === name ? 'flex' : 'none'
-    document.getElementById('page-' + p).style.flexDirection = 'column'
+    const pg = document.getElementById('page-'+p)
+    if (pg) pg.style.display = p===name?'flex':'none'
   })
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
   if (el) el.classList.add('active')
-  if (name === 'queue') renderQueue()
-  if (name === 'sewing') renderSewing()
+  if (name==='queue') renderQueue()
+  if (name==='sewing') renderSewing()
 }
 
-function switchTab(el, paneId) {
-  el.closest('.modal').querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
-  el.classList.add('active')
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'))
-  document.getElementById(paneId).classList.add('active')
-}
-
-function notify(msg, type) { toast(msg) }
-
-function stageBadgeHTML(stage, status) {
-  const labels = { design:'Design', pattern:'Pola', sewing:'Sewing', sample_master:'Sample Master', sample_vendor:'Sample Vendor', production:'Turun Produksi' }
-  const classes = { production:'badge-final', sample_vendor:'badge-vendor', sample_master:'badge-progress', sewing:'badge-progress' }
-  const cls = classes[stage] || 'badge-active'
-  return `<span class="badge ${cls}">${labels[stage] || stage}</span>`
-}
-
-async function openAddToQueue() {
-  const notInQueue = allArticles.filter(a => {
-    // check if already in queue by fetching
-    return true
-  })
-  const opts = allArticles.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('')
-  const sel = `<select id="queue-article-sel"><option value="">Select article...</option>${opts}</select>`
-  const html = `<div style="padding:16px">
-    <div class="form-row"><label class="form-label">Article</label>${sel}</div>
-    <div class="form-row"><label class="form-label">Notes</label><input type="text" id="queue-notes" placeholder="Optional"></div>
-    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn" onclick="closeModal('modal-queue-add')">Cancel</button>
-      <button class="btn btn-dark" onclick="saveAddToQueue()">Add to queue</button>
-    </div>
-  </div>`
-  let m = document.getElementById('modal-queue-add')
-  if (!m) {
-    m = document.createElement('div')
-    m.className = 'overlay'
-    m.id = 'modal-queue-add'
-    m.innerHTML = `<div class="modal modal-sm"><div class="modal-head"><div class="modal-title">Add to pola queue</div><button class="close-btn" onclick="closeModal('modal-queue-add')">×</button></div><div class="modal-body" id="queue-add-body"></div></div>`
-    document.body.appendChild(m)
-  }
-  document.getElementById('queue-add-body').innerHTML = html
-  openModal('modal-queue-add')
-}
-
-async function saveAddToQueue() {
-  const articleId = document.getElementById('queue-article-sel')?.value
-  if (!articleId) { notify('Please select an article.', 'error'); return }
-  const { data: existing } = await db.from('pattern_queue').select('queue_order').order('queue_order', { ascending: false }).limit(1)
-  const maxOrder = existing?.[0]?.queue_order || 0
-  const { error } = await db.from('pattern_queue').insert({
-    article_id: articleId,
-    queue_order: maxOrder + 1,
-    status: 'waiting',
-    notes: document.getElementById('queue-notes')?.value?.trim() || null
-  })
-  if (error) { notify('Failed to add to queue.', 'error'); return }
-  closeModal('modal-queue-add')
-  await renderQueue()
-  notify('Added to pola queue.', 'success')
-}
-
-;['queue','sewing'].forEach(p => { document.getElementById('page-' + p).style.display = 'none' })
+;['queue','sewing'].forEach(p => { const el=document.getElementById('page-'+p); if(el) el.style.display='none' })
 init()
 </script>
 </body>
