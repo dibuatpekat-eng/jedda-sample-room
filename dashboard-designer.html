@@ -377,13 +377,11 @@
     <div class="modal-tabs">
       <div class="tab active" onclick="switchTabLocal('modal-iteration','itab-spec',this)">Spec</div>
       <div class="tab" onclick="switchTabLocal('modal-iteration','itab-timeline',this)">Timeline</div>
-      <div class="tab" onclick="switchTabLocal('modal-iteration','itab-sewing',this)">Sewing</div>
       <div class="tab" onclick="switchTabLocal('modal-iteration','itab-log',this)">Log</div>
     </div>
     <div class="modal-body">
       <div class="tab-pane active" id="itab-spec"></div>
       <div class="tab-pane" id="itab-timeline"></div>
-      <div class="tab-pane" id="itab-sewing"></div>
       <div class="tab-pane" id="itab-log"></div>
     </div>
   </div>
@@ -685,17 +683,6 @@ async function renderIterationsPane(a, isOwn) {
     }).join('')
   }
 
-  // Parent advance options
-  if (isOwn) {
-    html += `<hr class="divider">
-    <div class="section-label">Parent article stage</div>
-    <div style="font-size:12px;color:var(--ink-60);margin-bottom:12px">
-      Ketika semua iterasi sudah selesai dan spec final sudah di-set, artikel induk bisa dilanjutkan ke tahap berikutnya.
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-sm" onclick="alert('Feature: proceed to sample master — requires size pack, production notes, and final spec to be set.')">Proceed to Sample Master →</button>
-    </div>`
-  }
 
   document.getElementById('dtab-iterations').innerHTML = html
 }
@@ -789,9 +776,16 @@ async function renderSizePackPane(a, isOwn) {
       </div>`
     }
 
-    if (cols.length) {
-      html += `<div style="margin-top:8px">
-        <button class="btn btn-sm btn-danger" onclick="clearSpCols('${a.id}')">Clear all columns</button>
+    if (cols.length && rows.length) {
+      const isConfirmed = sp?.confirmed
+      html += `<div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        ${isConfirmed
+          ? `<span style="font-size:11px;color:var(--sage)">✓ Size pack confirmed</span>
+             <button class="btn btn-sm" onclick="confirmSizePack('${a.id}', false)">Unconfirm</button>`
+          : `<button class="btn btn-dark btn-sm" onclick="confirmSizePack('${a.id}', true)">Confirm size pack ✓</button>
+             <span style="font-size:11px;color:var(--ink-30)">Confirm when size pack is final</span>`
+        }
+        <button class="btn btn-sm btn-danger" style="margin-left:auto" onclick="clearSpCols('${a.id}')">Clear all</button>
       </div>`
     }
   }
@@ -848,10 +842,19 @@ async function clearSpCols(articleId) {
   if (!confirm('Clear all columns and rows?')) return
   const { data: sp } = await db.from('size_packs').select('*').eq('article_id', articleId).maybeSingle()
   if (!sp) return
-  await db.from('size_packs').update({ columns: [], rows: [], updated_at: new Date().toISOString() }).eq('id', sp.id)
+  await db.from('size_packs').update({ columns: [], rows: [], confirmed: false, updated_at: new Date().toISOString() }).eq('id', sp.id)
   const a = allArticles.find(x => x.id === articleId)
   if (a) await renderSizePackPane(a, true)
   toast('Size pack cleared.')
+}
+
+async function confirmSizePack(articleId, confirm_val) {
+  const { data: sp } = await db.from('size_packs').select('*').eq('article_id', articleId).maybeSingle()
+  if (!sp) return
+  await db.from('size_packs').update({ confirmed: confirm_val, updated_at: new Date().toISOString() }).eq('id', sp.id)
+  const a = allArticles.find(x => x.id === articleId)
+  if (a) await renderSizePackPane(a, true)
+  toast(confirm_val ? 'Size pack confirmed.' : 'Size pack unconfirmed.')
 }
 
 // ── Readiness pane ──
@@ -863,7 +866,7 @@ async function renderReadinessPane(a, isOwn) {
 
   const allDone = iters?.length > 0 && iters.every(i => i.stage === 'done')
   const hasNotes = (notes?.length || 0) > 0
-  const hasSizePack = (sp?.columns?.length || 0) > 0 && (sp?.rows?.length || 0) > 0
+  const hasSizePack = sp?.confirmed === true
   const hasFinalSpec = !!finalSpec
   const hasSize = !!a.size_range
 
@@ -887,7 +890,7 @@ async function renderReadinessPane(a, isOwn) {
     ${check(allDone, 'All active iterations done', 'Mark all iterations as done first.')}
     ${check(hasFinalSpec, 'Final spec set', 'Go to an iteration and click "Set as final spec".')}
     ${check(hasSize, 'Size range filled', 'Fill in size range in Spec & Size tab.')}
-    ${check(hasSizePack, 'Size pack filled', 'Fill in measurement table in Size Pack tab.')}
+    ${check(hasSizePack, 'Size pack confirmed', 'Fill and confirm size pack in Size Pack tab.')}
     ${check(hasNotes, 'Production notes added', 'Add production notes in Prod. Notes tab.')}
     <div style="margin-top:20px">
       ${canProceed
@@ -908,6 +911,18 @@ async function proceedToSampleMaster(articleId) {
 
 // ── Samples pane ──
 async function renderSamplesPane(a, isOwn) {
+  const isUnlocked = ['sample_master','sample_vendor','production'].includes(a.stage)
+
+  if (!isUnlocked) {
+    document.getElementById('dtab-samples').innerHTML = `
+      <div style="text-align:center;padding:40px 20px">
+        <div style="font-size:32px;margin-bottom:12px">🔒</div>
+        <div style="font-size:13px;font-weight:400;margin-bottom:6px">Samples locked</div>
+        <div style="font-size:11px;color:var(--ink-60)">Complete all requirements in the Readiness tab first, then proceed to Sample Master.</div>
+      </div>`
+    return
+  }
+
   const [{ data: masters }, { data: vendors }] = await Promise.all([
     db.from('sample_masters').select('*, tailors(name)').eq('article_id', a.id).order('created_at'),
     db.from('sample_vendors').select('*').eq('article_id', a.id).order('created_at')
@@ -994,7 +1009,6 @@ async function openIterationModal(iterId, articleId) {
   await Promise.all([
     renderIterSpecPane(iter, isOwn, isDropped),
     renderIterTimelinePane(iter),
-    renderIterSewingPane(iter, isOwn, isDropped),
     renderIterLogPane(iter, isOwn, isDropped)
   ])
 
@@ -1021,31 +1035,20 @@ async function renderIterSpecPane(iter, isOwn, isDropped) {
   </div>`
 
   if (isOwn && !isDropped) {
-    // Determine if this is a mockup — mockup only goes to sewing then done
-    const isMockup = iter.type === 'mockup'
-    const stages = isMockup ? ITER_STAGES : ITER_STAGES // both use same: design→pattern→sewing→done
-    const curIdx = stages.indexOf(iter.stage)
-    const nextStage = stages[curIdx + 1]
-
     html += `<hr class="divider"><div class="action-bar" style="flex-wrap:wrap;gap:8px">`
 
-    // Set as final spec button
-    if (iter.stage !== 'dropped') {
+    if (iter.stage === 'pattern') {
+      // Only option from pola: advance to sewing
+      html += `<button class="btn btn-dark btn-sm" onclick="showSewingForm(true)">Proceed to Sewing — assign tailor ↓</button>`
+    } else if (iter.stage === 'sewing') {
+      // Mark as done
+      html += `<button class="btn btn-dark btn-sm" onclick="markIterDone('${iter.id}')">Mark as done ✓</button>`
+    } else if (iter.stage === 'done') {
+      // Set as final spec only when done
       html += `<button class="btn btn-sm btn-sage" onclick="setFinalSpec('${iter.id}','${currentArticleId}')">Set as final spec ↗</button>`
     }
 
-    // Advance button
-    if (nextStage && nextStage !== 'done') {
-      if (nextStage === 'sewing') {
-        html += `<button class="btn btn-dark btn-sm" onclick="showSewingForm(true)">Advance to: Sewing — assign tailor ↓</button>`
-      } else {
-        html += `<button class="btn btn-dark btn-sm" onclick="advanceIterStage('${iter.id}','${nextStage}')">Advance to: ${ITER_LABEL[nextStage]}</button>`
-      }
-    } else if (nextStage === 'done') {
-      html += `<button class="btn btn-dark btn-sm" onclick="markIterDone('${iter.id}')">Mark as done ✓</button>`
-    }
-
-    // Drop button
+    // Drop always available
     html += `<button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="openArchiveModal('iteration','${iter.id}')">Drop / archive</button>`
 
     html += `</div>`
@@ -1547,7 +1550,7 @@ async function saveNewArticle() {
 
   const { data: iter, error: iterErr } = await db.from('article_iterations').insert({
     article_id: art.id, label: 'Initial', type: 'full',
-    stage: 'design', status: 'active', created_by: profile.id
+    stage: 'pattern', status: 'active', created_by: profile.id
   }).select().single()
   if (iterErr) { toast('Failed to create iteration.'); console.error(iterErr); return }
 
@@ -1607,7 +1610,7 @@ async function saveNewIteration() {
     article_id: currentArticleId, label, type,
     part: type === 'mockup' ? part : null,
     notes: document.getElementById('ni-notes').value.trim() || null,
-    stage: 'design', status: 'active', created_by: profile.id
+    stage: 'pattern', status: 'active', created_by: profile.id
   }).select().single()
   if (error) { toast('Failed to create iteration.'); console.error(error); return }
 
@@ -1684,31 +1687,74 @@ async function openQueueDetail(queueId, iterId) {
   document.getElementById('qd-title').textContent = `${esc(iter.articles?.name||'—')} — ${esc(iter.label)}`
   document.getElementById('qd-sub').textContent = `${iter.type==='mockup'?'Mockup'+(iter.part?' — '+iter.part:''):'Full garment'} · ${fmtDate(iter.created_at)}`
 
+  const canProceed = iter.stage === 'pattern'
+
   document.getElementById('qd-body').innerHTML = `
     <div class="spec-grid">
       <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fabStr}</div></div>
       <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
       <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
-      ${iter.notes?`<div class="spec-cell span-2"><div class="spec-label">Notes</div><div class="spec-val">${esc(iter.notes)}</div></div>`:''}
+      ${iter.notes?`<div class="spec-cell span-2"><div class="spec-label">Notes / reason</div><div class="spec-val">${esc(iter.notes)}</div></div>`:''}
     </div>
     <hr class="divider">
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-dark btn-sm" onclick="closeModal('modal-queue-detail');openIterationModal('${iterId}','${iter.article_id}')">Open full detail →</button>
-      ${iter.stage==='design'?`<button class="btn btn-sm" onclick="advanceFromQueue('${iterId}','${queueId}')">Mark as In Progress (Pola)</button>`:''}
-    </div>`
+    ${canProceed ? `
+    <div id="qd-sewing-form">
+      <div class="form-section" style="margin-top:0">Proceed to Sewing — assign tailor</div>
+      <div class="form-grid-2">
+        <div class="form-row"><label class="form-label">Tailor *</label>
+          <select id="qd-tailor"><option value="">Select tailor...</option>
+            ${tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (optional)':''}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row"><label class="form-label">Size</label><input type="text" id="qd-size" placeholder="e.g. S fit M"></div>
+        <div class="form-row"><label class="form-label">Color</label><input type="text" id="qd-color" placeholder="e.g. Bistre, Steel"></div>
+        <div class="form-row"><label class="form-label">Notes for tailor</label><input type="text" id="qd-notes" placeholder="Optional"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-dark btn-sm" onclick="proceedToSewingFromQueue('${iterId}','${queueId}')">Confirm & proceed to sewing</button>
+        <button class="btn btn-danger btn-sm" onclick="dropFromQueue('${iterId}','${queueId}')">Drop</button>
+      </div>
+    </div>` : `
+    <div style="font-size:12px;color:var(--ink-60)">
+      Status: <strong>${iter.stage}</strong> — this iteration is no longer in pola stage.
+    </div>`}
+  `
 
   openModal('modal-queue-detail')
 }
 
-async function advanceFromQueue(iterId, queueId) {
+async function proceedToSewingFromQueue(iterId, queueId) {
+  const tailorId = document.getElementById('qd-tailor')?.value
+  if (!tailorId) { toast('Please select a tailor.'); return }
+  const [stageRes, sewRes] = await Promise.all([
+    db.from('article_iterations').update({ stage: 'sewing' }).eq('id', iterId),
+    db.from('sewing_assignments').insert({
+      article_id: currentArticleId, iteration_id: iterId, tailor_id: tailorId,
+      size: document.getElementById('qd-size')?.value?.trim() || null,
+      color: document.getElementById('qd-color')?.value?.trim() || null,
+      notes: document.getElementById('qd-notes')?.value?.trim() || null,
+      status: 'on_progress', assigned_by: profile.id
+    }),
+    db.from('pattern_queue').update({ status: 'done' }).eq('id', queueId)
+  ])
+  if (stageRes.error || sewRes.error) { toast('Failed. Please try again.'); return }
+  closeModal('modal-queue-detail')
+  await loadArticles()
+  renderQueue()
+  toast('Proceeded to sewing. Tailor assigned.')
+}
+
+async function dropFromQueue(iterId, queueId) {
+  const reason = prompt('Reason for dropping?')
+  if (!reason) return
   await Promise.all([
-    db.from('article_iterations').update({ stage: 'pattern' }).eq('id', iterId),
-    db.from('pattern_queue').update({ status: 'in_progress' }).eq('id', queueId)
+    db.from('article_iterations').update({ status: 'dropped', notes: 'Dropped: ' + reason }).eq('id', iterId),
+    db.from('pattern_queue').update({ status: 'done' }).eq('id', queueId)
   ])
   closeModal('modal-queue-detail')
   await loadArticles()
   renderQueue()
-  toast('Marked as in progress.')
+  toast('Iteration dropped.')
 }
 
 async function moveQueue(queueId, dir) {
