@@ -40,9 +40,12 @@
   .tab-pane.active { display: block; }
 
   /* ── SPEC ── */
-  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-  .spec-cell { background: var(--cream); border-radius: 2px; padding: 12px 14px; }
-  .spec-cell.span-2 { grid-column: span 2; }
+  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 16px; border: 0.5px solid var(--border); border-radius: 2px; overflow: hidden; }
+  .spec-cell { padding: 12px 14px; border-bottom: 0.5px solid var(--border); border-right: 0.5px solid var(--border); }
+  .spec-cell:nth-child(even) { border-right: none; }
+  .spec-cell.span-2 { grid-column: span 2; border-right: none; }
+  .spec-cell:last-child { border-bottom: none; }
+  .spec-cell:nth-last-child(2):not(.span-2) { border-bottom: none; }
   .spec-label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin-bottom: 4px; }
   .spec-val { font-size: 13px; font-weight: 400; line-height: 1.5; }
   .spec-sub { font-size: 11px; color: var(--ink-60); margin-top: 2px; }
@@ -241,12 +244,12 @@
           <select id="na-lining-type" onchange="onLiningChange('na')">
             <option value="none">None</option>
             <option value="dfc">DFC — Double Fabric Construction</option>
-            <option value="fabric">Select fabric</option>
+            <option value="furing">Furing</option>
           </select>
         </div>
         <div id="na-lining-fabric-row" style="display:none">
-          <div class="form-row"><label class="form-label">Lining fabric</label>
-            <select id="na-lining-fabric"><option value="">Select...</option></select>
+          <div class="form-row"><label class="form-label">Warna furing</label>
+            <input type="text" id="na-lining-color" placeholder="e.g. Krem, Hitam, Putih">
           </div>
         </div>
       </div>
@@ -325,8 +328,13 @@
           <input type="text" id="ni-part" placeholder="e.g. Kerah, Tangan, Placket">
         </div>
       </div>
-      <div class="form-row"><label class="form-label">Notes / reason</label>
-        <textarea id="ni-notes" placeholder="e.g. Why this iteration is being made..."></textarea>
+      <div class="form-grid-2">
+        <div class="form-row"><label class="form-label">Size untuk tailor *</label>
+          <input type="text" id="ni-size" placeholder="e.g. S fit M, M fit L">
+        </div>
+        <div class="form-row"><label class="form-label">Notes / reason</label>
+          <input type="text" id="ni-notes" placeholder="e.g. Ganti pola kerah...">
+        </div>
       </div>
 
       <div class="form-section">Spec — fabric *</div>
@@ -339,12 +347,12 @@
           <select id="ni-lining-type" onchange="onLiningChange('ni')">
             <option value="none">None</option>
             <option value="dfc">DFC — Double Fabric Construction</option>
-            <option value="fabric">Select fabric</option>
+            <option value="furing">Furing</option>
           </select>
         </div>
         <div id="ni-lining-fabric-row" style="display:none">
-          <div class="form-row"><label class="form-label">Lining fabric</label>
-            <select id="ni-lining-fabric"><option value="">Select...</option></select>
+          <div class="form-row"><label class="form-label">Warna furing</label>
+            <input type="text" id="ni-lining-color" placeholder="e.g. Krem, Hitam, Putih">
           </div>
         </div>
       </div>
@@ -572,28 +580,59 @@ function switchTabLocal(modalId, paneId, tabEl) {
 // ══════════════════════════════════════════
 // ARTICLES LIST
 // ══════════════════════════════════════════
+function calcProgress(a) {
+  // 6 components → color + label
+  let score = 0
+  const iters = a.article_iterations || []
+  const activeIters = iters.filter(i => i.status === 'active')
+  if (activeIters.length > 0) score++ // has iterations
+  if (activeIters.length > 0 && activeIters.every(i => i.stage === 'done')) score++ // all done
+  if (iters.some(i => i.is_final_spec)) score++ // final spec set
+  if (a.size_range) score++ // size range filled
+  // size_pack confirmed and prod notes checked async — use stage as proxy for now
+  if (['sample_master','sample_vendor','production'].includes(a.stage)) score += 2
+  return score
+}
+
+function progressBar(score) {
+  const max = 6
+  const colors = ['#E2DDD6','#E2DDD6','#E8A87C','#C9A84C','#7A8C78','#3A6080']
+  const labels = ['','Just started','In progress','In progress','Almost ready','Almost ready','Ready for production']
+  const barColor = score === 0 ? '#E2DDD6' : score <= 1 ? '#B5634A' : score <= 3 ? '#C9A84C' : score <= 5 ? '#7A8C78' : '#3A6080'
+  const label = labels[Math.min(score, 6)]
+  const bars = Array.from({length: max}, (_,i) =>
+    `<div style="width:16px;height:4px;border-radius:2px;background:${i < score ? barColor : '#E2DDD6'}"></div>`
+  ).join('')
+  return { bars, label, barColor }
+}
+
 function renderArticles() {
   const el = document.getElementById('articles-list')
   if (!allArticles.length) { el.innerHTML = '<div class="empty">No active articles.</div>'; return }
   el.innerHTML = allArticles.map(a => {
-    const activeIters = (a.article_iterations || []).filter(i => i.status === 'active')
-    const latest = activeIters.sort((x,y) => new Date(y.created_at) - new Date(x.created_at))[0]
-    const stage = latest?.stage || 'design'
-    const stageIdx = ITER_STAGES.indexOf(stage)
-    // Show parent stage based on latest active iteration
-    const dots = ITER_STAGES.filter(s => s !== 'done').map((s,i) => `<div class="prog-dot ${i < stageIdx ? 'done' : i === stageIdx ? 'active' : ''}"></div>`).join('')
+    const iters = a.article_iterations || []
+    const activeIters = iters.filter(i => i.status === 'active')
     const isOwn = a.designer_id === profile.id
-    const iterCount = (a.article_iterations || []).filter(i => i.status === 'active').length
-    const stageCls = { done:'badge-done', sewing:'badge-sewing', pattern:'badge-pattern', dropped:'badge-dropped' }[stage] || 'badge-active'
+    const iterCount = activeIters.length
+    const score = calcProgress(a)
+    const { bars, label } = progressBar(score)
+    // Stage badge based on parent article stage
+    const stageLabelMap = { design:'Design', pattern:'Pattern', sewing:'Sewing', sample_master:'Sample Master', sample_vendor:'Sample Vendor', production:'Production' }
+    const stageClsMap = { sample_master:'badge-master', sample_vendor:'badge-vendor', production:'badge-final', sewing:'badge-sewing', pattern:'badge-pattern' }
+    const stageCls = stageClsMap[a.stage] || 'badge-active'
+    const stageText = stageLabelMap[a.stage] || a.stage || 'Design'
     return `<div class="list-row" style="grid-template-columns:2fr 1fr 1.5fr 1fr 1fr" onclick="openArticle('${a.id}')">
       <div>
         <div class="art-name">${esc(a.name)}</div>
         <div class="art-sub">${esc(a.reference_source||'—')} · <span style="color:var(--ink-30)">${iterCount} active iteration${iterCount!==1?'s':''}</span></div>
       </div>
       <div style="font-size:12px;color:var(--ink-60)">${a.category}</div>
-      <div><div class="prog-dots">${dots}</div><div style="font-size:10px;color:var(--ink-30);margin-top:3px">${ITER_LABEL[stage]||stage}</div></div>
+      <div>
+        <div style="display:flex;gap:3px;margin-bottom:4px">${bars}</div>
+        <div style="font-size:10px;color:var(--ink-30)">${label}</div>
+      </div>
       <div style="font-size:12px">${a.profiles?.full_name||'—'}${isOwn?' <span style="font-size:9px;color:var(--ink-30)">(you)</span>':''}</div>
-      <div><span class="badge ${stageCls}">${(ITER_LABEL[stage]||stage).toUpperCase()}</span></div>
+      <div><span class="badge ${stageCls}">${stageText.toUpperCase()}</span></div>
     </div>`
   }).join('')
 }
@@ -670,7 +709,7 @@ async function renderIterationsPane(a, isOwn) {
     html += `<div class="section-label" style="margin-top:20px">Trash / dropped (${archived.length})</div>`
     html += archived.map(iter => {
       const typeLabel = iter.type === 'mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : 'Full garment'
-      return `<div class="iter-card dropped">
+      return `<div class="iter-card dropped" onclick="openIterationModal('${iter.id}','${a.id}')" style="cursor:pointer" title="Click to view detail">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
             <div class="iter-label">${esc(iter.label)}</div>
@@ -678,7 +717,7 @@ async function renderIterationsPane(a, isOwn) {
           </div>
           <span class="badge badge-dropped">DROPPED</span>
         </div>
-        <div style="font-size:10px;color:var(--ink-30);margin-top:4px">${fmtDate(iter.created_at)}</div>
+        <div style="font-size:10px;color:var(--ink-30);margin-top:4px">${fmtDate(iter.created_at)} · tap to view</div>
       </div>`
     }).join('')
   }
@@ -689,31 +728,35 @@ async function renderIterationsPane(a, isOwn) {
 
 // ── Spec & Size pane ──
 async function renderSpecPane(a, isOwn) {
-  // Check if there's a "final spec" set
   const { data: finalSpec } = await db.from('article_iterations')
     .select('*, iteration_fabrics(*), iteration_lining(*), iteration_interlining(*)')
-    .eq('article_id', a.id)
-    .eq('is_final_spec', true)
-    .maybeSingle()
+    .eq('article_id', a.id).eq('is_final_spec', true).maybeSingle()
 
   let specHtml = ''
   if (finalSpec) {
     const fab = finalSpec.iteration_fabrics?.map(f => `${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>') || '—'
     const lin = finalSpec.iteration_lining?.[0]
-    const lStr = !lin ? '—' : lin.lining_type==='none' ? 'None' : lin.lining_type==='dfc' ? 'DFC' : esc(lin.fabric_name||'—')
+    const lStr = !lin ? '—' : lin.lining_type==='none' ? 'None' : lin.lining_type==='dfc' ? 'DFC' : `Furing${lin.fabric_name?' — '+esc(lin.fabric_name):''}`
     const int = finalSpec.iteration_interlining?.map(i => `${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>') || '—'
-    specHtml = `<div style="background:var(--sage-light);border:0.5px solid var(--sage-mid);border-radius:2px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:var(--sage)">
-      Final spec set from: <strong>${esc(finalSpec.label)}</strong>
-      ${isOwn ? `<button class="btn btn-sm" style="margin-left:8px" onclick="clearFinalSpec('${a.id}')">Clear</button>` : ''}
-    </div>
-    <div class="spec-grid">
-      <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fab}</div></div>
-      <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
-      <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${int}</div></div>
-    </div>`
+    specHtml = `
+      <div style="font-size:11px;color:var(--sage);background:var(--sage-light);border:0.5px solid var(--sage-mid);border-radius:2px;padding:8px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <span>From: <strong>${esc(finalSpec.label)}</strong></span>
+        ${isOwn ? `<button class="btn btn-sm" style="margin-left:auto" onclick="clearFinalSpec('${a.id}')">Clear</button>` : ''}
+      </div>
+      <div class="spec-grid">
+        <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fab}</div></div>
+        <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
+        <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${int}</div></div>
+      </div>
+      ${isOwn ? `
+      <div style="margin-top:12px">
+        <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-30);margin-bottom:8px">Override spec (optional — jika ada perubahan dari final iteration)</div>
+        <div id="spec-override-rows"></div>
+        <button class="btn btn-sm" onclick="addFabRow('so')" type="button">+ Override fabric</button>
+      </div>` : ''}` 
   } else {
     specHtml = `<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:16px">
-      No final spec set yet. Go to an iteration and click "Set as final spec".
+      No final spec set yet. Go to an iteration → mark as done → "Set as final spec".
     </div>`
   }
 
@@ -721,14 +764,15 @@ async function renderSpecPane(a, isOwn) {
     <div class="section-label">Final spec</div>
     ${specHtml}
     <div class="section-label" style="margin-top:20px">Size range</div>
-    <div style="margin-bottom:8px;font-size:13px;font-weight:400">${esc(a.size_range||'Not set yet')}</div>
+    ${a.size_range
+      ? `<div style="font-size:13px;font-weight:400;margin-bottom:8px">${esc(a.size_range)}</div>`
+      : `<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:8px">Not set yet</div>`
+    }
     ${isOwn ? `<div style="display:flex;gap:8px;align-items:center">
-      <input type="text" id="spec-size-input" value="${esc(a.size_range||'')}" placeholder="e.g. S, M, L, XL" style="flex:1">
+      <input type="text" id="spec-size-input" value="${esc(a.size_range||'')}" placeholder="e.g. S M L, atau S/M M/L" style="flex:1">
       <button class="btn btn-sm btn-dark" onclick="updateSizeRange('${a.id}')">Save</button>
-    </div>` : ''}
-    <div class="section-label" style="margin-top:20px">Reference</div>
-    <div style="font-size:13px;font-weight:400">${esc(a.reference_source||'—')}</div>
-    ${a.reference_notes ? `<div style="font-size:11px;color:var(--ink-60);margin-top:2px">${esc(a.reference_notes)}</div>` : ''}`
+    </div>
+    <div style="font-size:10px;color:var(--ink-30);margin-top:4px">Format bebas: S M L · S,M,L · S/M,L/XL dll</div>` : ''}`
 }
 
 // ── Size Pack pane ──
@@ -838,23 +882,25 @@ async function removeSpRow(rowIdx, articleId) {
   toast('Row removed.')
 }
 
-async function clearSpCols(articleId) {
-  if (!confirm('Clear all columns and rows?')) return
+async function confirmSizePack(articleId, doConfirm) {
   const { data: sp } = await db.from('size_packs').select('*').eq('article_id', articleId).maybeSingle()
-  if (!sp) return
-  await db.from('size_packs').update({ columns: [], rows: [], confirmed: false, updated_at: new Date().toISOString() }).eq('id', sp.id)
+  if (!sp) { toast('No size pack found.'); return }
+  const { error } = await db.from('size_packs').update({ confirmed: doConfirm, updated_at: new Date().toISOString() }).eq('id', sp.id)
+  if (error) { toast('Failed to update.'); console.error(error); return }
   const a = allArticles.find(x => x.id === articleId)
-  if (a) await renderSizePackPane(a, true)
-  toast('Size pack cleared.')
+  if (a) await renderSizePackPane(a, a.designer_id === profile.id)
+  toast(doConfirm ? 'Size pack confirmed.' : 'Size pack unconfirmed.')
 }
 
-async function confirmSizePack(articleId, confirm_val) {
+async function clearSpCols(articleId) {
+  if (!window.confirm('Clear all columns and rows?')) return
   const { data: sp } = await db.from('size_packs').select('*').eq('article_id', articleId).maybeSingle()
   if (!sp) return
-  await db.from('size_packs').update({ confirmed: confirm_val, updated_at: new Date().toISOString() }).eq('id', sp.id)
+  const { error } = await db.from('size_packs').update({ columns: [], rows: [], confirmed: false, updated_at: new Date().toISOString() }).eq('id', sp.id)
+  if (error) { toast('Failed.'); return }
   const a = allArticles.find(x => x.id === articleId)
-  if (a) await renderSizePackPane(a, true)
-  toast(confirm_val ? 'Size pack confirmed.' : 'Size pack unconfirmed.')
+  if (a) await renderSizePackPane(a, a.designer_id === profile.id)
+  toast('Size pack cleared.')
 }
 
 // ── Readiness pane ──
@@ -923,10 +969,16 @@ async function renderSamplesPane(a, isOwn) {
     return
   }
 
-  const [{ data: masters }, { data: vendors }] = await Promise.all([
+  const [{ data: masters }, { data: vendors }, { data: cetakan }] = await Promise.all([
     db.from('sample_masters').select('*, tailors(name)').eq('article_id', a.id).order('created_at'),
-    db.from('sample_vendors').select('*').eq('article_id', a.id).order('created_at')
+    db.from('sample_vendors').select('*').eq('article_id', a.id).order('created_at'),
+    db.from('article_cetakan').select('*').eq('article_id', a.id)
   ])
+
+  const cetakanVendor = cetakan?.find(c => c.type === 'vendor')
+  const cetakanQC = cetakan?.find(c => c.type === 'qc')
+  const cetakanDone = (cetakanVendor?.file_path || cetakanVendor?.skip_approved) &&
+                      (cetakanQC?.file_path || cetakanQC?.skip_approved)
 
   let html = `<div class="section-label">Sample master</div>`
   html += masters?.length
@@ -944,20 +996,100 @@ async function renderSamplesPane(a, isOwn) {
     <button class="btn btn-dark btn-sm" onclick="addSampleMaster('${a.id}')">Add sample master</button>
   </div>`
 
-  html += `<div class="section-label">Sample vendor</div>`
-  html += vendors?.length
-    ? `<table class="data-table"><thead><tr><th>Vendor</th><th>Size</th><th>Status</th></tr></thead><tbody>${vendors.map(v=>`<tr><td>${esc(v.vendor_name)}</td><td>${esc(v.size||'—')}</td><td><span class="badge badge-vendor">${v.status}</span></td></tr>`).join('')}</tbody></table>`
-    : '<div class="empty-sm">None yet.</div>'
+  // ── CETAKAN SECTION ──
+  html += `<div class="section-label" style="margin-top:4px">Cetakan</div>
+  <div style="font-size:11px;color:var(--ink-60);margin-bottom:12px">Upload foto cetakan vendor dan QC sebelum sample vendor. Atau request skip (perlu approval head).</div>`
 
-  if (isOwn) html += `<div style="padding:12px;background:var(--cream);border-radius:2px;margin-top:10px">
-    <div class="form-grid-2" style="margin-bottom:8px">
-      <div class="form-row" style="margin:0"><label class="form-label">Vendor</label><input type="text" id="sv-vendor" placeholder="e.g. Pak Tatang"></div>
-      <div class="form-row" style="margin:0"><label class="form-label">Size</label><input type="text" id="sv-size" placeholder="e.g. M"></div>
-    </div>
-    <button class="btn btn-dark btn-sm" onclick="addSampleVendor('${a.id}')">Add sample vendor</button>
-  </div>`
+  const renderCetakanItem = (type, item) => {
+    const label = type === 'vendor' ? 'Cetakan Vendor' : 'Cetakan QC'
+    if (item?.file_path) {
+      return `<div style="padding:10px 12px;background:var(--cream);border-radius:2px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-30)">${label}</span>
+        <span style="font-size:12px;flex:1">${esc(item.file_name||'File uploaded')}</span>
+        <span style="font-size:11px;color:var(--sage)">✓ Done</span>
+      </div>`
+    }
+    if (item?.skip_requested && !item?.skip_approved) {
+      return `<div style="padding:10px 12px;background:var(--gold-light);border-radius:2px;margin-bottom:8px">
+        <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-30);margin-bottom:4px">${label}</div>
+        <div style="font-size:12px;color:var(--gold)">Skip requested — menunggu approval head</div>
+        <div style="font-size:11px;color:var(--ink-60);margin-top:2px">Reason: ${esc(item.skip_reason||'—')}</div>
+      </div>`
+    }
+    if (item?.skip_approved) {
+      return `<div style="padding:10px 12px;background:var(--cream);border-radius:2px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-30)">${label}</span>
+        <span style="font-size:12px;flex:1;color:var(--ink-60)">Skip approved by head</span>
+        <span style="font-size:11px;color:var(--sage)">✓ OK</span>
+      </div>`
+    }
+    // Not yet
+    if (!isOwn) return `<div style="font-size:11px;color:var(--ink-30);margin-bottom:8px">${label}: Not yet</div>`
+    return `<div style="padding:10px 12px;background:var(--cream);border-radius:2px;margin-bottom:8px">
+      <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-30);margin-bottom:8px">${label}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label class="btn btn-sm btn-dark" style="cursor:pointer">
+          Upload foto
+          <input type="file" accept="image/*,application/pdf" style="display:none" onchange="uploadCetakan('${a.id}','${type}',this)">
+        </label>
+        <button class="btn btn-sm" onclick="requestSkipCetakan('${a.id}','${type}')">Request skip (tanpa cetakan)</button>
+      </div>
+    </div>`
+  }
+
+  html += renderCetakanItem('vendor', cetakanVendor)
+  html += renderCetakanItem('qc', cetakanQC)
+
+  // ── SAMPLE VENDOR (locked until cetakan done) ──
+  html += `<div class="section-label" style="margin-top:8px">Sample vendor</div>`
+  if (!cetakanDone) {
+    html += `<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-bottom:12px">🔒 Selesaikan cetakan vendor & QC dulu (atau request skip & tunggu approval).</div>`
+  } else {
+    html += vendors?.length
+      ? `<table class="data-table"><thead><tr><th>Vendor</th><th>Size</th><th>Status</th></tr></thead><tbody>${vendors.map(v=>`<tr><td>${esc(v.vendor_name)}</td><td>${esc(v.size||'—')}</td><td><span class="badge badge-vendor">${v.status}</span></td></tr>`).join('')}</tbody></table>`
+      : '<div class="empty-sm">None yet.</div>'
+    if (isOwn) html += `<div style="padding:12px;background:var(--cream);border-radius:2px;margin-top:10px">
+      <div class="form-grid-2" style="margin-bottom:8px">
+        <div class="form-row" style="margin:0"><label class="form-label">Vendor</label><input type="text" id="sv-vendor" placeholder="e.g. Pak Tatang"></div>
+        <div class="form-row" style="margin:0"><label class="form-label">Size</label><input type="text" id="sv-size" placeholder="e.g. M"></div>
+      </div>
+      <button class="btn btn-dark btn-sm" onclick="addSampleVendor('${a.id}')">Add sample vendor</button>
+    </div>`
+  }
 
   document.getElementById('dtab-samples').innerHTML = html
+}
+
+async function uploadCetakan(articleId, type, input) {
+  const file = input.files?.[0]
+  if (!file) return
+  const path = `cetakan/${articleId}/${type}_${Date.now()}_${file.name}`
+  const { error: upErr } = await db.storage.from('jedda-files').upload(path, file)
+  if (upErr) { toast('Upload failed.'); console.error(upErr); return }
+  // Upsert cetakan record
+  const { data: existing } = await db.from('article_cetakan').select('id').eq('article_id', articleId).eq('type', type).maybeSingle()
+  if (existing) {
+    await db.from('article_cetakan').update({ file_path: path, file_name: file.name, updated_at: new Date().toISOString() }).eq('id', existing.id)
+  } else {
+    await db.from('article_cetakan').insert({ article_id: articleId, type, file_path: path, file_name: file.name, uploaded_by: profile.id })
+  }
+  const a = allArticles.find(x => x.id === articleId)
+  if (a) await renderSamplesPane(a, true)
+  toast('Cetakan uploaded.')
+}
+
+async function requestSkipCetakan(articleId, type) {
+  const reason = window.prompt('Reason for skipping cetakan?')
+  if (!reason) return
+  const { data: existing } = await db.from('article_cetakan').select('id').eq('article_id', articleId).eq('type', type).maybeSingle()
+  if (existing) {
+    await db.from('article_cetakan').update({ skip_requested: true, skip_reason: reason, updated_at: new Date().toISOString() }).eq('id', existing.id)
+  } else {
+    await db.from('article_cetakan').insert({ article_id: articleId, type, skip_requested: true, skip_reason: reason, uploaded_by: profile.id })
+  }
+  const a = allArticles.find(x => x.id === articleId)
+  if (a) await renderSamplesPane(a, true)
+  toast('Skip requested. Menunggu approval head.')
 }
 
 // ── Notes pane ──
@@ -1088,17 +1220,19 @@ function showSewingForm(show) {
 // ── Iter Timeline pane ──
 async function renderIterTimelinePane(iter) {
   const isMockup = iter.type === 'mockup'
-  // Both full and mockup use same stages: design → pattern → sewing → done
   const stages = ITER_STAGES
-  const curIdx = stages.indexOf(iter.stage === 'dropped' ? 'dropped' : iter.stage)
+  const isDone = iter.stage === 'done'
+  const curIdx = isDone ? stages.length : stages.indexOf(iter.stage)
 
   let html = `<div style="padding:8px 0">`
   stages.forEach((s, i) => {
-    const isPast = iter.stage === 'done' ? true : i < curIdx
-    const isCurrent = s === iter.stage
+    const isPast = isDone || i < curIdx
+    const isCurrent = !isDone && s === iter.stage
     const dotCls = isPast ? 'done' : isCurrent ? (iter.stage==='dropped'?'dropped':'active') : ''
-    const statusText = isPast ? 'Completed' : isCurrent ? (iter.stage==='dropped'?'Dropped':'Current stage') : 'Pending'
-    const statusCls = isPast ? 'tl-done' : isCurrent ? (iter.stage==='dropped'?'tl-dropped':'tl-active') : 'tl-pending'
+    const statusText = isPast ? 'Completed' : isCurrent ? 'Current stage' : 'Pending'
+    const statusCls = isPast ? 'tl-done' : isCurrent ? 'tl-active' : 'tl-pending'
+    // Timestamp: created_at for pattern (when iteration was made), updated at for others
+    const ts = s === 'pattern' ? fmtDate(iter.created_at) : (isPast && s === 'done' && iter.stage === 'done') ? fmtDate(iter.updated_at||iter.created_at) : ''
     html += `<div class="tl-item">
       <div class="tl-left">
         <div class="tl-dot ${dotCls}"></div>
@@ -1106,16 +1240,12 @@ async function renderIterTimelinePane(iter) {
       </div>
       <div>
         <div class="tl-stage">${ITER_LABEL[s]||s}</div>
-        <div class="tl-status ${statusCls}">${statusText}</div>
+        <div class="tl-status ${statusCls}">${statusText}${ts?' · <span style="color:var(--ink-30)">'+ts+'</span>':''}</div>
       </div>
     </div>`
   })
   html += `</div>`
-
-  if (isMockup) {
-    html += `<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-top:8px">Mockup flow: Design → Pola → Sewing → Done (tidak lanjut ke Sample Master)</div>`
-  }
-
+  if (isMockup) html += `<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-top:8px">Mockup: Pola → Sewing → Done</div>`
   document.getElementById('itab-timeline').innerHTML = html
 }
 
@@ -1393,7 +1523,7 @@ function openNewIterationModal(articleId, articleName, articleCat) {
   niFabCount = 0; niIntCount = 0
   currentArticleId = articleId
   document.getElementById('ni-sub').textContent = articleName
-  ;['ni-label','ni-part','ni-notes'].forEach(id => { const el = document.getElementById(id); if(el) el.value = '' })
+  ;['ni-label','ni-part','ni-notes','ni-size'].forEach(id => { const el = document.getElementById(id); if(el) el.value = '' })
   document.getElementById('ni-type').value = 'full'
   document.getElementById('ni-part-row').style.display = 'none'
   document.getElementById('ni-lining-type').value = 'none'
@@ -1413,7 +1543,7 @@ function onNiTypeChange() {
 
 function onLiningChange(prefix) {
   const val = document.getElementById(`${prefix}-lining-type`).value
-  document.getElementById(`${prefix}-lining-fabric-row`).style.display = val === 'fabric' ? 'block' : 'none'
+  document.getElementById(`${prefix}-lining-fabric-row`).style.display = val === 'furing' ? 'block' : 'none'
 }
 
 // ══════════════════════════════════════════
@@ -1519,11 +1649,11 @@ function getLiningData(prefix) {
   const typeEl = document.getElementById(`${prefix}-lining-type`)
   if (!typeEl) return null
   const liningType = typeEl.value
-  const fabSel = document.getElementById(`${prefix}-lining-fabric`)
+  const colorEl = document.getElementById(`${prefix}-lining-color`)
   return {
     lining_type: liningType,
-    fabric_id: liningType === 'fabric' && fabSel?.value ? fabSel.value : null,
-    fabric_name: liningType === 'fabric' ? (fabSel?.options[fabSel.selectedIndex]?.dataset?.name || '') : null
+    fabric_id: null,
+    fabric_name: liningType === 'furing' ? (colorEl?.value?.trim() || null) : null
   }
 }
 
@@ -1601,8 +1731,10 @@ async function saveNewIteration() {
   const label = document.getElementById('ni-label').value.trim()
   const type = document.getElementById('ni-type').value
   const part = document.getElementById('ni-part').value.trim()
+  const size = document.getElementById('ni-size')?.value?.trim() || null
   if (!label) { toast('Label is required.'); return }
   if (type === 'mockup' && !part) { toast('Part name is required for mockup.'); return }
+  if (!size) { toast('Size untuk tailor harus diisi.'); return }
   const fabrics = collectFabs('ni', niFabCount)
   if (!fabrics.length) { toast('Please add at least one fabric.'); return }
 
@@ -1610,6 +1742,7 @@ async function saveNewIteration() {
     article_id: currentArticleId, label, type,
     part: type === 'mockup' ? part : null,
     notes: document.getElementById('ni-notes').value.trim() || null,
+    size_for_tailor: size,
     stage: 'pattern', status: 'active', created_by: profile.id
   }).select().single()
   if (error) { toast('Failed to create iteration.'); console.error(error); return }
@@ -1670,19 +1803,25 @@ async function renderQueue() {
 
 async function openQueueDetail(queueId, iterId) {
   if (!iterId) { toast('No iteration linked to this queue item.'); return }
-  // Fetch iteration + spec
-  const [{ data: iter }, { data: fabs }, { data: lins }, { data: ints }] = await Promise.all([
+  // Fetch iteration + spec + tailor workloads
+  const [{ data: iter }, { data: fabs }, { data: lins }, { data: ints }, { data: activeSews }] = await Promise.all([
     db.from('article_iterations').select('*, articles(name,category)').eq('id', iterId).single(),
     db.from('iteration_fabrics').select('*').eq('iteration_id', iterId),
     db.from('iteration_lining').select('*').eq('iteration_id', iterId),
-    db.from('iteration_interlining').select('*').eq('iteration_id', iterId)
+    db.from('iteration_interlining').select('*').eq('iteration_id', iterId),
+    db.from('sewing_assignments').select('tailor_id').eq('status','on_progress')
   ])
   if (!iter) return
 
+  // Build workload map
+  const wl = {}
+  tailors.forEach(t => { wl[t.id] = (activeSews||[]).filter(s => s.tailor_id === t.id).length })
+
   const lining = lins?.[0] || null
   const fabStr = fabs?.map(f=>`${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>')||'—'
-  const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':esc(lining.fabric_name||'—')
+  const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':`Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
   const intStr = ints?.map(i=>`${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>')||'—'
+  const sizeFromIter = iter.size_for_tailor || ''
 
   document.getElementById('qd-title').textContent = `${esc(iter.articles?.name||'—')} — ${esc(iter.label)}`
   document.getElementById('qd-sub').textContent = `${iter.type==='mockup'?'Mockup'+(iter.part?' — '+iter.part:''):'Full garment'} · ${fmtDate(iter.created_at)}`
@@ -1700,18 +1839,20 @@ async function openQueueDetail(queueId, iterId) {
     ${canProceed ? `
     <div id="qd-sewing-form">
       <div class="form-section" style="margin-top:0">Proceed to Sewing — assign tailor</div>
+      <div class="info-box" style="margin-bottom:10px">
+        <div class="info-box-label">Size untuk tailor</div>
+        <strong>${sizeFromIter || 'Belum diisi saat add iteration'}</strong>
+      </div>
       <div class="form-grid-2">
         <div class="form-row"><label class="form-label">Tailor *</label>
           <select id="qd-tailor"><option value="">Select tailor...</option>
-            ${tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (optional)':''}</option>`).join('')}
+            ${tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (opt)':''} — ${wl[t.id]||0} WIP</option>`).join('')}
           </select>
         </div>
-        <div class="form-row"><label class="form-label">Size</label><input type="text" id="qd-size" placeholder="e.g. S fit M"></div>
-        <div class="form-row"><label class="form-label">Color</label><input type="text" id="qd-color" placeholder="e.g. Bistre, Steel"></div>
         <div class="form-row"><label class="form-label">Notes for tailor</label><input type="text" id="qd-notes" placeholder="Optional"></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn btn-dark btn-sm" onclick="proceedToSewingFromQueue('${iterId}','${queueId}')">Confirm & proceed to sewing</button>
+        <button class="btn btn-dark btn-sm" onclick="proceedToSewingFromQueue('${iterId}','${queueId}','${sizeFromIter}')">Confirm & proceed to sewing</button>
         <button class="btn btn-danger btn-sm" onclick="dropFromQueue('${iterId}','${queueId}')">Drop</button>
       </div>
     </div>` : `
@@ -1723,21 +1864,20 @@ async function openQueueDetail(queueId, iterId) {
   openModal('modal-queue-detail')
 }
 
-async function proceedToSewingFromQueue(iterId, queueId) {
+async function proceedToSewingFromQueue(iterId, queueId, sizeFromIter) {
   const tailorId = document.getElementById('qd-tailor')?.value
   if (!tailorId) { toast('Please select a tailor.'); return }
-  const [stageRes, sewRes] = await Promise.all([
+  const [stageRes, sewRes, qRes] = await Promise.all([
     db.from('article_iterations').update({ stage: 'sewing' }).eq('id', iterId),
     db.from('sewing_assignments').insert({
       article_id: currentArticleId, iteration_id: iterId, tailor_id: tailorId,
-      size: document.getElementById('qd-size')?.value?.trim() || null,
-      color: document.getElementById('qd-color')?.value?.trim() || null,
+      size: sizeFromIter || null,
       notes: document.getElementById('qd-notes')?.value?.trim() || null,
       status: 'on_progress', assigned_by: profile.id
     }),
     db.from('pattern_queue').update({ status: 'done' }).eq('id', queueId)
   ])
-  if (stageRes.error || sewRes.error) { toast('Failed. Please try again.'); return }
+  if (stageRes.error || sewRes.error) { toast('Failed. Please try again.'); console.error(stageRes.error||sewRes.error); return }
   closeModal('modal-queue-detail')
   await loadArticles()
   renderQueue()
@@ -1776,28 +1916,99 @@ async function renderSewing() {
   const [{ data: tailorList }, { data: assigns }] = await Promise.all([
     db.from('tailors').select('*').eq('is_active', true),
     db.from('sewing_assignments')
-      .select('*, articles(name,category), tailors(name,type)')
+      .select('*, articles(name,category), tailors(name,type), article_iterations(label,type,part)')
       .eq('status', 'on_progress')
   ])
   const el = document.getElementById('sewing-list')
   if (!tailorList?.length) { el.innerHTML = '<div class="empty">No tailors.</div>'; return }
+
+  // Build workload count per tailor for display
+  const workloadMap = {}
+  tailorList.forEach(t => { workloadMap[t.id] = (assigns||[]).filter(a => a.tailor_id === t.id).length })
+
   el.innerHTML = tailorList.map(t => {
     const works = (assigns || []).filter(a => a.tailor_id === t.id)
     return `<div class="card" style="margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
         <div style="font-size:13px;font-weight:400">${esc(t.name)}</div>
         ${t.type==='optional'?'<span style="font-size:9px;color:var(--ink-30)">(optional)</span>':''}
-        <span style="margin-left:auto;font-size:11px;color:var(--ink-60)">${works.length} active</span>
+        <span style="margin-left:auto;font-size:11px;color:${works.length>2?'var(--terracota)':'var(--ink-60)'}">${works.length} active${works.length>2?' — busy':''}</span>
       </div>
-      ${works.map(w => `<div style="padding:8px 0;border-top:0.5px solid var(--border);display:flex;align-items:center;gap:10px" onclick="openSewingDetail('${w.id}','${w.iteration_id||''}','${w.article_id}')">
-        <div style="flex:1">
-          <div style="font-size:12px;font-weight:400">${esc(w.articles?.name||'—')}${w.article_iterations?.label?' — '+esc(w.article_iterations.label):''}</div>
-          <div style="font-size:11px;color:var(--ink-60)">${w.size?'Size: '+esc(w.size):''}${w.color?' · '+esc(w.color):''}</div>
-        </div>
-        <button class="btn btn-sm btn-sage" onclick="event.stopPropagation();quickMarkSewingDone('${w.id}')">Done ✓</button>
-      </div>`).join('') || '<div style="font-size:11px;color:var(--ink-30)">No active assignments.</div>'}
+      ${works.map(w => {
+        const iterLabel = w.article_iterations ? (w.article_iterations.type==='mockup' ? `Mockup${w.article_iterations.part?' — '+w.article_iterations.part:''}` : w.article_iterations.label) : ''
+        const isSampleMaster = w.is_sample_master
+        return `<div style="padding:8px 0;border-top:0.5px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer" onclick="openSewingDetail('${w.id}','${w.iteration_id||''}','${w.article_id}')">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="font-size:12px;font-weight:400">${esc(w.articles?.name||'—')}</div>
+              ${iterLabel?`<span style="font-size:10px;color:var(--ink-60)">— ${esc(iterLabel)}</span>`:''}
+              ${isSampleMaster?`<span class="badge badge-master" style="font-size:9px">SAMPLE MASTER</span>`:''}
+            </div>
+            <div style="font-size:11px;color:var(--ink-60)">${w.size?'Size: '+esc(w.size):'—'}${w.color?' · '+esc(w.color):''}</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sm" onclick="event.stopPropagation();openTransferModal('${w.id}')">Transfer</button>
+            <button class="btn btn-sm btn-sage" onclick="event.stopPropagation();quickMarkSewingDone('${w.id}')">Done ✓</button>
+          </div>
+        </div>`
+      }).join('') || '<div style="font-size:11px;color:var(--ink-30)">No active assignments.</div>'}
     </div>`
   }).join('')
+}
+
+async function openTransferModal(assignId) {
+  const { data: assign } = await db.from('sewing_assignments').select('*, tailors(name), articles(name)').eq('id', assignId).single()
+  if (!assign) return
+
+  // Count workload per tailor
+  const { data: allAssigns } = await db.from('sewing_assignments').select('tailor_id').eq('status','on_progress')
+  const wl = {}
+  tailors.forEach(t => { wl[t.id] = (allAssigns||[]).filter(a => a.tailor_id === t.id).length })
+
+  const modal = document.getElementById('modal-transfer') || (() => {
+    const m = document.createElement('div')
+    m.className = 'overlay'
+    m.id = 'modal-transfer'
+    m.innerHTML = `<div class="modal modal-sm">
+      <div class="modal-head"><div class="modal-title" id="transfer-title">Transfer assignment</div><button class="close-btn" onclick="closeModal('modal-transfer')">×</button></div>
+      <div class="modal-body" id="transfer-body"></div>
+    </div>`
+    document.body.appendChild(m)
+    return m
+  })()
+
+  document.getElementById('transfer-title').textContent = `Transfer: ${assign.articles?.name||'—'}`
+  document.getElementById('transfer-body').innerHTML = `
+    <div style="font-size:11px;color:var(--ink-60);margin-bottom:12px">Currently assigned to: <strong>${esc(assign.tailors?.name||'—')}</strong></div>
+    <div class="form-row"><label class="form-label">Transfer to *</label>
+      <select id="transfer-tailor">
+        <option value="">Select tailor...</option>
+        ${tailors.filter(t => t.id !== assign.tailor_id).map(t =>
+          `<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (optional)':''} — ${wl[t.id]||0} active</option>`
+        ).join('')}
+      </select>
+    </div>
+    <div class="form-row"><label class="form-label">Transfer notes</label><input type="text" id="transfer-notes" placeholder="Reason for transfer..."></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-dark btn-sm" onclick="confirmTransfer('${assignId}','${assign.tailor_id}')">Confirm transfer</button>
+      <button class="btn btn-sm" onclick="closeModal('modal-transfer')">Cancel</button>
+    </div>`
+  openModal('modal-transfer')
+}
+
+async function confirmTransfer(assignId, fromTailorId) {
+  const toTailorId = document.getElementById('transfer-tailor')?.value
+  if (!toTailorId) { toast('Please select a tailor.'); return }
+  const notes = document.getElementById('transfer-notes')?.value?.trim() || null
+  const { error } = await db.from('sewing_assignments').update({
+    tailor_id: toTailorId,
+    transferred_from: fromTailorId,
+    transfer_notes: notes
+  }).eq('id', assignId)
+  if (error) { toast('Failed to transfer.'); return }
+  closeModal('modal-transfer')
+  await renderSewing()
+  toast('Assignment transferred.')
 }
 
 async function openSewingDetail(assignId, iterId, articleId) {
