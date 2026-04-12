@@ -41,9 +41,9 @@
 
   /* ── SPEC ── */
   .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 16px; border: 0.5px solid var(--border); border-radius: 2px; overflow: hidden; }
-  .spec-cell { padding: 12px 14px; border-bottom: 0.5px solid var(--border); border-right: 0.5px solid var(--border); }
-  .spec-cell:nth-child(even) { border-right: none; }
-  .spec-cell.span-2 { grid-column: span 2; border-right: none; }
+  .spec-cell { padding: 12px 14px; border-bottom: 0.5px solid var(--border); }
+  .spec-cell:first-child { border-right: 0.5px solid var(--border); }
+  .spec-cell.span-2 { grid-column: span 2; }
   .spec-cell:last-child { border-bottom: none; }
   .spec-cell:nth-last-child(2):not(.span-2) { border-bottom: none; }
   .spec-label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin-bottom: 4px; }
@@ -284,7 +284,7 @@
       <div class="tab" onclick="switchTabLocal('modal-article','dtab-spec',this)">Spec & Size</div>
       <div class="tab" onclick="switchTabLocal('modal-article','dtab-sizepack',this)">Size Pack</div>
       <div class="tab" onclick="switchTabLocal('modal-article','dtab-notes',this)">Prod. notes</div>
-      <div class="tab" onclick="switchTabLocal('modal-article','dtab-readiness',this)">Readiness</div>
+      <div class="tab" onclick="onReadinessTabClick(this)">Readiness</div>
       <div class="tab" onclick="switchTabLocal('modal-article','dtab-samples',this)">Samples</div>
     </div>
     <div class="modal-body">
@@ -329,7 +329,7 @@
         </div>
       </div>
       <div class="form-grid-2">
-        <div class="form-row"><label class="form-label">Size untuk tailor *</label>
+        <div class="form-row"><label class="form-label">Size *</label>
           <input type="text" id="ni-size" placeholder="e.g. S fit M, M fit L">
         </div>
         <div class="form-row"><label class="form-label">Notes / reason</label>
@@ -577,6 +577,18 @@ function switchTabLocal(modalId, paneId, tabEl) {
   document.getElementById(paneId).classList.add('active')
 }
 
+async function onReadinessTabClick(tabEl) {
+  switchTabLocal('modal-article', 'dtab-readiness', tabEl)
+  // Re-fetch fresh article data and re-render readiness
+  const { data: freshArt } = await db.from('articles')
+    .select('*, profiles!articles_designer_id_fkey(full_name), article_iterations(*)')
+    .eq('id', currentArticleId).single()
+  if (freshArt) {
+    const isOwn = freshArt.designer_id === profile.id
+    await renderReadinessPane(freshArt, isOwn)
+  }
+}
+
 // ══════════════════════════════════════════
 // ARTICLES LIST
 // ══════════════════════════════════════════
@@ -747,13 +759,7 @@ async function renderSpecPane(a, isOwn) {
         <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fab}</div></div>
         <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
         <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${int}</div></div>
-      </div>
-      ${isOwn ? `
-      <div style="margin-top:12px">
-        <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-30);margin-bottom:8px">Override spec (optional — jika ada perubahan dari final iteration)</div>
-        <div id="spec-override-rows"></div>
-        <button class="btn btn-sm" onclick="addFabRow('so')" type="button">+ Override fabric</button>
-      </div>` : ''}` 
+      </div>`
   } else {
     specHtml = `<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:16px">
       No final spec set yet. Go to an iteration → mark as done → "Set as final spec".
@@ -778,171 +784,133 @@ async function renderSpecPane(a, isOwn) {
 // ── Size Pack pane ──
 async function renderSizePackPane(a, isOwn) {
   const { data: sp } = await db.from('size_packs').select('*').eq('article_id', a.id).maybeSingle()
-  const cols = sp?.columns || []
-  const rows = sp?.rows || []
+  const hasFile = !!sp?.file_path
+  const isConfirmed = !!sp?.confirmed
 
-  let html = `<div style="font-size:11px;color:var(--ink-60);margin-bottom:16px">
-    Tabel measurement untuk QC dan produksi. Kolom = measurement type (Bust, Waist, dll). Row = per size.
+  let html = `<div style="font-size:11px;color:var(--ink-60);margin-bottom:20px">
+    Upload file size pack (Excel/PDF) — digunakan oleh QC dan produksi/vendor.
   </div>`
 
-  if (cols.length && rows.length) {
-    html += `<div style="overflow-x:auto;margin-bottom:16px">
-      <table class="data-table">
-        <thead><tr><th>Size</th>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}${isOwn?'<th></th>':''}</tr></thead>
-        <tbody>${rows.map((r,ri)=>`<tr>
-          <td style="font-weight:400">${esc(r.size)}</td>
-          ${cols.map(c=>`<td>${esc(r.measurements?.[c]||'—')}</td>`).join('')}
-          ${isOwn?`<td><button class="btn btn-sm btn-danger" onclick="removeSpRow(${ri},'${a.id}')">×</button></td>`:''}
-        </tr>`).join('')}</tbody>
-      </table>
-    </div>`
-  } else if (!isOwn) {
-    html += '<div class="empty-sm">No size pack yet.</div>'
-  }
-
-  if (isOwn) {
-    html += `<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
-      <div>
-        <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-30);margin-bottom:4px">Add column</div>
-        <div style="display:flex;gap:6px">
-          <input type="text" id="sp-new-col" placeholder="e.g. Bust, Waist, Length" style="width:160px">
-          <button class="btn btn-sm" onclick="addSpCol('${a.id}')">Add</button>
-        </div>
+  if (hasFile) {
+    html += `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:0.5px solid var(--border);border-radius:2px;margin-bottom:12px">
+      <div style="font-size:20px">📄</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:400">${esc(sp.file_name||'Size pack file')}</div>
+        <div style="font-size:11px;color:var(--ink-60);margin-top:2px">${isConfirmed?'<span style="color:var(--sage)">✓ Confirmed</span>':'Not confirmed yet'}</div>
       </div>
-    </div>`
-
-    if (cols.length) {
-      html += `<div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-30);margin-bottom:8px">Add row (size)</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px">
-        <div class="form-row" style="margin:0"><label class="form-label">Size label</label><input type="text" id="sp-new-size" placeholder="e.g. S, M, L, XS" style="width:80px"></div>
-        ${cols.map(c=>`<div class="form-row" style="margin:0"><label class="form-label">${esc(c)}</label><input type="text" id="sp-val-${c.replace(/\s/g,'_')}" placeholder="cm" style="width:70px"></div>`).join('')}
-        <button class="btn btn-sm btn-dark" onclick="addSpRow('${a.id}')">Add row</button>
-      </div>`
-    }
-
-    if (cols.length && rows.length) {
-      const isConfirmed = sp?.confirmed
-      html += `<div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-        ${isConfirmed
-          ? `<span style="font-size:11px;color:var(--sage)">✓ Size pack confirmed</span>
-             <button class="btn btn-sm" onclick="confirmSizePack('${a.id}', false)">Unconfirm</button>`
-          : `<button class="btn btn-dark btn-sm" onclick="confirmSizePack('${a.id}', true)">Confirm size pack ✓</button>
-             <span style="font-size:11px;color:var(--ink-30)">Confirm when size pack is final</span>`
+      ${isOwn ? `<div style="display:flex;gap:6px">
+        ${!isConfirmed
+          ? `<button class="btn btn-dark btn-sm" onclick="confirmSizePack('${a.id}', true)">Confirm ✓</button>`
+          : `<button class="btn btn-sm" onclick="confirmSizePack('${a.id}', false)">Unconfirm</button>`
         }
-        <button class="btn btn-sm btn-danger" style="margin-left:auto" onclick="clearSpCols('${a.id}')">Clear all</button>
-      </div>`
-    }
+        <label class="btn btn-sm" style="cursor:pointer">
+          Replace
+          <input type="file" accept=".xlsx,.xls,.pdf,.csv" style="display:none" onchange="uploadSizePack('${a.id}',this)">
+        </label>
+        <button class="btn btn-sm btn-danger" onclick="deleteSizePack('${a.id}')">Delete</button>
+      </div>` : ''}
+    </div>`
+  } else {
+    html += isOwn
+      ? `<label style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;border:1.5px dashed var(--border);border-radius:2px;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--ink-30)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="font-size:24px;margin-bottom:8px">📤</div>
+          <div style="font-size:13px;font-weight:400;margin-bottom:4px">Upload size pack</div>
+          <div style="font-size:11px;color:var(--ink-60)">Excel, PDF, atau CSV</div>
+          <input type="file" accept=".xlsx,.xls,.pdf,.csv" style="display:none" onchange="uploadSizePack('${a.id}',this)">
+        </label>`
+      : `<div class="empty-sm">No size pack uploaded yet.</div>`
   }
 
   document.getElementById('dtab-sizepack').innerHTML = html
 }
 
-async function addSpCol(articleId) {
-  const colName = document.getElementById('sp-new-col')?.value?.trim()
-  if (!colName) { toast('Column name is required.'); return }
-  const { data: sp } = await db.from('size_packs').select('*').eq('article_id', articleId).maybeSingle()
-  const cols = sp?.columns || []
-  if (cols.includes(colName)) { toast('Column already exists.'); return }
-  const newCols = [...cols, colName]
+async function uploadSizePack(articleId, input) {
+  const file = input.files?.[0]
+  if (!file) return
+  toast('Uploading...')
+  const path = `size-packs/${articleId}/${Date.now()}_${file.name}`
+  const { error: upErr } = await db.storage.from('jedda-files').upload(path, file, { upsert: true })
+  if (upErr) { toast('Upload failed: ' + upErr.message); console.error(upErr); return }
+
+  const { data: sp } = await db.from('size_packs').select('id').eq('article_id', articleId).maybeSingle()
   if (sp) {
-    await db.from('size_packs').update({ columns: newCols, updated_at: new Date().toISOString() }).eq('id', sp.id)
+    await db.from('size_packs').update({ file_path: path, file_name: file.name, confirmed: false, updated_at: new Date().toISOString() }).eq('id', sp.id)
   } else {
-    await db.from('size_packs').insert({ article_id: articleId, columns: newCols, rows: [], created_by: profile.id })
+    await db.from('size_packs').insert({ article_id: articleId, file_path: path, file_name: file.name, confirmed: false, created_by: profile.id })
   }
-  const a = allArticles.find(x => x.id === articleId)
-  if (a) await renderSizePackPane(a, true)
-  toast(`Column "${colName}" added.`)
+  await loadArticles()
+  const updated = allArticles.find(x => x.id === articleId)
+  if (updated) await renderSizePackPane(updated, updated.designer_id === profile.id)
+  toast('Size pack uploaded.')
 }
 
-async function addSpRow(articleId) {
-  const size = document.getElementById('sp-new-size')?.value?.trim()
-  if (!size) { toast('Size label is required.'); return }
-  const { data: sp } = await db.from('size_packs').select('*').eq('article_id', articleId).maybeSingle()
-  if (!sp) { toast('Add columns first.'); return }
-  const cols = sp.columns || []
-  const measurements = {}
-  cols.forEach(c => {
-    const val = document.getElementById(`sp-val-${c.replace(/\s/g,'_')}`)?.value?.trim()
-    if (val) measurements[c] = val
-  })
-  const newRows = [...(sp.rows || []), { size, measurements }]
-  await db.from('size_packs').update({ rows: newRows, updated_at: new Date().toISOString() }).eq('id', sp.id)
-  const a = allArticles.find(x => x.id === articleId)
-  if (a) await renderSizePackPane(a, true)
-  toast(`Row "${size}" added.`)
-}
-
-async function removeSpRow(rowIdx, articleId) {
+async function deleteSizePack(articleId) {
+  if (!window.confirm('Delete size pack file?')) return
   const { data: sp } = await db.from('size_packs').select('*').eq('article_id', articleId).maybeSingle()
   if (!sp) return
-  const newRows = (sp.rows || []).filter((_,i) => i !== rowIdx)
-  await db.from('size_packs').update({ rows: newRows, updated_at: new Date().toISOString() }).eq('id', sp.id)
-  const a = allArticles.find(x => x.id === articleId)
-  if (a) await renderSizePackPane(a, true)
-  toast('Row removed.')
+  if (sp.file_path) await db.storage.from('jedda-files').remove([sp.file_path])
+  await db.from('size_packs').update({ file_path: null, file_name: null, confirmed: false, updated_at: new Date().toISOString() }).eq('id', sp.id)
+  await loadArticles()
+  const updated = allArticles.find(x => x.id === articleId)
+  if (updated) await renderSizePackPane(updated, updated.designer_id === profile.id)
+  toast('Size pack deleted.')
 }
 
 async function confirmSizePack(articleId, doConfirm) {
   const { data: sp } = await db.from('size_packs').select('*').eq('article_id', articleId).maybeSingle()
-  if (!sp) { toast('No size pack found.'); return }
+  if (!sp?.file_path) { toast('Upload file dulu sebelum confirm.'); return }
   const { error } = await db.from('size_packs').update({ confirmed: doConfirm, updated_at: new Date().toISOString() }).eq('id', sp.id)
-  if (error) { toast('Failed to update.'); console.error(error); return }
-  const a = allArticles.find(x => x.id === articleId)
-  if (a) await renderSizePackPane(a, a.designer_id === profile.id)
+  if (error) { toast('Failed.'); console.error(error); return }
+  await loadArticles()
+  const updated = allArticles.find(x => x.id === articleId)
+  if (updated) await renderSizePackPane(updated, updated.designer_id === profile.id)
   toast(doConfirm ? 'Size pack confirmed.' : 'Size pack unconfirmed.')
-}
-
-async function clearSpCols(articleId) {
-  if (!window.confirm('Clear all columns and rows?')) return
-  const { data: sp } = await db.from('size_packs').select('*').eq('article_id', articleId).maybeSingle()
-  if (!sp) return
-  const { error } = await db.from('size_packs').update({ columns: [], rows: [], confirmed: false, updated_at: new Date().toISOString() }).eq('id', sp.id)
-  if (error) { toast('Failed.'); return }
-  const a = allArticles.find(x => x.id === articleId)
-  if (a) await renderSizePackPane(a, a.designer_id === profile.id)
-  toast('Size pack cleared.')
 }
 
 // ── Readiness pane ──
 async function renderReadinessPane(a, isOwn) {
-  const { data: iters } = await db.from('article_iterations').select('*').eq('article_id', a.id).eq('status', 'active')
-  const { data: notes } = await db.from('production_notes').select('id').eq('article_id', a.id)
-  const { data: sp } = await db.from('size_packs').select('columns,rows').eq('article_id', a.id).maybeSingle()
-  const { data: finalSpec } = await db.from('article_iterations').select('id').eq('article_id', a.id).eq('is_final_spec', true).maybeSingle()
+  // Always fetch fresh data
+  const [{ data: iters }, { data: notes }, { data: sp }, { data: finalSpec }, { data: freshArt }] = await Promise.all([
+    db.from('article_iterations').select('*').eq('article_id', a.id).eq('status', 'active'),
+    db.from('production_notes').select('id').eq('article_id', a.id),
+    db.from('size_packs').select('file_path,confirmed').eq('article_id', a.id).maybeSingle(),
+    db.from('article_iterations').select('id').eq('article_id', a.id).eq('is_final_spec', true).maybeSingle(),
+    db.from('articles').select('size_range').eq('id', a.id).single()
+  ])
 
   const allDone = iters?.length > 0 && iters.every(i => i.stage === 'done')
   const hasNotes = (notes?.length || 0) > 0
-  const hasSizePack = sp?.confirmed === true
+  const hasSizePack = !!(sp?.file_path && sp?.confirmed)
   const hasFinalSpec = !!finalSpec
-  const hasSize = !!a.size_range
+  const hasSize = !!(freshArt?.size_range)
+  const hasSpecAndSize = hasFinalSpec && hasSize  // both required together
 
-  const check = (ok, label, hint) => `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border)">
-    <div style="width:16px;height:16px;border-radius:50%;background:${ok?'var(--sage)':'var(--border)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
-      ${ok?'<span style="color:white;font-size:9px">✓</span>':''}
+  const check = (ok, label, hint) => `<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--border)">
+    <div style="width:18px;height:18px;border-radius:50%;background:${ok?'var(--sage)':'var(--border)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
+      ${ok?'<span style="color:white;font-size:9px;font-weight:600">✓</span>':''}
     </div>
     <div>
-      <div style="font-size:12px;font-weight:400;color:${ok?'var(--ink)':'var(--ink-30)'}">${label}</div>
+      <div style="font-size:12px;font-weight:400;color:${ok?'var(--ink)':'var(--ink-60)'}">${label}</div>
       ${!ok&&hint?`<div style="font-size:11px;color:var(--ink-30);margin-top:2px">${hint}</div>`:''}
     </div>
   </div>`
 
-  const allReady = allDone && hasNotes && hasSizePack && hasFinalSpec && hasSize
+  const allReady = allDone && hasNotes && hasSizePack && hasSpecAndSize
   const canProceed = isOwn && allReady
 
   document.getElementById('dtab-readiness').innerHTML = `
     <div style="font-size:11px;color:var(--ink-60);margin-bottom:16px">
       Semua syarat ini harus terpenuhi sebelum artikel bisa dilanjutkan ke Sample Master.
     </div>
-    ${check(allDone, 'All active iterations done', 'Mark all iterations as done first.')}
-    ${check(hasFinalSpec, 'Final spec set', 'Go to an iteration and click "Set as final spec".')}
-    ${check(hasSize, 'Size range filled', 'Fill in size range in Spec & Size tab.')}
-    ${check(hasSizePack, 'Size pack confirmed', 'Fill and confirm size pack in Size Pack tab.')}
-    ${check(hasNotes, 'Production notes added', 'Add production notes in Prod. Notes tab.')}
+    ${check(allDone, 'Semua iterasi aktif sudah done', 'Mark semua iteration sebagai done dulu.')}
+    ${check(hasSpecAndSize, 'Final spec & size range sudah diisi', `${!hasFinalSpec?'Set final spec dari iteration yang sudah done.':''}${!hasSize?' Size range belum diisi di tab Spec & Size.':''}`)}
+    ${check(hasSizePack, 'Size pack diupload & confirmed', 'Upload file size pack di tab Size Pack, lalu confirm.')}
+    ${check(hasNotes, 'Production notes sudah ada', 'Tambahkan production notes di tab Prod. Notes.')}
     <div style="margin-top:20px">
       ${canProceed
         ? `<button class="btn btn-dark" onclick="proceedToSampleMaster('${a.id}')">Proceed to Sample Master →</button>`
-        : `<button class="btn btn-dark" disabled style="opacity:0.4">Proceed to Sample Master →</button>
-           <div style="font-size:11px;color:var(--ink-30);margin-top:8px">Complete all requirements above first.</div>`
+        : `<button class="btn btn-dark" disabled style="opacity:0.4;cursor:not-allowed">Proceed to Sample Master →</button>
+           <div style="font-size:11px;color:var(--ink-30);margin-top:8px">Lengkapi semua syarat di atas.</div>`
       }
     </div>`
 }
@@ -980,14 +948,50 @@ async function renderSamplesPane(a, isOwn) {
   const cetakanDone = (cetakanVendor?.file_path || cetakanVendor?.skip_approved) &&
                       (cetakanQC?.file_path || cetakanQC?.skip_approved)
 
+  // Parse sizes from size_range for tracking
+  const parseSizes = (sizeRange) => {
+    if (!sizeRange) return []
+    return sizeRange.split(/[\s,\/]+/).map(s => s.trim()).filter(Boolean)
+  }
+  const expectedSizes = parseSizes(a.size_range)
+  const doneSizes = (masters||[]).map(m => m.size?.trim()).filter(Boolean)
+  const missingSizes = expectedSizes.filter(s => !doneSizes.includes(s))
+  const allSizesDone = expectedSizes.length > 0 && missingSizes.length === 0
+
   let html = `<div class="section-label">Sample master</div>`
+
+  // Show size progress if size_range is set
+  if (expectedSizes.length > 0) {
+    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">`
+    expectedSizes.forEach(s => {
+      const done = doneSizes.includes(s)
+      html += `<div style="padding:4px 10px;border-radius:2px;font-size:11px;border:0.5px solid ${done?'var(--sage)':'var(--border)'};color:${done?'var(--sage)':'var(--ink-30)'};background:${done?'var(--sage-light)':'transparent'}">
+        ${done?'✓ ':''}${esc(s)}
+      </div>`
+    })
+    html += `</div>`
+    if (allSizesDone) {
+      html += `<div style="font-size:11px;color:var(--sage);margin-bottom:10px">✓ All sizes complete</div>`
+    } else {
+      html += `<div style="font-size:11px;color:var(--ink-60);margin-bottom:10px">Missing: ${missingSizes.map(s=>esc(s)).join(', ')}</div>`
+    }
+  }
+
   html += masters?.length
     ? `<table class="data-table"><thead><tr><th>Size</th><th>Color</th><th>Tailor</th><th>Status</th></tr></thead><tbody>${masters.map(m=>`<tr><td>${esc(m.size)}</td><td>${esc(m.color||'—')}</td><td>${esc(m.tailors?.name||'—')}</td><td><span class="badge badge-master">${m.status}</span></td></tr>`).join('')}</tbody></table>`
     : '<div class="empty-sm">None yet.</div>'
 
   if (isOwn) html += `<div style="padding:12px;background:var(--cream);border-radius:2px;margin:10px 0 16px">
     <div class="form-grid-2" style="margin-bottom:8px">
-      <div class="form-row" style="margin:0"><label class="form-label">Size</label><input type="text" id="sm-size" placeholder="e.g. S, M"></div>
+      <div class="form-row" style="margin:0"><label class="form-label">Size</label>
+        <select id="sm-size">
+          <option value="">Select size...</option>
+          ${expectedSizes.length
+            ? expectedSizes.map(s=>`<option value="${esc(s)}" ${doneSizes.includes(s)?'disabled':''} >${esc(s)}${doneSizes.includes(s)?' ✓':''}</option>`).join('')
+            : '<option value="__custom__">Custom...</option>'
+          }
+        </select>
+      </div>
       <div class="form-row" style="margin:0"><label class="form-label">Color</label><input type="text" id="sm-color" placeholder="e.g. Bistre"></div>
       <div class="form-row" style="margin:0"><label class="form-label">Tailor</label>
         <select id="sm-tailor"><option value="">Select tailor...</option>${tailors.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select>
@@ -1916,15 +1920,20 @@ async function renderSewing() {
   const [{ data: tailorList }, { data: assigns }] = await Promise.all([
     db.from('tailors').select('*').eq('is_active', true),
     db.from('sewing_assignments')
-      .select('*, articles(name,category), tailors(name,type), article_iterations(label,type,part)')
+      .select('*, articles(name,category), tailors(name,type)')
       .eq('status', 'on_progress')
   ])
   const el = document.getElementById('sewing-list')
   if (!tailorList?.length) { el.innerHTML = '<div class="empty">No tailors.</div>'; return }
 
-  // Build workload count per tailor for display
-  const workloadMap = {}
-  tailorList.forEach(t => { workloadMap[t.id] = (assigns||[]).filter(a => a.tailor_id === t.id).length })
+  // Fetch iteration labels for assignments that have iteration_id
+  const iterIds = [...new Set((assigns||[]).map(a => a.iteration_id).filter(Boolean))]
+  let iterMap = {}
+  if (iterIds.length) {
+    const { data: iters } = await db.from('article_iterations')
+      .select('id,label,type,part').in('id', iterIds)
+    iters?.forEach(i => { iterMap[i.id] = i })
+  }
 
   el.innerHTML = tailorList.map(t => {
     const works = (assigns || []).filter(a => a.tailor_id === t.id)
@@ -1935,23 +1944,26 @@ async function renderSewing() {
         <span style="margin-left:auto;font-size:11px;color:${works.length>2?'var(--terracota)':'var(--ink-60)'}">${works.length} active${works.length>2?' — busy':''}</span>
       </div>
       ${works.map(w => {
-        const iterLabel = w.article_iterations ? (w.article_iterations.type==='mockup' ? `Mockup${w.article_iterations.part?' — '+w.article_iterations.part:''}` : w.article_iterations.label) : ''
-        const isSampleMaster = w.is_sample_master
+        const iter = w.iteration_id ? iterMap[w.iteration_id] : null
+        const iterLabel = iter
+          ? (iter.type==='mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : iter.label)
+          : ''
+        const isSampleMaster = !!w.is_sample_master
         return `<div style="padding:8px 0;border-top:0.5px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer" onclick="openSewingDetail('${w.id}','${w.iteration_id||''}','${w.article_id}')">
           <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <div style="font-size:12px;font-weight:400">${esc(w.articles?.name||'—')}</div>
-              ${iterLabel?`<span style="font-size:10px;color:var(--ink-60)">— ${esc(iterLabel)}</span>`:''}
-              ${isSampleMaster?`<span class="badge badge-master" style="font-size:9px">SAMPLE MASTER</span>`:''}
+              ${iterLabel?`<span style="font-size:11px;color:var(--ink-60)">— ${esc(iterLabel)}</span>`:''}
+              ${isSampleMaster?`<span class="badge badge-master" style="font-size:9px;padding:1px 5px">SM</span>`:''}
             </div>
-            <div style="font-size:11px;color:var(--ink-60)">${w.size?'Size: '+esc(w.size):'—'}${w.color?' · '+esc(w.color):''}</div>
+            <div style="font-size:11px;color:var(--ink-60);margin-top:2px">${w.size?'Size: '+esc(w.size):'—'}</div>
           </div>
           <div style="display:flex;gap:6px">
             <button class="btn btn-sm" onclick="event.stopPropagation();openTransferModal('${w.id}')">Transfer</button>
             <button class="btn btn-sm btn-sage" onclick="event.stopPropagation();quickMarkSewingDone('${w.id}')">Done ✓</button>
           </div>
         </div>`
-      }).join('') || '<div style="font-size:11px;color:var(--ink-30)">No active assignments.</div>'}
+      }).join('') || '<div style="font-size:11px;color:var(--ink-30);padding:8px 0">No active assignments.</div>'}
     </div>`
   }).join('')
 }
@@ -2074,8 +2086,9 @@ async function updateSizeRange(articleId) {
 }
 
 async function addSampleMaster(articleId) {
-  const size = document.getElementById('sm-size')?.value?.trim()
-  if (!size) { toast('Size is required.'); return }
+  const sizeEl = document.getElementById('sm-size')
+  const size = sizeEl?.value?.trim()
+  if (!size || size === '__custom__') { toast('Size is required.'); return }
   const tailorId = document.getElementById('sm-tailor')?.value || null
   const { error } = await db.from('sample_masters').insert({
     article_id: articleId, size,
@@ -2084,8 +2097,9 @@ async function addSampleMaster(articleId) {
     status: 'in_progress'
   })
   if (error) { toast('Failed.'); console.error(error); return }
-  const a = allArticles.find(x => x.id === articleId)
-  if (a) await renderSamplesPane(a, a.designer_id === profile.id)
+  await loadArticles()
+  const updated = allArticles.find(x => x.id === articleId)
+  if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
   toast('Sample master added.')
 }
 
