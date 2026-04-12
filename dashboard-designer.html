@@ -40,10 +40,11 @@
   .tab-pane.active { display: block; }
 
   /* ── SPEC ── */
-  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 16px; border: 0.5px solid var(--border); border-radius: 2px; overflow: hidden; }
-  .spec-cell { padding: 12px 14px; border-bottom: 0.5px solid var(--border); }
-  .spec-cell:first-child { border-right: 0.5px solid var(--border); }
-  .spec-cell.span-2 { grid-column: span 2; }
+  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 16px; }
+  .spec-cell { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .spec-cell:nth-child(odd) { padding-right: 16px; }
+  .spec-cell:nth-child(even) { padding-left: 16px; border-left: 0.5px solid var(--border); }
+  .spec-cell.span-2 { grid-column: span 2; padding-left: 0; border-left: none; }
   .spec-cell:last-child { border-bottom: none; }
   .spec-cell:nth-last-child(2):not(.span-2) { border-bottom: none; }
   .spec-label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin-bottom: 4px; }
@@ -259,6 +260,12 @@
         <div id="na-interlining-rows"></div>
         <button class="btn btn-sm" onclick="addIntRow('na')" type="button">+ Add interlining</button>
       </div>
+
+      <div id="na-accessories-section">
+        <div class="form-section">Accessories <span style="font-weight:300;color:var(--ink-30)">(optional)</span></div>
+        <div id="na-acc-rows"></div>
+        <button class="btn btn-sm" onclick="addAccRow('na')" type="button">+ Add accessory</button>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('modal-new-article')">Cancel</button>
@@ -329,7 +336,7 @@
         </div>
       </div>
       <div class="form-grid-2">
-        <div class="form-row"><label class="form-label">Size *</label>
+        <div class="form-row"><label class="form-label">Size</label>
           <input type="text" id="ni-size" placeholder="e.g. S fit M, M fit L">
         </div>
         <div class="form-row"><label class="form-label">Notes / reason</label>
@@ -361,6 +368,12 @@
         <div class="form-section">Interlining</div>
         <div id="ni-interlining-rows"></div>
         <button class="btn btn-sm" onclick="addIntRow('ni')" type="button">+ Add interlining</button>
+      </div>
+
+      <div id="ni-accessories-section">
+        <div class="form-section">Accessories <span style="font-weight:300;color:var(--ink-30)">(optional)</span></div>
+        <div id="ni-acc-rows"></div>
+        <button class="btn btn-sm" onclick="addAccRow('ni')" type="button">+ Add accessory</button>
       </div>
     </div>
     <div class="modal-footer">
@@ -457,13 +470,14 @@ let profile = null
 let allArticles = []
 let masterFabrics = []
 let masterInterlinings = []
+let masterAccessories = []
 let tailors = []
 let currentArticleId = null
 let currentIterationId = null
 let pendingArchiveId = null
 let pendingArchiveType = null // 'article' | 'iteration'
-let naFabCount = 0, naIntCount = 0
-let niFabCount = 0, niIntCount = 0
+let naFabCount = 0, naIntCount = 0, naAccCount = 0
+let niFabCount = 0, niIntCount = 0, niAccCount = 0
 
 // Iteration flow: design → pattern → sewing → done
 // Parent flow: design → pattern → sewing → sample_master → sample_vendor → production
@@ -485,14 +499,16 @@ async function init() {
 }
 
 async function loadMasterData() {
-  const [f, i, t] = await Promise.all([
+  const [f, i, t, a] = await Promise.all([
     db.from('master_fabrics').select('*').order('name'),
     db.from('master_interlinings').select('*').order('name'),
-    db.from('tailors').select('*').eq('is_active', true)
+    db.from('tailors').select('*').eq('is_active', true),
+    db.from('master_accessories').select('*').order('name')
   ])
   masterFabrics = f.data || []
   masterInterlinings = i.data || []
   tailors = t.data || []
+  masterAccessories = a.data || []
 }
 
 async function loadArticles() {
@@ -741,7 +757,7 @@ async function renderIterationsPane(a, isOwn) {
 // ── Spec & Size pane ──
 async function renderSpecPane(a, isOwn) {
   const { data: finalSpec } = await db.from('article_iterations')
-    .select('*, iteration_fabrics(*), iteration_lining(*), iteration_interlining(*)')
+    .select('*, iteration_fabrics(*), iteration_lining(*), iteration_interlining(*), iteration_accessories(*)')
     .eq('article_id', a.id).eq('is_final_spec', true).maybeSingle()
 
   let specHtml = ''
@@ -750,6 +766,7 @@ async function renderSpecPane(a, isOwn) {
     const lin = finalSpec.iteration_lining?.[0]
     const lStr = !lin ? '—' : lin.lining_type==='none' ? 'None' : lin.lining_type==='dfc' ? 'DFC' : `Furing${lin.fabric_name?' — '+esc(lin.fabric_name):''}`
     const int = finalSpec.iteration_interlining?.map(i => `${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>') || '—'
+    const acc = finalSpec.iteration_accessories?.map(a => `${esc(a.accessory_name)}${a.notes?' — '+esc(a.notes):''}`).join('<br>') || '—'
     specHtml = `
       <div style="font-size:11px;color:var(--sage);background:var(--sage-light);border:0.5px solid var(--sage-mid);border-radius:2px;padding:8px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
         <span>From: <strong>${esc(finalSpec.label)}</strong></span>
@@ -758,7 +775,8 @@ async function renderSpecPane(a, isOwn) {
       <div class="spec-grid">
         <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fab}</div></div>
         <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
-        <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${int}</div></div>
+        <div class="spec-cell"><div class="spec-label">Interlining</div><div class="spec-val">${int}</div></div>
+        <div class="spec-cell"><div class="spec-label">Accessories</div><div class="spec-val">${acc}</div></div>
       </div>`
   } else {
     specHtml = `<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:16px">
@@ -1153,20 +1171,23 @@ async function openIterationModal(iterId, articleId) {
 
 // ── Iter Spec pane ──
 async function renderIterSpecPane(iter, isOwn, isDropped) {
-  const [{ data: fabs }, { data: lins }, { data: ints }] = await Promise.all([
+  const [{ data: fabs }, { data: lins }, { data: ints }, { data: accs }] = await Promise.all([
     db.from('iteration_fabrics').select('*').eq('iteration_id', iter.id),
     db.from('iteration_lining').select('*').eq('iteration_id', iter.id),
-    db.from('iteration_interlining').select('*').eq('iteration_id', iter.id)
+    db.from('iteration_interlining').select('*').eq('iteration_id', iter.id),
+    db.from('iteration_accessories').select('*').eq('iteration_id', iter.id).order('sort_order')
   ])
   const lining = lins?.[0] || null
   const fabStr = fabs?.map(f => `${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>') || '—'
-  const lStr = !lining ? '—' : lining.lining_type==='none' ? 'None' : lining.lining_type==='dfc' ? 'DFC' : esc(lining.fabric_name||'—')
+  const lStr = !lining ? '—' : lining.lining_type==='none' ? 'None' : lining.lining_type==='dfc' ? 'DFC' : `Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
   const intStr = ints?.map(i => `${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>') || '—'
+  const accStr = accs?.map(a => `${esc(a.accessory_name)}${a.notes?' — '+esc(a.notes):''}`).join('<br>') || '—'
 
   let html = `<div class="spec-grid">
     <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fabStr}</div></div>
     <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
-    <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
+    <div class="spec-cell"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
+    <div class="spec-cell"><div class="spec-label">Accessories</div><div class="spec-val">${accStr}</div></div>
     ${iter.notes?`<div class="spec-cell span-2"><div class="spec-label">Notes / reason</div><div class="spec-val">${esc(iter.notes)}</div></div>`:''}
   </div>`
 
@@ -1199,11 +1220,9 @@ async function renderIterSpecPane(iter, isOwn, isDropped) {
       <div class="form-grid-2">
         <div class="form-row"><label class="form-label">Tailor *</label>
           <select id="adv-tailor"><option value="">Select tailor...</option>
-            ${tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (optional)':''}</option>`).join('')}
+            ${await (async()=>{const{data:asw}=await db.from('sewing_assignments').select('tailor_id').eq('status','on_progress');const wlm={};tailors.forEach(t=>{wlm[t.id]=(asw||[]).filter(s=>s.tailor_id===t.id).length});return tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (opt)':''} — ${wlm[t.id]||0} WIP</option>`).join('')})()}
           </select>
         </div>
-        <div class="form-row"><label class="form-label">Size</label><input type="text" id="adv-size" placeholder="e.g. S fit M"></div>
-        <div class="form-row"><label class="form-label">Color</label><input type="text" id="adv-color" placeholder="e.g. Bistre, Steel"></div>
         <div class="form-row"><label class="form-label">Notes for tailor</label><input type="text" id="adv-notes" placeholder="Optional"></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:8px">
@@ -1251,45 +1270,6 @@ async function renderIterTimelinePane(iter) {
   html += `</div>`
   if (isMockup) html += `<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-top:8px">Mockup: Pola → Sewing → Done</div>`
   document.getElementById('itab-timeline').innerHTML = html
-}
-
-// ── Iter Sewing pane ──
-async function renderIterSewingPane(iter, isOwn, isDropped) {
-  const { data: assigns } = await db.from('sewing_assignments')
-    .select('*, tailors(name,type)')
-    .eq('iteration_id', iter.id)
-    .order('created_at', { ascending: false })
-
-  let html = assigns?.length
-    ? `<table class="data-table"><thead><tr><th>Tailor</th><th>Size</th><th>Color</th><th>Status</th><th>Notes</th></tr></thead><tbody>` +
-      assigns.map(w => `<tr>
-        <td>${esc(w.tailors?.name||'—')}${w.tailors?.type==='optional'?' <span style="font-size:9px;color:var(--ink-30)">(opt)</span>':''}</td>
-        <td>${esc(w.size||'—')}</td><td>${esc(w.color||'—')}</td>
-        <td>
-          <span class="badge badge-${w.status==='done'?'done':w.status==='dropped'?'dropped':'sewing'}">${w.status}</span>
-          ${isOwn&&w.status==='on_progress'?`<button class="btn btn-sm btn-sage" style="margin-left:6px" onclick="markSewingDone('${w.id}','${iter.id}')">Done ✓</button>`:''}
-        </td>
-        <td style="color:var(--ink-60)">${esc(w.notes||'—')}</td>
-      </tr>`).join('') + `</tbody></table>`
-    : '<div class="empty-sm">No sewing assignments yet.</div>'
-
-  if (isOwn && !isDropped && iter.stage === 'sewing') {
-    html += `<hr class="divider">
-    <div class="form-section" style="margin-top:0">Add sewing assignment</div>
-    <div class="form-grid-2">
-      <div class="form-row"><label class="form-label">Tailor *</label>
-        <select id="sew-tailor"><option value="">Select...</option>
-          ${tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (optional)':''}</option>`).join('')}
-        </select>
-      </div>
-      <div class="form-row"><label class="form-label">Size</label><input type="text" id="sew-size" placeholder="e.g. S fit M"></div>
-      <div class="form-row"><label class="form-label">Color</label><input type="text" id="sew-color" placeholder="e.g. Bistre"></div>
-      <div class="form-row"><label class="form-label">Notes</label><input type="text" id="sew-notes" placeholder="Optional"></div>
-    </div>
-    <button class="btn btn-dark btn-sm" onclick="addSewingAssign('${iter.id}')">Assign</button>`
-  }
-
-  document.getElementById('itab-sewing').innerHTML = html
 }
 
 // ── Iter Log pane ──
@@ -1359,12 +1339,14 @@ async function confirmAdvanceToSewing(iterId) {
   const tailorId = document.getElementById('adv-tailor')?.value
   if (!tailorId) { toast('Please select a tailor.'); return }
 
+  // Get size from iteration's size_for_tailor
+  const { data: iterData } = await db.from('article_iterations').select('size_for_tailor').eq('id', iterId).single()
+
   const [stageRes, sewRes] = await Promise.all([
     db.from('article_iterations').update({ stage: 'sewing' }).eq('id', iterId),
     db.from('sewing_assignments').insert({
       article_id: currentArticleId, iteration_id: iterId, tailor_id: tailorId,
-      size: document.getElementById('adv-size')?.value?.trim() || null,
-      color: document.getElementById('adv-color')?.value?.trim() || null,
+      size: iterData?.size_for_tailor || null,
       notes: document.getElementById('adv-notes')?.value?.trim() || null,
       status: 'on_progress', assigned_by: profile.id
     })
@@ -1377,34 +1359,20 @@ async function confirmAdvanceToSewing(iterId) {
   const isOwn = a?.designer_id === profile.id
   await Promise.all([
     renderIterSpecPane(iter, isOwn, false),
-    renderIterSewingPane(iter, isOwn, false),
     renderIterTimelinePane(iter)
   ])
   toast('Advanced to sewing. Tailor assigned.')
-}
-
-async function addSewingAssign(iterId) {
-  const tailorId = document.getElementById('sew-tailor')?.value
-  if (!tailorId) { toast('Please select a tailor.'); return }
-  const { error } = await db.from('sewing_assignments').insert({
-    article_id: currentArticleId, iteration_id: iterId, tailor_id: tailorId,
-    size: document.getElementById('sew-size')?.value?.trim() || null,
-    color: document.getElementById('sew-color')?.value?.trim() || null,
-    notes: document.getElementById('sew-notes')?.value?.trim() || null,
-    status: 'on_progress', assigned_by: profile.id
-  })
-  if (error) { toast('Failed to assign.'); return }
-  const { data: iter } = await db.from('article_iterations').select('*').eq('id', iterId).single()
-  const a = allArticles.find(x => x.id === currentArticleId)
-  await renderIterSewingPane(iter, a?.designer_id === profile.id, false)
-  toast('Tailor assigned.')
 }
 
 async function markSewingDone(assignId, iterId) {
   await db.from('sewing_assignments').update({ status: 'done' }).eq('id', assignId)
   const { data: iter } = await db.from('article_iterations').select('*').eq('id', iterId).single()
   const a = allArticles.find(x => x.id === currentArticleId)
-  await renderIterSewingPane(iter, a?.designer_id === profile.id, false)
+  const isOwn = a?.designer_id === profile.id
+  await Promise.all([
+    renderIterSpecPane(iter, isOwn, false),
+    renderIterTimelinePane(iter)
+  ])
   toast('Sewing marked as done.')
 }
 
@@ -1501,13 +1469,14 @@ async function confirmArchive() {
 // NEW ARTICLE FORM
 // ══════════════════════════════════════════
 function openNewArticleModal() {
-  naFabCount = 0; naIntCount = 0
+  naFabCount = 0; naIntCount = 0; naAccCount = 0
   ;['na-name','na-size','na-ref-source','na-ref-notes'].forEach(id => { const el = document.getElementById(id); if(el) el.value = '' })
   document.getElementById('na-date').value = new Date().toISOString().split('T')[0]
   document.getElementById('na-lining-type').value = 'none'
   document.getElementById('na-lining-fabric-row').style.display = 'none'
   document.getElementById('na-fabric-rows').innerHTML = ''
   document.getElementById('na-interlining-rows').innerHTML = ''
+  document.getElementById('na-acc-rows').innerHTML = ''
   addFabRow('na')
   onNaCatChange()
   fillSelect('na-lining-fabric', masterFabrics)
@@ -1516,7 +1485,7 @@ function openNewArticleModal() {
 
 function onNaCatChange() {
   const cat = document.getElementById('na-cat').value
-  document.getElementById('na-lining-section').style.display = ['Outer','Jacket','Dress'].includes(cat) ? 'block' : 'none'
+  document.getElementById('na-lining-section').style.display = ['Outer','Jacket'].includes(cat) ? 'block' : 'none'
   document.getElementById('na-interlining-section').style.display = cat !== 'Pants' ? 'block' : 'none'
 }
 
@@ -1524,7 +1493,7 @@ function onNaCatChange() {
 // NEW ITERATION FORM
 // ══════════════════════════════════════════
 function openNewIterationModal(articleId, articleName, articleCat) {
-  niFabCount = 0; niIntCount = 0
+  niFabCount = 0; niIntCount = 0; niAccCount = 0
   currentArticleId = articleId
   document.getElementById('ni-sub').textContent = articleName
   ;['ni-label','ni-part','ni-notes','ni-size'].forEach(id => { const el = document.getElementById(id); if(el) el.value = '' })
@@ -1534,8 +1503,9 @@ function openNewIterationModal(articleId, articleName, articleCat) {
   document.getElementById('ni-lining-fabric-row').style.display = 'none'
   document.getElementById('ni-fabric-rows').innerHTML = ''
   document.getElementById('ni-interlining-rows').innerHTML = ''
+  document.getElementById('ni-acc-rows').innerHTML = ''
   addFabRow('ni')
-  document.getElementById('ni-lining-section').style.display = ['Outer','Jacket','Dress'].includes(articleCat) ? 'block' : 'none'
+  document.getElementById('ni-lining-section').style.display = ['Outer','Jacket'].includes(articleCat) ? 'block' : 'none'
   document.getElementById('ni-interlining-section').style.display = articleCat !== 'Pants' ? 'block' : 'none'
   fillSelect('ni-lining-fabric', masterFabrics)
   openModal('modal-new-iteration')
@@ -1553,9 +1523,13 @@ function onLiningChange(prefix) {
 // ══════════════════════════════════════════
 // SHARED FORM HELPERS
 // ══════════════════════════════════════════
+let overrideFabCount = 0
+
 function addFabRow(prefix) {
-  const counts = { na: () => naFabCount++, ni: () => niFabCount++ }
-  const i = counts[prefix]()
+  let i
+  if (prefix === 'na') { i = naFabCount++ }
+  else if (prefix === 'ni') { i = niFabCount++ }
+  else { i = overrideFabCount++ }
   const wrap = document.createElement('div')
   wrap.className = 'fabric-row-wrap'
   wrap.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:4px">
@@ -1577,9 +1551,13 @@ function addFabRow(prefix) {
   document.getElementById(`${prefix}-fabric-rows`).appendChild(wrap)
 }
 
+let overrideIntCount = 0
+
 function addIntRow(prefix) {
-  const counts = { na: () => naIntCount++, ni: () => niIntCount++ }
-  const i = counts[prefix]()
+  let i
+  if (prefix === 'na') { i = naIntCount++ }
+  else if (prefix === 'ni') { i = niIntCount++ }
+  else { i = overrideIntCount++ }
   const wrap = document.createElement('div')
   wrap.className = 'fabric-row-wrap'
   wrap.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:4px">
@@ -1649,6 +1627,53 @@ function collectInts(prefix, count) {
   return out
 }
 
+// ── Accessories helpers ──
+let overrideAccCount = 0
+
+function addAccRow(prefix) {
+  let i
+  if (prefix === 'na') { i = naAccCount++ }
+  else if (prefix === 'ni') { i = niAccCount++ }
+  else { i = overrideAccCount++ }
+  const wrap = document.createElement('div')
+  wrap.className = 'fabric-row-wrap'
+  wrap.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:4px">
+    <div class="form-row" style="margin:0"><label class="form-label">Accessory</label>
+      <select id="${prefix}-acc-${i}" onchange="onSelChange('${prefix}-acc-${i}','${prefix}-acc-new-${i}')">
+        <option value="">Select...</option>
+        ${masterAccessories.map(a=>`<option value="${a.id}" data-name="${esc(a.name)}">${esc(a.name)}</option>`).join('')}
+        <option value="__new__">+ Type new</option>
+      </select>
+    </div>
+    <div class="form-row" style="margin:0"><label class="form-label">Notes</label>
+      <input type="text" id="${prefix}-acc-notes-${i}" placeholder="e.g. Sungwon 28L - Bistre">
+    </div>
+    <button class="btn btn-sm btn-danger" onclick="this.closest('.fabric-row-wrap').remove()" style="align-self:flex-end">×</button>
+  </div>
+  <div id="${prefix}-acc-new-${i}" style="display:none;margin-bottom:8px">
+    <input type="text" id="${prefix}-acc-newname-${i}" placeholder="Type new accessory name" style="width:100%">
+  </div>`
+  document.getElementById(`${prefix}-acc-rows`).appendChild(wrap)
+}
+
+function collectAccs(prefix, count) {
+  const out = []
+  for (let i = 0; i < count; i++) {
+    const sel = document.getElementById(`${prefix}-acc-${i}`)
+    if (!sel) continue
+    const newName = document.getElementById(`${prefix}-acc-newname-${i}`)?.value?.trim()
+    const name = sel.value === '__new__' ? newName : (sel.options[sel.selectedIndex]?.dataset?.name || '')
+    if (!name) continue
+    out.push({
+      accessory_id: sel.value && sel.value !== '__new__' ? sel.value : null,
+      accessory_name: name,
+      notes: document.getElementById(`${prefix}-acc-notes-${i}`)?.value?.trim() || null,
+      sort_order: i
+    })
+  }
+  return out
+}
+
 function getLiningData(prefix) {
   const typeEl = document.getElementById(`${prefix}-lining-type`)
   if (!typeEl) return null
@@ -1678,7 +1703,7 @@ async function saveNewArticle() {
     size_range: document.getElementById('na-size').value.trim() || null,
     reference_source: refSource,
     reference_notes: document.getElementById('na-ref-notes').value.trim() || null,
-    stage: 'design', status: 'active'
+    stage: 'pattern', status: 'active'
   }).select().single()
   if (artErr) { toast('Failed to create article.'); console.error(artErr); return }
 
@@ -1694,7 +1719,7 @@ async function saveNewArticle() {
 
   // Save lining
   const cat2 = document.getElementById('na-cat').value
-  if (['Outer','Jacket','Dress'].includes(cat2)) {
+  if (['Outer','Jacket'].includes(cat2)) {
     const lData = getLiningData('na')
     if (lData) {
       await Promise.all([
@@ -1713,6 +1738,15 @@ async function saveNewArticle() {
         db.from('article_interlining').insert(inters.map(i => ({ ...i, article_id: art.id })))
       ])
     }
+  }
+
+  // Save accessories
+  const accs = collectAccs('na', naAccCount)
+  if (accs.length) {
+    await Promise.all([
+      db.from('iteration_accessories').insert(accs.map(a => ({ ...a, iteration_id: iter.id }))),
+      db.from('article_accessories').insert(accs.map(a => ({ name: a.accessory_name, article_id: art.id })))
+    ])
   }
 
   // Add to pola queue
@@ -1738,7 +1772,6 @@ async function saveNewIteration() {
   const size = document.getElementById('ni-size')?.value?.trim() || null
   if (!label) { toast('Label is required.'); return }
   if (type === 'mockup' && !part) { toast('Part name is required for mockup.'); return }
-  if (!size) { toast('Size untuk tailor harus diisi.'); return }
   const fabrics = collectFabs('ni', niFabCount)
   if (!fabrics.length) { toast('Please add at least one fabric.'); return }
 
@@ -1760,6 +1793,10 @@ async function saveNewIteration() {
 
   const inters = collectInts('ni', niIntCount)
   if (inters.length) await db.from('iteration_interlining').insert(inters.map(i => ({ ...i, iteration_id: iter.id })))
+
+  // Save accessories
+  const accs = collectAccs('ni', niAccCount)
+  if (accs.length) await db.from('iteration_accessories').insert(accs.map(a => ({ ...a, iteration_id: iter.id })))
 
   // Add to pola queue
   const a = allArticles.find(x => x.id === currentArticleId)
@@ -1808,11 +1845,12 @@ async function renderQueue() {
 async function openQueueDetail(queueId, iterId) {
   if (!iterId) { toast('No iteration linked to this queue item.'); return }
   // Fetch iteration + spec + tailor workloads
-  const [{ data: iter }, { data: fabs }, { data: lins }, { data: ints }, { data: activeSews }] = await Promise.all([
+  const [{ data: iter }, { data: fabs }, { data: lins }, { data: ints }, { data: accs }, { data: activeSews }] = await Promise.all([
     db.from('article_iterations').select('*, articles(name,category)').eq('id', iterId).single(),
     db.from('iteration_fabrics').select('*').eq('iteration_id', iterId),
     db.from('iteration_lining').select('*').eq('iteration_id', iterId),
     db.from('iteration_interlining').select('*').eq('iteration_id', iterId),
+    db.from('iteration_accessories').select('*').eq('iteration_id', iterId).order('sort_order'),
     db.from('sewing_assignments').select('tailor_id').eq('status','on_progress')
   ])
   if (!iter) return
@@ -1825,6 +1863,7 @@ async function openQueueDetail(queueId, iterId) {
   const fabStr = fabs?.map(f=>`${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>')||'—'
   const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':`Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
   const intStr = ints?.map(i=>`${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>')||'—'
+  const accStr = accs?.map(a=>`${esc(a.accessory_name)}${a.notes?' — '+esc(a.notes):''}`).join('<br>')||'—'
   const sizeFromIter = iter.size_for_tailor || ''
 
   document.getElementById('qd-title').textContent = `${esc(iter.articles?.name||'—')} — ${esc(iter.label)}`
@@ -1836,7 +1875,8 @@ async function openQueueDetail(queueId, iterId) {
     <div class="spec-grid">
       <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fabStr}</div></div>
       <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
-      <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Accessories</div><div class="spec-val">${accStr}</div></div>
       ${iter.notes?`<div class="spec-cell span-2"><div class="spec-label">Notes / reason</div><div class="spec-val">${esc(iter.notes)}</div></div>`:''}
     </div>
     <hr class="divider">
@@ -1844,7 +1884,7 @@ async function openQueueDetail(queueId, iterId) {
     <div id="qd-sewing-form">
       <div class="form-section" style="margin-top:0">Proceed to Sewing — assign tailor</div>
       <div class="info-box" style="margin-bottom:10px">
-        <div class="info-box-label">Size untuk tailor</div>
+        <div class="info-box-label">Size</div>
         <strong>${sizeFromIter || 'Belum diisi saat add iteration'}</strong>
       </div>
       <div class="form-grid-2">
@@ -1948,7 +1988,7 @@ async function renderSewing() {
         const iterLabel = iter
           ? (iter.type==='mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : iter.label)
           : ''
-        const isSampleMaster = !!w.is_sample_master
+        const isSampleMaster = !!w.label?.includes('Sample Master')
         return `<div style="padding:8px 0;border-top:0.5px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer" onclick="openSewingDetail('${w.id}','${w.iteration_id||''}','${w.article_id}')">
           <div style="flex:1">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -2033,7 +2073,8 @@ async function openSewingDetail(assignId, iterId, articleId) {
     queries.push(
       db.from('iteration_fabrics').select('*').eq('iteration_id', iterId),
       db.from('iteration_lining').select('*').eq('iteration_id', iterId),
-      db.from('iteration_interlining').select('*').eq('iteration_id', iterId)
+      db.from('iteration_interlining').select('*').eq('iteration_id', iterId),
+      db.from('iteration_accessories').select('*').eq('iteration_id', iterId).order('sort_order')
     )
   }
   const results = await Promise.all(queries)
@@ -2041,20 +2082,23 @@ async function openSewingDetail(assignId, iterId, articleId) {
   const fabs = results[1]?.data || []
   const lins = results[2]?.data || []
   const ints = results[3]?.data || []
+  const accs = results[4]?.data || []
 
   const lining = lins?.[0]
   const fabStr = fabs?.map(f=>`${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>') || '—'
-  const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':esc(lining.fabric_name||'—')
+  const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':`Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
   const intStr = ints?.map(i=>`${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>') || '—'
+  const accStr = accs?.map(a=>`${esc(a.accessory_name)}${a.notes?' — '+esc(a.notes):''}`).join('<br>') || '—'
 
   document.getElementById('sd-title').textContent = `${esc(assign?.articles?.name||'—')}`
-  document.getElementById('sd-sub').textContent = `Tailor: ${esc(assign?.tailors?.name||'—')} · Size: ${esc(assign?.size||'—')} · Color: ${esc(assign?.color||'—')}`
+  document.getElementById('sd-sub').textContent = `Tailor: ${esc(assign?.tailors?.name||'—')} · Size: ${esc(assign?.size||'—')}`
 
   document.getElementById('sd-body').innerHTML = `
     <div class="spec-grid">
       <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fabStr}</div></div>
       <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
-      <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Accessories</div><div class="spec-val">${accStr}</div></div>
     </div>
     ${assign?.notes?`<div class="info-box" style="margin-top:8px"><div class="info-box-label">Notes for tailor</div>${esc(assign.notes)}</div>`:''}
     <hr class="divider">
