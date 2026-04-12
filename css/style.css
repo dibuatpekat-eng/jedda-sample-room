@@ -260,3 +260,12 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg widt
 .badge-master { background: var(--gold-light); color: var(--gold); border: 0.5px solid var(--gold); }
 .badge-sewing { background: var(--blue-soft); color: var(--blue-mid); border: 0.5px solid var(--blue-mid); }
 .empty { font-size: 12px; color: var(--ink-30); font-style: italic; padding: 20px 0; }
+
+/* ── ITERATIONS ── */
+.iter-card { background: var(--warm-white); border: 0.5px solid var(--border); border-radius: 2px; padding: 14px 16px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.15s; }
+.iter-card:hover { border-color: var(--ink-30); }
+.iter-label { font-size: 13px; font-weight: 400; }
+.iter-meta { font-size: 11px; color: var(--ink-60); margin-top: 2px; }
+.modal-wide { max-width: 720px; }
+.badge-pattern { background: var(--blue-soft); color: var(--blue-mid); border: 0.5px solid var(--blue-mid); }
+.empty-sm { font-size: 11px; color: var(--ink-30); font-style: italic; margin-bottom: 10px; }
