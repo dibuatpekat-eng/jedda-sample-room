@@ -1080,17 +1080,24 @@ async function renderSamplesPane(a, isOwn) {
     }
   }
 
-  const smStatusLabel = { in_progress: 'In Progress', done: 'Done', qc_checked: 'QC Checked', approved: 'Approved', revision: 'Revision' }
-  const smStatusCls = { in_progress: 'badge-sewing', done: 'badge-done', qc_checked: 'badge-pattern', approved: 'badge-master', revision: 'badge-dropped' }
+  const smStatusLabel = { in_progress: 'In Progress', done: 'Done', qc_checked: 'QC Checked', approved: 'Approved' }
+  const smStatusCls = { in_progress: 'badge-sewing', done: 'badge-done', qc_checked: 'badge-pattern', approved: 'badge-master' }
+  const getStatusLabel = (s) => s?.startsWith('revision') ? s.replace('_',' ').toUpperCase() : (smStatusLabel[s]||s)
+  const getStatusCls = (s) => s?.startsWith('revision') ? 'badge-dropped' : (smStatusCls[s]||'badge-active')
 
   html += masters?.length
-    ? `<table class="data-table"><thead><tr><th>Size</th><th>Color</th><th>Tailor</th><th>Status</th>${isOwn?'<th></th>':''}</tr></thead><tbody>${masters.map(m=>`<tr>
-        <td>${esc(m.size)}</td>
-        <td>${esc(m.color||'—')}</td>
-        <td>${esc(m.tailors?.name||'—')}</td>
-        <td><span class="badge ${smStatusCls[m.status]||'badge-active'}">${smStatusLabel[m.status]||m.status}</span></td>
-        ${isOwn ? `<td>${m.status==='in_progress'?`<button class="btn btn-sm btn-sage" onclick="markSampleMasterDone('${m.id}','${a.id}')">Done ✓</button>`:''}</td>` : ''}
-      </tr>`).join('')}</tbody></table>`
+    ? `<table class="data-table"><thead><tr><th>Size</th><th>Color</th><th>Tailor</th><th>Status</th>${isOwn?'<th></th>':''}</tr></thead><tbody>
+        ${masters.map(m=>`<tr style="cursor:pointer" onclick="openSampleMasterDetail('${m.id}','${a.id}')">
+          <td>${esc(m.size)}</td>
+          <td>${esc(m.color||'—')}</td>
+          <td>${esc(m.tailors?.name||'—')}</td>
+          <td><span class="badge ${getStatusCls(m.status)}">${getStatusLabel(m.status)}</span></td>
+          ${isOwn ? `<td onclick="event.stopPropagation()" style="white-space:nowrap">
+            ${m.status==='in_progress'||m.status?.startsWith('revision')?`<button class="btn btn-sm btn-sage" onclick="markSampleMasterDone('${m.id}','${a.id}')">Done ✓</button> `:''}
+            <button class="btn btn-sm" onclick="openReviseModal('${m.id}','${a.id}',${m.revision_count||0})">Revisi</button>
+          </td>` : ''}
+        </tr>`).join('')}
+      </tbody></table>`
     : '<div class="empty-sm">None yet.</div>'
 
   if (isOwn) html += `<div style="padding:12px;background:var(--cream);border-radius:2px;margin:10px 0 16px">
@@ -1098,7 +1105,7 @@ async function renderSamplesPane(a, isOwn) {
       ? `<div style="font-size:11px;color:var(--gold);margin-bottom:8px">⚠ Hanya size yang sudah ada size pack confirmed yang bisa dibuat sample master: ${availableSizes.join(', ')||'(belum ada)'}</div>`
       : ''}
     <div class="form-grid-2" style="margin-bottom:8px">
-      <div class="form-row" style="margin:0"><label class="form-label">Size</label>
+      <div class="form-row" style="margin:0"><label class="form-label">Size *</label>
         <select id="sm-size">
           <option value="">Select size...</option>
           ${availableSizes.length
@@ -1109,12 +1116,12 @@ async function renderSamplesPane(a, isOwn) {
           }
         </select>
       </div>
-      <div class="form-row" style="margin:0"><label class="form-label">Color</label><input type="text" id="sm-color" placeholder="e.g. Bistre"></div>
-      <div class="form-row" style="margin:0"><label class="form-label">Tailor</label>
+      <div class="form-row" style="margin:0"><label class="form-label">Color *</label><input type="text" id="sm-color" placeholder="e.g. Bistre"></div>
+      <div class="form-row" style="margin:0"><label class="form-label">Tailor *</label>
         <select id="sm-tailor"><option value="">Select tailor...</option>${tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (opt)':''} — ${smWl[t.id]||0} WIP</option>`).join('')}</select>
       </div>
     </div>
-    <button class="btn btn-dark btn-sm" onclick="addSampleMaster('${a.id}')">Add sample master</button>
+    <button class="btn btn-dark btn-sm" onclick="confirmAddSampleMaster('${a.id}')">Add sample master</button>
   </div>`
 
   // ── CETAKAN SECTION ──
@@ -2283,9 +2290,8 @@ async function quickMarkSewingDone(assignId) {
   await db.from('sewing_assignments').update({ status: 'done' }).eq('id', assignId)
 
   if (assign?.is_sample_master) {
-    // Mark the corresponding sample_master as done
     await db.from('sample_masters')
-      .update({ status: 'done' })
+      .update({ status: 'done', done_at: new Date().toISOString() })
       .eq('article_id', assign.article_id)
       .eq('size', assign.size)
       .eq('status', 'in_progress')
@@ -2328,46 +2334,191 @@ async function updateSizeRange(articleId) {
   toast('Size range updated.')
 }
 
-async function addSampleMaster(articleId) {
-  const sizeEl = document.getElementById('sm-size')
-  const size = sizeEl?.value?.trim()
+async function confirmAddSampleMaster(articleId) {
+  // Validate first
+  const size = document.getElementById('sm-size')?.value?.trim()
   if (!size || size === '__custom__') { toast('Size is required.'); return }
   const tailorId = document.getElementById('sm-tailor')?.value || null
   if (!tailorId) { toast('Tailor is required.'); return }
   const color = document.getElementById('sm-color')?.value?.trim() || null
+  if (!color) { toast('Color is required.'); return }
 
+  // Fetch article spec for confirmation popup
+  const a = allArticles.find(x => x.id === articleId)
+  const { data: finalSpec } = await db.from('article_iterations')
+    .select('label, iteration_fabrics(*), iteration_lining(*), iteration_interlining(*), iteration_accessories(*)')
+    .eq('article_id', articleId).eq('is_final_spec', true).maybeSingle()
+
+  const tailor = tailors.find(t => t.id === tailorId)
+  const fabStr = finalSpec?.iteration_fabrics?.map(f=>`${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join(', ') || '—'
+  const lining = finalSpec?.iteration_lining?.[0]
+  const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':`Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
+  const intStr = finalSpec?.iteration_interlining?.map(i=>esc(i.interlining_name)).join(', ') || '—'
+  const accStr = finalSpec?.iteration_accessories?.map(a=>`${esc(a.accessory_name)}${a.notes?' ('+esc(a.notes)+')':''}`).join(', ') || '—'
+
+  // Build confirm modal dynamically
+  let m = document.getElementById('modal-sm-confirm')
+  if (!m) {
+    m = document.createElement('div')
+    m.className = 'overlay'
+    m.id = 'modal-sm-confirm'
+    m.innerHTML = `<div class="modal modal-sm">
+      <div class="modal-head"><div class="modal-title">Konfirmasi Sample Master</div><button class="close-btn" onclick="closeModal('modal-sm-confirm')">×</button></div>
+      <div class="modal-body" id="sm-confirm-body"></div>
+    </div>`
+    document.body.appendChild(m)
+  }
+  document.getElementById('sm-confirm-body').innerHTML = `
+    <div style="font-size:11px;color:var(--ink-60);margin-bottom:12px">Pastikan spec sudah benar sebelum assign ke tailor.</div>
+    <div class="spec-grid" style="margin-bottom:14px">
+      <div class="spec-cell"><div class="spec-label">Size</div><div class="spec-val">${esc(size)}</div></div>
+      <div class="spec-cell"><div class="spec-label">Color</div><div class="spec-val">${esc(color)}</div></div>
+      <div class="spec-cell"><div class="spec-label">Tailor</div><div class="spec-val">${esc(tailor?.name||'—')}</div></div>
+      <div class="spec-cell"><div class="spec-label">From spec</div><div class="spec-val">${esc(finalSpec?.label||'—')}</div></div>
+      <div class="spec-cell span-2"><div class="spec-label">Fabric</div><div class="spec-val">${fabStr}</div></div>
+      <div class="spec-cell span-2"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
+      <div class="spec-cell span-2"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
+      <div class="spec-cell span-2"><div class="spec-label">Accessories</div><div class="spec-val">${accStr}</div></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-dark btn-sm" onclick="addSampleMaster('${articleId}','${size}','${color}','${tailorId}')">Confirm & assign →</button>
+      <button class="btn btn-sm" onclick="closeModal('modal-sm-confirm')">Cancel</button>
+    </div>`
+  openModal('modal-sm-confirm')
+}
+
+async function addSampleMaster(articleId, size, color, tailorId) {
+  closeModal('modal-sm-confirm')
   const { data: sm, error } = await db.from('sample_masters').insert({
     article_id: articleId, size, color,
-    tailor_id: tailorId || null,
+    tailor_id: tailorId,
     status: 'in_progress'
   }).select().single()
   if (error) { toast('Failed to add sample master.'); console.error(error); return }
 
-  // Also create a sewing assignment so it appears in Sewing workload
-  if (tailorId) {
-    const { error: swErr } = await db.from('sewing_assignments').insert({
-      article_id: articleId, tailor_id: tailorId,
-      size, is_sample_master: true,
-      label: `Sample Master — ${size}${color?' ('+color+')':''}`,
-      status: 'on_progress', assigned_by: profile.id
-    })
-    if (swErr) console.warn('SM sewing insert:', swErr.message)
-  }
+  const { error: swErr } = await db.from('sewing_assignments').insert({
+    article_id: articleId, tailor_id: tailorId,
+    size, is_sample_master: true,
+    label: `Sample Master — ${size} (${color})`,
+    status: 'on_progress', assigned_by: profile.id
+  })
+  if (swErr) console.warn('SM sewing insert:', swErr.message)
 
   await loadArticles()
   const updated = allArticles.find(x => x.id === articleId)
   if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
-  toast('Sample master added.')
+  toast('Sample master added & assigned.')
 }
 
 async function markSampleMasterDone(masterId, articleId) {
-  const { error } = await db.from('sample_masters').update({ status: 'done' }).eq('id', masterId)
-  if (error) { toast('Failed to mark done: ' + error.message); console.error(error); return }
+  const { error } = await db.from('sample_masters').update({
+    status: 'done',
+    done_at: new Date().toISOString()
+  }).eq('id', masterId)
+  if (error) { toast('Failed: ' + error.message); console.error(error); return }
+  // Mark sewing assignment done too
+  const { data: sm } = await db.from('sample_masters').select('size,article_id').eq('id', masterId).single()
+  if (sm) {
+    await db.from('sewing_assignments').update({ status: 'done' })
+      .eq('article_id', sm.article_id).eq('size', sm.size).eq('is_sample_master', true)
+  }
   await loadArticles()
   const updated = allArticles.find(x => x.id === articleId)
   if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
   await renderSewing()
-  toast('Sample master marked as done.')
+  toast('Sample master done.')
+}
+
+async function openReviseModal(masterId, articleId, currentRevCount) {
+  let m = document.getElementById('modal-sm-revise')
+  if (!m) {
+    m = document.createElement('div')
+    m.className = 'overlay'
+    m.id = 'modal-sm-revise'
+    m.innerHTML = `<div class="modal modal-sm">
+      <div class="modal-head"><div class="modal-title">Revisi Sample Master</div><button class="close-btn" onclick="closeModal('modal-sm-revise')">×</button></div>
+      <div class="modal-body" id="sm-revise-body"></div>
+    </div>`
+    document.body.appendChild(m)
+  }
+  const nextRev = (parseInt(currentRevCount)||0) + 1
+  document.getElementById('sm-revise-body').innerHTML = `
+    <div style="font-size:11px;color:var(--ink-60);margin-bottom:12px">Status akan berubah ke <strong>Revision ${nextRev}</strong>. Tulis alasan revisi:</div>
+    <div class="form-row"><textarea id="sm-revise-notes" placeholder="e.g. Size kurang, perlu diperkecil 1cm di bagian pinggang..." style="min-height:80px"></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-dark btn-sm" onclick="submitRevision('${masterId}','${articleId}',${nextRev})">Submit revisi</button>
+      <button class="btn btn-sm" onclick="closeModal('modal-sm-revise')">Cancel</button>
+    </div>`
+  openModal('modal-sm-revise')
+}
+
+async function submitRevision(masterId, articleId, revNum) {
+  const notes = document.getElementById('sm-revise-notes')?.value?.trim()
+  if (!notes) { toast('Tulis alasan revisi dulu.'); return }
+  const newStatus = `revision_${revNum}`
+  const { error } = await db.from('sample_masters').update({
+    status: newStatus,
+    revision_count: revNum,
+    revision_notes: notes
+  }).eq('id', masterId)
+  if (error) { toast('Failed: ' + error.message); return }
+  closeModal('modal-sm-revise')
+  await loadArticles()
+  const updated = allArticles.find(x => x.id === articleId)
+  if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
+  toast(`Revisi ${revNum} dicatat.`)
+}
+
+async function openSampleMasterDetail(masterId, articleId) {
+  const { data: m } = await db.from('sample_masters')
+    .select('*, tailors(name)').eq('id', masterId).single()
+  if (!m) return
+
+  const a = allArticles.find(x => x.id === articleId)
+  const { data: finalSpec } = await db.from('article_iterations')
+    .select('label, iteration_fabrics(*), iteration_lining(*), iteration_interlining(*), iteration_accessories(*)')
+    .eq('article_id', articleId).eq('is_final_spec', true).maybeSingle()
+
+  const fabStr = finalSpec?.iteration_fabrics?.map(f=>`${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>') || '—'
+  const lining = finalSpec?.iteration_lining?.[0]
+  const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':`Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
+  const intStr = finalSpec?.iteration_interlining?.map(i=>`${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>') || '—'
+  const accStr = finalSpec?.iteration_accessories?.map(a=>`${esc(a.accessory_name)}${a.notes?' — '+esc(a.notes):''}`).join('<br>') || '—'
+
+  const smStatusLabel = { in_progress:'In Progress', done:'Done', qc_checked:'QC Checked', approved:'Approved' }
+  const getStatusLabel = (s) => s?.startsWith('revision') ? s.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase()) : (smStatusLabel[s]||s)
+
+  let modal = document.getElementById('modal-sm-detail')
+  if (!modal) {
+    modal = document.createElement('div')
+    modal.className = 'overlay'
+    modal.id = 'modal-sm-detail'
+    modal.innerHTML = `<div class="modal">
+      <div class="modal-head"><div><div class="modal-title" id="smd-title"></div><div class="modal-sub" id="smd-sub"></div></div>
+      <button class="close-btn" onclick="closeModal('modal-sm-detail')">×</button></div>
+      <div class="modal-body" id="smd-body"></div>
+    </div>`
+    document.body.appendChild(modal)
+  }
+
+  document.getElementById('smd-title').textContent = `Sample Master — ${m.size}`
+  document.getElementById('smd-sub').textContent = `${a?.name||'—'} · Tailor: ${m.tailors?.name||'—'}`
+  document.getElementById('smd-body').innerHTML = `
+    <div class="spec-grid" style="margin-bottom:14px">
+      <div class="spec-cell"><div class="spec-label">Size</div><div class="spec-val">${esc(m.size)}</div></div>
+      <div class="spec-cell"><div class="spec-label">Color</div><div class="spec-val">${esc(m.color||'—')}</div></div>
+      <div class="spec-cell"><div class="spec-label">Status</div><div class="spec-val">${getStatusLabel(m.status)}</div></div>
+      <div class="spec-cell"><div class="spec-label">Selesai</div><div class="spec-val">${m.done_at?fmtDate(m.done_at):'—'}</div></div>
+      ${m.revision_count>0?`<div class="spec-cell span-2"><div class="spec-label">Revisi ke-${m.revision_count} · Notes</div><div class="spec-val">${esc(m.revision_notes||'—')}</div></div>`:''}
+    </div>
+    <div class="section-label">Spec (dari final spec: ${esc(finalSpec?.label||'—')})</div>
+    <div class="spec-grid">
+      <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fabStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Interlining</div><div class="spec-val">${intStr}</div></div>
+      <div class="spec-cell"><div class="spec-label">Accessories</div><div class="spec-val">${accStr}</div></div>
+    </div>`
+  openModal('modal-sm-detail')
 }
 
 async function addSampleVendor(articleId) {
