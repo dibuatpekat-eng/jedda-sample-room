@@ -805,60 +805,102 @@ async function renderSpecPane(a, isOwn) {
 
 // ── Size Pack pane ──
 async function renderSizePackPane(a, isOwn) {
-  const { data: sp } = await db.from('size_packs').select('*').eq('article_id', a.id).maybeSingle()
-  const hasFile = !!sp?.file_path
-  const isConfirmed = !!sp?.confirmed
+  const { data: spList } = await db.from('size_packs').select('*').eq('article_id', a.id).order('created_at')
 
-  let html = `<div style="font-size:11px;color:var(--ink-60);margin-bottom:20px">
-    Upload file size pack (Excel/PDF) — digunakan oleh QC dan produksi/vendor.
+  // Parse expected sizes from size_range
+  const parseSizes = (sr) => sr ? sr.split(/[,]+/).map(s => s.trim()).filter(Boolean) : []
+  const expectedSizes = parseSizes(a.size_range)
+
+  let html = `<div style="font-size:11px;color:var(--ink-60);margin-bottom:16px">
+    Upload file size pack per ukuran (Excel/PDF). Tiap size punya size pack masing-masing.
   </div>`
 
-  if (hasFile) {
-    html += `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:0.5px solid var(--border);border-radius:2px;margin-bottom:12px">
-      <div style="font-size:20px">📄</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:400">${esc(sp.file_name||'Size pack file')}</div>
-        <div style="font-size:11px;color:var(--ink-60);margin-top:2px">${isConfirmed?'<span style="color:var(--sage)">✓ Confirmed</span>':'Not confirmed yet'}</div>
-      </div>
-      ${isOwn ? `<div style="display:flex;gap:6px">
-        ${!isConfirmed
-          ? `<button class="btn btn-dark btn-sm" onclick="confirmSizePack('${a.id}', true)">Confirm ✓</button>`
-          : `<button class="btn btn-sm" onclick="confirmSizePack('${a.id}', false)">Unconfirm</button>`
-        }
-        <label class="btn btn-sm" style="cursor:pointer">
-          Replace
-          <input type="file" accept=".xlsx,.xls,.pdf,.csv" style="display:none" onchange="uploadSizePack('${a.id}',this)">
-        </label>
-        <button class="btn btn-sm btn-danger" onclick="deleteSizePack('${a.id}')">Delete</button>
-      </div>` : ''}
-    </div>`
+  if (expectedSizes.length > 0) {
+    // Per-size view
+    html += `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">`
+    for (const sz of expectedSizes) {
+      const sp = (spList||[]).find(s => s.size_label === sz)
+      const hasFile = !!sp?.file_path
+      const isConfirmed = !!sp?.confirmed
+      html += `<div style="border:0.5px solid var(--border);border-radius:2px;padding:12px 14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:11px;font-weight:500;min-width:32px">${esc(sz)}</div>
+          ${hasFile ? `
+            <div style="flex:1">
+              <div style="font-size:12px">${esc(sp.file_name||'File uploaded')}</div>
+              <div style="font-size:10px;color:${isConfirmed?'var(--sage)':'var(--ink-30)'};margin-top:2px">${isConfirmed?'✓ Confirmed':'Not confirmed'}</div>
+            </div>
+            ${isOwn ? `<div style="display:flex;gap:5px">
+              ${!isConfirmed
+                ? `<button class="btn btn-dark btn-sm" onclick="confirmSizePackForSize('${a.id}','${sz}',true)">Confirm ✓</button>`
+                : `<button class="btn btn-sm" onclick="confirmSizePackForSize('${a.id}','${sz}',false)">Unconfirm</button>`
+              }
+              <label class="btn btn-sm" style="cursor:pointer">Replace<input type="file" accept=".xlsx,.xls,.pdf,.csv" style="display:none" onchange="uploadSizePackForSize('${a.id}','${sz}',this)"></label>
+              <button class="btn btn-sm btn-danger" onclick="deleteSizePackForSize('${a.id}','${sz}')">×</button>
+            </div>` : ''}
+          ` : `
+            <div style="flex:1;font-size:11px;color:var(--ink-30)">Belum diupload</div>
+            ${isOwn ? `<label class="btn btn-sm btn-dark" style="cursor:pointer">Upload<input type="file" accept=".xlsx,.xls,.pdf,.csv" style="display:none" onchange="uploadSizePackForSize('${a.id}','${sz}',this)"></label>` : ''}
+          `}
+        </div>
+      </div>`
+    }
+    html += `</div>`
   } else {
-    html += isOwn
-      ? `<label style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;border:1.5px dashed var(--border);border-radius:2px;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--ink-30)'" onmouseout="this.style.borderColor='var(--border)'">
-          <div style="font-size:24px;margin-bottom:8px">📤</div>
-          <div style="font-size:13px;font-weight:400;margin-bottom:4px">Upload size pack</div>
-          <div style="font-size:11px;color:var(--ink-60)">Excel, PDF, atau CSV</div>
-          <input type="file" accept=".xlsx,.xls,.pdf,.csv" style="display:none" onchange="uploadSizePack('${a.id}',this)">
-        </label>`
-      : `<div class="empty-sm">No size pack uploaded yet.</div>`
+    // No size range set — fallback: upload without size label
+    html += `<div style="font-size:11px;color:var(--gold);margin-bottom:12px">⚠ Size range belum diisi di tab Spec & Size. Set dulu supaya size pack bisa ditrack per size.</div>`
+    const sp = (spList||[]).find(s => !s.size_label) || spList?.[0]
+    const hasFile = !!sp?.file_path
+    const isConfirmed = !!sp?.confirmed
+    if (hasFile) {
+      html += `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:0.5px solid var(--border);border-radius:2px;margin-bottom:12px">
+        <div style="font-size:20px">📄</div>
+        <div style="flex:1">
+          <div style="font-size:13px">${esc(sp.file_name||'Size pack file')}</div>
+          <div style="font-size:11px;color:${isConfirmed?'var(--sage)':'var(--ink-30)'};">${isConfirmed?'✓ Confirmed':'Not confirmed'}</div>
+        </div>
+        ${isOwn ? `<div style="display:flex;gap:6px">
+          ${!isConfirmed
+            ? `<button class="btn btn-dark btn-sm" onclick="confirmSizePackForSize('${a.id}',null,true)">Confirm ✓</button>`
+            : `<button class="btn btn-sm" onclick="confirmSizePackForSize('${a.id}',null,false)">Unconfirm</button>`
+          }
+          <label class="btn btn-sm" style="cursor:pointer">Replace<input type="file" accept=".xlsx,.xls,.pdf,.csv" style="display:none" onchange="uploadSizePackForSize('${a.id}',null,this)"></label>
+          <button class="btn btn-sm btn-danger" onclick="deleteSizePackForSize('${a.id}',null)">Delete</button>
+        </div>` : ''}
+      </div>`
+    } else if (isOwn) {
+      html += `<label style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;border:1.5px dashed var(--border);border-radius:2px;cursor:pointer">
+        <div style="font-size:24px;margin-bottom:8px">📤</div>
+        <div style="font-size:13px;font-weight:400;margin-bottom:4px">Upload size pack</div>
+        <div style="font-size:11px;color:var(--ink-60)">Excel, PDF, atau CSV</div>
+        <input type="file" accept=".xlsx,.xls,.pdf,.csv" style="display:none" onchange="uploadSizePackForSize('${a.id}',null,this)">
+      </label>`
+    } else {
+      html += `<div class="empty-sm">No size pack uploaded yet.</div>`
+    }
   }
 
   document.getElementById('dtab-sizepack').innerHTML = html
 }
 
-async function uploadSizePack(articleId, input) {
+async function uploadSizePackForSize(articleId, sizeLabel, input) {
   const file = input.files?.[0]
   if (!file) return
   toast('Uploading...')
-  const path = `size-packs/${articleId}/${Date.now()}_${file.name}`
+  const sizeSlug = sizeLabel ? sizeLabel.replace(/\//g,'-') : 'no-size'
+  const path = `size-packs/${articleId}/${sizeSlug}_${Date.now()}_${file.name}`
   const { error: upErr } = await db.storage.from('jedda-files').upload(path, file, { upsert: true })
-  if (upErr) { toast('Upload failed: ' + upErr.message); console.error(upErr); return }
+  if (upErr) { toast('Upload failed: ' + upErr.message); return }
 
-  const { data: sp } = await db.from('size_packs').select('id').eq('article_id', articleId).maybeSingle()
-  if (sp) {
-    await db.from('size_packs').update({ file_path: path, file_name: file.name, confirmed: false, updated_at: new Date().toISOString() }).eq('id', sp.id)
+  // Check if record exists for this article + size_label
+  const query = db.from('size_packs').select('id').eq('article_id', articleId)
+  if (sizeLabel) { query.eq('size_label', sizeLabel) } else { query.is('size_label', null) }
+  const { data: existing } = await query.maybeSingle()
+
+  if (existing) {
+    await db.from('size_packs').update({ file_path: path, file_name: file.name, confirmed: false, updated_at: new Date().toISOString() }).eq('id', existing.id)
   } else {
-    await db.from('size_packs').insert({ article_id: articleId, file_path: path, file_name: file.name, confirmed: false, created_by: profile.id })
+    await db.from('size_packs').insert({ article_id: articleId, size_label: sizeLabel || null, file_path: path, file_name: file.name, confirmed: false, created_by: profile.id })
   }
   await loadArticles()
   const updated = allArticles.find(x => x.id === articleId)
@@ -866,9 +908,23 @@ async function uploadSizePack(articleId, input) {
   toast('Size pack uploaded.')
 }
 
-async function deleteSizePack(articleId) {
-  if (!window.confirm('Delete size pack file?')) return
-  const { data: sp } = await db.from('size_packs').select('*').eq('article_id', articleId).maybeSingle()
+async function confirmSizePackForSize(articleId, sizeLabel, doConfirm) {
+  const query = db.from('size_packs').select('id,file_path').eq('article_id', articleId)
+  if (sizeLabel) { query.eq('size_label', sizeLabel) } else { query.is('size_label', null) }
+  const { data: sp } = await query.maybeSingle()
+  if (!sp?.file_path) { toast('Upload file dulu.'); return }
+  await db.from('size_packs').update({ confirmed: doConfirm, updated_at: new Date().toISOString() }).eq('id', sp.id)
+  await loadArticles()
+  const updated = allArticles.find(x => x.id === articleId)
+  if (updated) await renderSizePackPane(updated, updated.designer_id === profile.id)
+  toast(doConfirm ? 'Size pack confirmed.' : 'Size pack unconfirmed.')
+}
+
+async function deleteSizePackForSize(articleId, sizeLabel) {
+  if (!window.confirm('Delete this size pack file?')) return
+  const query = db.from('size_packs').select('*').eq('article_id', articleId)
+  if (sizeLabel) { query.eq('size_label', sizeLabel) } else { query.is('size_label', null) }
+  const { data: sp } = await query.maybeSingle()
   if (!sp) return
   if (sp.file_path) await db.storage.from('jedda-files').remove([sp.file_path])
   await db.from('size_packs').update({ file_path: null, file_name: null, confirmed: false, updated_at: new Date().toISOString() }).eq('id', sp.id)
@@ -876,17 +932,6 @@ async function deleteSizePack(articleId) {
   const updated = allArticles.find(x => x.id === articleId)
   if (updated) await renderSizePackPane(updated, updated.designer_id === profile.id)
   toast('Size pack deleted.')
-}
-
-async function confirmSizePack(articleId, doConfirm) {
-  const { data: sp } = await db.from('size_packs').select('*').eq('article_id', articleId).maybeSingle()
-  if (!sp?.file_path) { toast('Upload file dulu sebelum confirm.'); return }
-  const { error } = await db.from('size_packs').update({ confirmed: doConfirm, updated_at: new Date().toISOString() }).eq('id', sp.id)
-  if (error) { toast('Failed.'); console.error(error); return }
-  await loadArticles()
-  const updated = allArticles.find(x => x.id === articleId)
-  if (updated) await renderSizePackPane(updated, updated.designer_id === profile.id)
-  toast(doConfirm ? 'Size pack confirmed.' : 'Size pack unconfirmed.')
 }
 
 // ── Readiness pane ──
@@ -902,10 +947,23 @@ async function renderReadinessPane(a, isOwn) {
 
   const allDone = iters?.length > 0 && iters.every(i => i.stage === 'done')
   const hasNotes = (notes?.length || 0) > 0
-  const hasSizePack = !!(sp?.file_path && sp?.confirmed)
   const hasFinalSpec = !!finalSpec
   const hasSize = !!(freshArt?.size_range)
   const hasSpecAndSize = hasFinalSpec && hasSize  // both required together
+
+  // Size pack check: per size if size_range is set
+  const parseSizeRange = (sr) => sr ? sr.split(/[,]+/).map(s => s.trim()).filter(Boolean) : []
+  const expectedSizes = parseSizeRange(freshArt?.size_range)
+  let hasSizePack = false
+  let sizePackHint = 'Upload file size pack di tab Size Pack, lalu confirm.'
+  if (expectedSizes.length > 0) {
+    const { data: spAll } = await db.from('size_packs').select('size_label,file_path,confirmed').eq('article_id', a.id)
+    const missingSizes = expectedSizes.filter(sz => !(spAll||[]).some(s => s.size_label === sz && s.file_path && s.confirmed))
+    hasSizePack = missingSizes.length === 0
+    if (!hasSizePack) sizePackHint = `Size pack belum lengkap untuk: ${missingSizes.join(', ')}`
+  } else {
+    hasSizePack = !!(sp?.file_path && sp?.confirmed)
+  }
 
   const check = (ok, label, hint) => `<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--border)">
     <div style="width:18px;height:18px;border-radius:50%;background:${ok?'var(--sage)':'var(--border)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
@@ -926,7 +984,7 @@ async function renderReadinessPane(a, isOwn) {
     </div>
     ${check(allDone, 'Semua iterasi aktif sudah done', 'Mark semua iteration sebagai done dulu.')}
     ${check(hasSpecAndSize, 'Final spec & size range sudah diisi', `${!hasFinalSpec?'Set final spec dari iteration yang sudah done.':''}${!hasSize?' Size range belum diisi di tab Spec & Size.':''}`)}
-    ${check(hasSizePack, 'Size pack diupload & confirmed', 'Upload file size pack di tab Size Pack, lalu confirm.')}
+    ${check(hasSizePack, 'Size pack diupload & confirmed (per size)', sizePackHint)}
     ${check(hasNotes, 'Production notes sudah ada', 'Tambahkan production notes di tab Prod. Notes.')}
     <div style="margin-top:20px">
       ${canProceed
@@ -1621,7 +1679,13 @@ function collectFabs(prefix, count) {
     if (!name) continue
     // Auto-add new fabric to master list (fire and forget)
     if (sel.value === '__new__' && newName) {
-      db.from('master_fabrics').insert({ name: newName }).then(() => {})
+      const lower = newName.toLowerCase()
+      const exists = masterFabrics.some(f => f.name.toLowerCase() === lower)
+      if (!exists) {
+        db.from('master_fabrics').insert({ name: newName }).then(({ data }) => {
+          if (data?.[0]) masterFabrics.push(data[0])
+        })
+      }
     }
     out.push({
       fabric_id: sel.value && sel.value !== '__new__' ? sel.value : null,
@@ -1643,7 +1707,13 @@ function collectInts(prefix, count) {
     if (!name) continue
     // Auto-add new interlining to master list
     if (sel.value === '__new__' && newName) {
-      db.from('master_interlinings').insert({ name: newName }).then(() => {})
+      const lower = newName.toLowerCase()
+      const exists = masterInterlinings.some(x => x.name.toLowerCase() === lower)
+      if (!exists) {
+        db.from('master_interlinings').insert({ name: newName }).then(({ data }) => {
+          if (data?.[0]) masterInterlinings.push(data[0])
+        })
+      }
     }
     out.push({
       interlining_id: sel.value && sel.value !== '__new__' ? sel.value : null,
@@ -1691,9 +1761,15 @@ function collectAccs(prefix, count) {
     const newName = document.getElementById(`${prefix}-acc-newname-${i}`)?.value?.trim()
     const name = sel.value === '__new__' ? newName : (sel.options[sel.selectedIndex]?.dataset?.name || '')
     if (!name) continue
-    // Auto-add new accessory to master list
+    // Auto-add new accessory to master list — check for duplicate first (case-insensitive)
     if (sel.value === '__new__' && newName) {
-      db.from('master_accessories').insert({ name: newName }).then(() => {})
+      const lower = newName.toLowerCase()
+      const exists = masterAccessories.some(a => a.name.toLowerCase() === lower)
+      if (!exists) {
+        db.from('master_accessories').insert({ name: newName }).then(({ data }) => {
+          if (data?.[0]) masterAccessories.push(data[0])
+        })
+      }
     }
     out.push({
       accessory_id: sel.value && sel.value !== '__new__' ? sel.value : null,
@@ -1855,21 +1931,28 @@ async function renderQueue() {
   const el = document.getElementById('queue-list')
   if (!data?.length) { el.innerHTML = '<div class="empty">No items in pola queue.</div>'; return }
   el.innerHTML = data.map((q, i) => {
-    const cls = q.status === 'in_progress' ? 'badge-sewing' : 'badge-active'
-    const lbl = q.status === 'in_progress' ? 'In progress' : 'Waiting'
-    return `<div class="queue-item ${q.status==='in_progress'?'current':''}" onclick="openQueueDetail('${q.id}','${q.iteration_id||''}')">
+    const isInProgress = q.status === 'in_progress'
+    const cls = isInProgress ? 'badge-sewing' : 'badge-active'
+    const lbl = isInProgress ? 'In progress' : 'Waiting'
+    return `<div class="queue-item ${isInProgress?'current':''}" onclick="openQueueDetail('${q.id}','${q.iteration_id||''}')">
       <div class="queue-num">${i+1}</div>
       <div style="flex:1">
         <div style="font-size:13px;font-weight:400">${esc(q.label||q.articles?.name||'—')}</div>
         <div style="font-size:11px;color:var(--ink-60)">${q.articles?.category||'—'}</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
-        <span class="badge ${cls}">${lbl}</span>
+        <span class="badge ${cls}" style="cursor:pointer" title="Click to toggle status" onclick="event.stopPropagation();toggleQueueStatus('${q.id}','${q.status}')">${lbl}</span>
         ${i>0 ? `<button class="btn btn-sm" onclick="event.stopPropagation();moveQueue('${q.id}',-1)">↑</button>` : ''}
         ${i<data.length-1 ? `<button class="btn btn-sm" onclick="event.stopPropagation();moveQueue('${q.id}',1)">↓</button>` : ''}
       </div>
     </div>`
   }).join('')
+}
+
+async function toggleQueueStatus(queueId, currentStatus) {
+  const newStatus = currentStatus === 'in_progress' ? 'waiting' : 'in_progress'
+  await db.from('pattern_queue').update({ status: newStatus }).eq('id', queueId)
+  await renderQueue()
 }
 
 async function openQueueDetail(queueId, iterId) {
@@ -2023,7 +2106,7 @@ async function renderSewing() {
         const iterLabel = iter
           ? (iter.type==='mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : iter.label)
           : ''
-        const isSampleMaster = !!w.label?.includes('Sample Master')
+        const isSampleMaster = !!w.is_sample_master
         return `<div style="padding:8px 0;border-top:0.5px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer" onclick="openSewingDetail('${w.id}','${w.iteration_id||''}','${w.article_id}')">
           <div style="flex:1">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
