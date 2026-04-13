@@ -2080,7 +2080,7 @@ async function renderSewing() {
 
   const [tailorRes, assignRes] = await Promise.all([
     db.from('tailors').select('*').eq('is_active', true),
-    db.from('sewing_assignments').select('*, articles(name,category), tailors(name,type)').eq('status', 'on_progress')
+    db.from('sewing_assignments').select('*, articles(name,category), tailors!sewing_assignments_tailor_id_fkey(name,type)').eq('status', 'on_progress')
   ])
 
   if (tailorRes.error) { el.innerHTML = `<div class="empty">Error loading tailors: ${tailorRes.error.message}</div>`; return }
@@ -2131,7 +2131,7 @@ async function renderSewing() {
 }
 
 async function openTransferModal(assignId) {
-  const { data: assign } = await db.from('sewing_assignments').select('*, tailors(name), articles(name)').eq('id', assignId).single()
+  const { data: assign } = await db.from('sewing_assignments').select('*, tailors!sewing_assignments_tailor_id_fkey(name), articles(name)').eq('id', assignId).single()
   if (!assign) return
 
   // Count workload per tailor
@@ -2189,7 +2189,7 @@ async function openSewingDetail(assignId, iterId, articleId) {
   currentIterationId = iterId
   currentArticleId = articleId
   const queries = [
-    db.from('sewing_assignments').select('*, tailors(name,type), articles(name)').eq('id', assignId).single()
+    db.from('sewing_assignments').select('*, tailors!sewing_assignments_tailor_id_fkey(name,type), articles(name)').eq('id', assignId).single()
   ]
   if (iterId) {
     queries.push(
