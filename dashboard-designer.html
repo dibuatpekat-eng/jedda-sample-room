@@ -696,8 +696,14 @@ async function openArticle(id) {
 
 // ── Iterations pane ──
 async function renderIterationsPane(a, isOwn) {
-  const { data: iters } = await db.from('article_iterations')
-    .select('*').eq('article_id', a.id).order('created_at', { ascending: true })
+  const [{ data: iters }, { data: queueItems }] = await Promise.all([
+    db.from('article_iterations').select('*').eq('article_id', a.id).order('created_at', { ascending: true }),
+    db.from('pattern_queue').select('iteration_id,status').eq('article_id', a.id).neq('status','done')
+  ])
+
+  // Build queue status map: iteration_id -> queue status
+  const queueMap = {}
+  ;(queueItems||[]).forEach(q => { if (q.iteration_id) queueMap[q.iteration_id] = q.status })
 
   const active = iters?.filter(i => i.status === 'active') || []
   const archived = iters?.filter(i => i.status !== 'active') || []
@@ -719,26 +725,39 @@ async function renderIterationsPane(a, isOwn) {
   } else {
     html += active.map(iter => {
       const typeLabel = iter.type === 'mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : 'Full garment'
-      const stageCls = { done:'badge-done', sewing:'badge-sewing', pattern:'badge-pattern', dropped:'badge-dropped' }[iter.stage] || 'badge-active'
+      // Determine badge: if stage=pattern and queue is in_progress → show Pola — In Progress
+      let badgeText, badgeCls
+      if (iter.stage === 'pattern') {
+        const qs = queueMap[iter.id]
+        if (qs === 'in_progress') {
+          badgeText = 'POLA — IN PROGRESS'
+          badgeCls = 'badge-sewing'
+        } else {
+          badgeText = 'POLA'
+          badgeCls = 'badge-pattern'
+        }
+      } else {
+        badgeCls = { done:'badge-done', sewing:'badge-sewing', dropped:'badge-dropped' }[iter.stage] || 'badge-active'
+        badgeText = (ITER_LABEL[iter.stage]||iter.stage).toUpperCase()
+      }
       return `<div class="iter-card" onclick="openIterationModal('${iter.id}','${a.id}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
             <div class="iter-label">${esc(iter.label)}</div>
             <div class="iter-meta">${typeLabel}${iter.notes?' · '+esc(iter.notes):''}</div>
           </div>
-          <span class="badge ${stageCls}">${(ITER_LABEL[iter.stage]||iter.stage).toUpperCase()}</span>
+          <span class="badge ${badgeCls}">${badgeText}</span>
         </div>
         <div style="font-size:10px;color:var(--ink-30);margin-top:8px">${fmtDate(iter.created_at)}</div>
       </div>`
     }).join('')
   }
 
-  // Trash section
   if (archived.length) {
     html += `<div class="section-label" style="margin-top:20px">Trash / dropped (${archived.length})</div>`
     html += archived.map(iter => {
       const typeLabel = iter.type === 'mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : 'Full garment'
-      return `<div class="iter-card dropped" onclick="openIterationModal('${iter.id}','${a.id}')" style="cursor:pointer" title="Click to view detail">
+      return `<div class="iter-card dropped" onclick="openIterationModal('${iter.id}','${a.id}')" style="cursor:pointer">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
             <div class="iter-label">${esc(iter.label)}</div>
@@ -746,11 +765,10 @@ async function renderIterationsPane(a, isOwn) {
           </div>
           <span class="badge badge-dropped">DROPPED</span>
         </div>
-        <div style="font-size:10px;color:var(--ink-30);margin-top:4px">${fmtDate(iter.created_at)} · tap to view</div>
+        <div style="font-size:10px;color:var(--ink-30);margin-top:4px">${fmtDate(iter.created_at)}</div>
       </div>`
     }).join('')
   }
-
 
   document.getElementById('dtab-iterations').innerHTML = html
 }
@@ -1406,12 +1424,8 @@ async function markIterDone(iterId) {
   if (error) { toast('Failed.'); return }
   await db.from('pattern_queue').update({ status: 'done' }).eq('iteration_id', iterId)
   await loadArticles()
-  const { data: iter } = await db.from('article_iterations').select('*').eq('id', iterId).single()
-  const a = allArticles.find(x => x.id === currentArticleId)
-  await Promise.all([
-    renderIterSpecPane(iter, false, false),
-    renderIterTimelinePane(iter)
-  ])
+  closeModal('modal-iteration')
+  await openArticle(currentArticleId)
   toast('Iteration marked as done.')
 }
 
@@ -1419,7 +1433,6 @@ async function confirmAdvanceToSewing(iterId) {
   const tailorId = document.getElementById('adv-tailor')?.value
   if (!tailorId) { toast('Please select a tailor.'); return }
 
-  // Get size and label from iteration
   const { data: iterData } = await db.from('article_iterations').select('size_for_tailor,label,type,part').eq('id', iterId).single()
   const sewLabel = iterData ? (iterData.type==='mockup' ? `Mockup${iterData.part?' — '+iterData.part:''}` : iterData.label) : ''
 
@@ -1438,10 +1451,8 @@ async function confirmAdvanceToSewing(iterId) {
   const { data: iter } = await db.from('article_iterations').select('*').eq('id', iterId).single()
   const a = allArticles.find(x => x.id === currentArticleId)
   const isOwn = a?.designer_id === profile.id
-  await Promise.all([
-    renderIterSpecPane(iter, isOwn, false),
-    renderIterTimelinePane(iter)
-  ])
+  closeModal('modal-iteration')
+  await openArticle(currentArticleId)
   toast('Advanced to sewing. Tailor assigned.')
 }
 
@@ -1497,6 +1508,16 @@ async function clearFinalSpec(articleId) {
 // ARCHIVE / DROP
 // ══════════════════════════════════════════
 function openArchiveModal(type, id) {
+  // Guard: if dropping an iteration that is final spec, block it
+  if (type === 'iteration') {
+    const a = allArticles.find(x => x.id === currentArticleId)
+    const iters = a?.article_iterations || []
+    const iter = iters.find(i => i.id === id)
+    if (iter?.is_final_spec) {
+      toast('Cannot drop — this iteration is set as the final spec. Clear it first.')
+      return
+    }
+  }
   pendingArchiveType = type
   pendingArchiveId = id
   document.getElementById('archive-reason').value = ''
@@ -2043,6 +2064,11 @@ async function proceedToSewingFromQueue(iterId, queueId, sizeFromIter) {
   closeModal('modal-queue-detail')
   await loadArticles()
   renderQueue()
+  // Refresh article modal if it's open for this article
+  if (currentArticleId) {
+    const a = allArticles.find(x => x.id === currentArticleId)
+    if (a) await renderIterationsPane(a, a.designer_id === profile.id)
+  }
   toast('Proceeded to sewing. Tailor assigned.')
 }
 
@@ -2233,9 +2259,21 @@ async function openSewingDetail(assignId, iterId, articleId) {
 }
 
 async function quickMarkSewingDone(assignId) {
+  // Get assignment to find iteration_id
+  const { data: assign } = await db.from('sewing_assignments').select('iteration_id,article_id').eq('id', assignId).single()
   await db.from('sewing_assignments').update({ status: 'done' }).eq('id', assignId)
+  // Also mark iteration stage as done
+  if (assign?.iteration_id) {
+    await db.from('article_iterations').update({ stage: 'done' }).eq('id', assign.iteration_id)
+  }
   closeModal('modal-sewing-detail')
+  await loadArticles()
   await renderSewing()
+  // If article modal is open, refresh it too
+  if (assign?.article_id && currentArticleId === assign.article_id) {
+    const a = allArticles.find(x => x.id === assign.article_id)
+    if (a) await renderIterationsPane(a, a.designer_id === profile.id)
+  }
   toast('Sewing marked as done.')
 }
 
@@ -2247,7 +2285,12 @@ async function updateSizeRange(articleId) {
   await db.from('articles').update({ size_range: val || null }).eq('id', articleId)
   await loadArticles()
   const a = allArticles.find(x => x.id === articleId)
-  if (a) await renderSpecPane(a, a.designer_id === profile.id)
+  if (a) {
+    await renderSpecPane(a, a.designer_id === profile.id)
+    await renderSizePackPane(a, a.designer_id === profile.id)
+    await renderReadinessPane(a, a.designer_id === profile.id)
+    await renderSamplesPane(a, a.designer_id === profile.id)
+  }
   toast('Size range updated.')
 }
 
@@ -2256,13 +2299,25 @@ async function addSampleMaster(articleId) {
   const size = sizeEl?.value?.trim()
   if (!size || size === '__custom__') { toast('Size is required.'); return }
   const tailorId = document.getElementById('sm-tailor')?.value || null
-  const { error } = await db.from('sample_masters').insert({
-    article_id: articleId, size,
-    color: document.getElementById('sm-color')?.value?.trim() || null,
+  const color = document.getElementById('sm-color')?.value?.trim() || null
+
+  const { data: sm, error } = await db.from('sample_masters').insert({
+    article_id: articleId, size, color,
     tailor_id: tailorId || null,
     status: 'in_progress'
-  })
-  if (error) { toast('Failed.'); console.error(error); return }
+  }).select().single()
+  if (error) { toast('Failed to add sample master.'); console.error(error); return }
+
+  // Also create a sewing assignment so it appears in Sewing workload
+  if (tailorId) {
+    await db.from('sewing_assignments').insert({
+      article_id: articleId, tailor_id: tailorId,
+      size, is_sample_master: true,
+      label: `Sample Master — ${size}${color?' ('+color+')':''}`,
+      status: 'on_progress', assigned_by: profile.id
+    }).catch(e => console.warn('SM sewing insert:', e))
+  }
+
   await loadArticles()
   const updated = allArticles.find(x => x.id === articleId)
   if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
@@ -2271,10 +2326,17 @@ async function addSampleMaster(articleId) {
 
 async function markSampleMasterDone(masterId, articleId) {
   const { error } = await db.from('sample_masters').update({ status: 'done' }).eq('id', masterId)
-  if (error) { toast('Failed.'); return }
+  if (error) { toast('Failed to mark done.'); console.error(error); return }
+  // Mark the corresponding sewing assignment done too
+  await db.from('sewing_assignments')
+    .update({ status: 'done' })
+    .eq('article_id', articleId)
+    .eq('is_sample_master', true)
+    .catch(() => {})
   await loadArticles()
   const updated = allArticles.find(x => x.id === articleId)
   if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
+  await renderSewing()
   toast('Sample master marked as done.')
 }
 
