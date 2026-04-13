@@ -1057,7 +1057,7 @@ async function renderSamplesPane(a, isOwn) {
   const availableSizes = expectedSizes.length > 0
     ? expectedSizes.filter(s => sizePackConfirmedSizes.includes(s))
     : expectedSizes // if no size_range, show all
-  const doneSizes = (masters||[]).map(m => m.size?.trim()).filter(Boolean)
+  const doneSizes = (masters||[]).filter(m => ['done','approved','qc_checked'].includes(m.status)).map(m => m.size?.trim()).filter(Boolean)
   const missingSizes = expectedSizes.filter(s => !doneSizes.includes(s))
   const allSizesDone = expectedSizes.length > 0 && missingSizes.length === 0
 
@@ -1080,8 +1080,17 @@ async function renderSamplesPane(a, isOwn) {
     }
   }
 
+  const smStatusLabel = { in_progress: 'In Progress', done: 'Done', qc_checked: 'QC Checked', approved: 'Approved', revision: 'Revision' }
+  const smStatusCls = { in_progress: 'badge-sewing', done: 'badge-done', qc_checked: 'badge-pattern', approved: 'badge-master', revision: 'badge-dropped' }
+
   html += masters?.length
-    ? `<table class="data-table"><thead><tr><th>Size</th><th>Color</th><th>Tailor</th><th>Status</th>${isOwn?'<th></th>':''}</tr></thead><tbody>${masters.map(m=>`<tr><td>${esc(m.size)}</td><td>${esc(m.color||'—')}</td><td>${esc(m.tailors?.name||'—')}</td><td><span class="badge badge-master">${m.status}</span></td>${isOwn&&m.status==='in_progress'?`<td><button class="btn btn-sm btn-sage" onclick="markSampleMasterDone('${m.id}','${a.id}')">Done ✓</button></td>`:isOwn?'<td></td>':''}</tr>`).join('')}</tbody></table>`
+    ? `<table class="data-table"><thead><tr><th>Size</th><th>Color</th><th>Tailor</th><th>Status</th>${isOwn?'<th></th>':''}</tr></thead><tbody>${masters.map(m=>`<tr>
+        <td>${esc(m.size)}</td>
+        <td>${esc(m.color||'—')}</td>
+        <td>${esc(m.tailors?.name||'—')}</td>
+        <td><span class="badge ${smStatusCls[m.status]||'badge-active'}">${smStatusLabel[m.status]||m.status}</span></td>
+        ${isOwn ? `<td>${m.status==='in_progress'?`<button class="btn btn-sm btn-sage" onclick="markSampleMasterDone('${m.id}','${a.id}')">Done ✓</button>`:''}</td>` : ''}
+      </tr>`).join('')}</tbody></table>`
     : '<div class="empty-sm">None yet.</div>'
 
   if (isOwn) html += `<div style="padding:12px;background:var(--cream);border-radius:2px;margin:10px 0 16px">
@@ -1447,6 +1456,8 @@ async function confirmAdvanceToSewing(iterId) {
   ])
   if (stageRes.error || sewRes.error) { toast('Failed. Please try again.'); return }
   await db.from('pattern_queue').update({ status: 'done' }).eq('iteration_id', iterId)
+  // Update parent article stage to sewing
+  await db.from('articles').update({ stage: 'sewing' }).eq('id', currentArticleId)
   await loadArticles()
   const { data: iter } = await db.from('article_iterations').select('*').eq('id', iterId).single()
   const a = allArticles.find(x => x.id === currentArticleId)
@@ -2065,6 +2076,8 @@ async function proceedToSewingFromQueue(iterId, queueId, sizeFromIter) {
     db.from('pattern_queue').update({ status: 'done' }).eq('id', queueId)
   ])
   if (stageRes.error || sewRes.error) { toast('Failed. Please try again.'); console.error(stageRes.error||sewRes.error); return }
+  // Update parent article stage to sewing
+  await db.from('articles').update({ stage: 'sewing' }).eq('id', currentArticleId)
   closeModal('modal-queue-detail')
   await loadArticles()
   renderQueue()
@@ -2331,12 +2344,7 @@ async function addSampleMaster(articleId) {
 
 async function markSampleMasterDone(masterId, articleId) {
   const { error } = await db.from('sample_masters').update({ status: 'done' }).eq('id', masterId)
-  if (error) { toast('Failed to mark done.'); console.error(error); return }
-  // Mark the corresponding sewing assignment done too
-  await db.from('sewing_assignments')
-    .update({ status: 'done' })
-    .eq('article_id', articleId)
-    .eq('is_sample_master', true)
+  if (error) { toast('Failed to mark done: ' + error.message); console.error(error); return }
   await loadArticles()
   const updated = allArticles.find(x => x.id === articleId)
   if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
