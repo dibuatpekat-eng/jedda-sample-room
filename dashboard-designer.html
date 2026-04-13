@@ -234,6 +234,7 @@
       </div>
       <div class="form-row"><label class="form-label">Reference source *</label><input type="text" id="na-ref-source" placeholder="e.g. COS, Pinterest, Original design"></div>
       <div class="form-row"><label class="form-label">Modification notes</label><input type="text" id="na-ref-notes" placeholder="e.g. Modified sleeve detail"></div>
+      <div class="form-row"><label class="form-label">Size <span style="color:var(--ink-30)">(untuk tailor initial)</span></label><input type="text" id="na-init-size" placeholder="e.g. S fit M"></div>
 
       <div class="form-section">Fabric — Initial *</div>
       <div id="na-fabric-rows"></div>
@@ -760,6 +761,8 @@ async function renderSpecPane(a, isOwn) {
     .select('*, iteration_fabrics(*), iteration_lining(*), iteration_interlining(*), iteration_accessories(*)')
     .eq('article_id', a.id).eq('is_final_spec', true).maybeSingle()
 
+  const specLocked = ['sample_master','sample_vendor','production'].includes(a.stage)
+
   let specHtml = ''
   if (finalSpec) {
     const fab = finalSpec.iteration_fabrics?.map(f => `${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>') || '—'
@@ -770,7 +773,8 @@ async function renderSpecPane(a, isOwn) {
     specHtml = `
       <div style="font-size:11px;color:var(--sage);background:var(--sage-light);border:0.5px solid var(--sage-mid);border-radius:2px;padding:8px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
         <span>From: <strong>${esc(finalSpec.label)}</strong></span>
-        ${isOwn ? `<button class="btn btn-sm" style="margin-left:auto" onclick="clearFinalSpec('${a.id}')">Clear</button>` : ''}
+        ${isOwn && !specLocked ? `<button class="btn btn-sm" style="margin-left:auto" onclick="clearFinalSpec('${a.id}')">Clear</button>` : ''}
+        ${specLocked ? `<span style="margin-left:auto;font-size:10px;color:var(--ink-30)">🔒 Locked</span>` : ''}
       </div>
       <div class="spec-grid">
         <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fab}</div></div>
@@ -792,11 +796,11 @@ async function renderSpecPane(a, isOwn) {
       ? `<div style="font-size:13px;font-weight:400;margin-bottom:8px">${esc(a.size_range)}</div>`
       : `<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:8px">Not set yet</div>`
     }
-    ${isOwn ? `<div style="display:flex;gap:8px;align-items:center">
-      <input type="text" id="spec-size-input" value="${esc(a.size_range||'')}" placeholder="e.g. S M L, atau S/M M/L" style="flex:1">
+    ${isOwn && !specLocked ? `<div style="display:flex;gap:8px;align-items:center">
+      <input type="text" id="spec-size-input" value="${esc(a.size_range||'')}" placeholder="e.g. S/M, L/XL" style="flex:1">
       <button class="btn btn-sm btn-dark" onclick="updateSizeRange('${a.id}')">Save</button>
     </div>
-    <div style="font-size:10px;color:var(--ink-30);margin-top:4px">Format bebas: S M L · S,M,L · S/M,L/XL dll</div>` : ''}`
+    <div style="font-size:10px;color:var(--ink-30);margin-top:4px">Pisahkan dengan koma: S/M, L/XL atau S, M, L</div>` : ''}`
 }
 
 // ── Size Pack pane ──
@@ -969,7 +973,8 @@ async function renderSamplesPane(a, isOwn) {
   // Parse sizes from size_range for tracking
   const parseSizes = (sizeRange) => {
     if (!sizeRange) return []
-    return sizeRange.split(/[\s,\/]+/).map(s => s.trim()).filter(Boolean)
+    // Split by comma or multiple spaces, keep S/M as one unit
+    return sizeRange.split(/[,]+/).map(s => s.trim()).filter(Boolean)
   }
   const expectedSizes = parseSizes(a.size_range)
   const doneSizes = (masters||[]).map(m => m.size?.trim()).filter(Boolean)
@@ -1201,8 +1206,10 @@ async function renderIterSpecPane(iter, isOwn, isDropped) {
       // Mark as done
       html += `<button class="btn btn-dark btn-sm" onclick="markIterDone('${iter.id}')">Mark as done ✓</button>`
     } else if (iter.stage === 'done') {
-      // Set as final spec only when done
-      html += `<button class="btn btn-sm btn-sage" onclick="setFinalSpec('${iter.id}','${currentArticleId}')">Set as final spec ↗</button>`
+      // Set as final spec only when done AND not a mockup
+      if (iter.type !== 'mockup') {
+        html += `<button class="btn btn-sm btn-sage" onclick="setFinalSpec('${iter.id}','${currentArticleId}')">Set as final spec ↗</button>`
+      }
     }
 
     // Drop always available
@@ -1470,7 +1477,7 @@ async function confirmArchive() {
 // ══════════════════════════════════════════
 function openNewArticleModal() {
   naFabCount = 0; naIntCount = 0; naAccCount = 0
-  ;['na-name','na-size','na-ref-source','na-ref-notes'].forEach(id => { const el = document.getElementById(id); if(el) el.value = '' })
+  ;['na-name','na-size','na-ref-source','na-ref-notes','na-init-size'].forEach(id => { const el = document.getElementById(id); if(el) el.value = '' })
   document.getElementById('na-date').value = new Date().toISOString().split('T')[0]
   document.getElementById('na-lining-type').value = 'none'
   document.getElementById('na-lining-fabric-row').style.display = 'none'
@@ -1600,6 +1607,10 @@ function collectFabs(prefix, count) {
     const newName = document.getElementById(`${prefix}-fab-newname-${i}`)?.value?.trim()
     const name = sel.value === '__new__' ? newName : (sel.options[sel.selectedIndex]?.dataset?.name || '')
     if (!name) continue
+    // Auto-add new fabric to master list (fire and forget)
+    if (sel.value === '__new__' && newName) {
+      db.from('master_fabrics').insert({ name: newName }).then(() => {})
+    }
     out.push({
       fabric_id: sel.value && sel.value !== '__new__' ? sel.value : null,
       fabric_name: name,
@@ -1618,6 +1629,10 @@ function collectInts(prefix, count) {
     const newName = document.getElementById(`${prefix}-int-newname-${i}`)?.value?.trim()
     const name = sel.value === '__new__' ? newName : (sel.options[sel.selectedIndex]?.dataset?.name || '')
     if (!name) continue
+    // Auto-add new interlining to master list
+    if (sel.value === '__new__' && newName) {
+      db.from('master_interlinings').insert({ name: newName }).then(() => {})
+    }
     out.push({
       interlining_id: sel.value && sel.value !== '__new__' ? sel.value : null,
       interlining_name: name,
@@ -1664,6 +1679,10 @@ function collectAccs(prefix, count) {
     const newName = document.getElementById(`${prefix}-acc-newname-${i}`)?.value?.trim()
     const name = sel.value === '__new__' ? newName : (sel.options[sel.selectedIndex]?.dataset?.name || '')
     if (!name) continue
+    // Auto-add new accessory to master list
+    if (sel.value === '__new__' && newName) {
+      db.from('master_accessories').insert({ name: newName }).then(() => {})
+    }
     out.push({
       accessory_id: sel.value && sel.value !== '__new__' ? sel.value : null,
       accessory_name: name,
@@ -1709,6 +1728,7 @@ async function saveNewArticle() {
 
   const { data: iter, error: iterErr } = await db.from('article_iterations').insert({
     article_id: art.id, label: 'Initial', type: 'full',
+    size_for_tailor: document.getElementById('na-init-size')?.value?.trim() || null,
     stage: 'pattern', status: 'active', created_by: profile.id
   }).select().single()
   if (iterErr) { toast('Failed to create iteration.'); console.error(iterErr); return }
@@ -1722,10 +1742,8 @@ async function saveNewArticle() {
   if (['Outer','Jacket'].includes(cat2)) {
     const lData = getLiningData('na')
     if (lData) {
-      await Promise.all([
-        db.from('iteration_lining').insert({ ...lData, iteration_id: iter.id }),
-        db.from('article_lining').insert({ ...lData, article_id: art.id })
-      ])
+      await db.from('iteration_lining').insert({ ...lData, iteration_id: iter.id })
+      try { await db.from('article_lining').insert({ ...lData, article_id: art.id }) } catch(e) {}
     }
   }
 
@@ -1854,6 +1872,7 @@ async function openQueueDetail(queueId, iterId) {
     db.from('sewing_assignments').select('tailor_id').eq('status','on_progress')
   ])
   if (!iter) return
+  currentArticleId = iter.article_id
 
   // Build workload map
   const wl = {}
