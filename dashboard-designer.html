@@ -653,7 +653,7 @@ function renderArticles() {
     return `<div class="list-row" style="grid-template-columns:2fr 1fr 1.5fr 1fr 1fr" onclick="openArticle('${a.id}')">
       <div>
         <div class="art-name">${esc(a.name)}</div>
-        <div class="art-sub">${esc(a.reference_source||'—')} · <span style="color:var(--ink-30)">${iterCount} active iteration${iterCount!==1?'s':''}</span></div>
+        <div class="art-sub">${esc(a.profiles?.full_name||'—')} · <span style="color:var(--ink-30)">${iterCount} active iteration${iterCount!==1?'s':''}</span></div>
       </div>
       <div style="font-size:12px;color:var(--ink-60)">${a.category}</div>
       <div>
@@ -676,7 +676,7 @@ async function openArticle(id) {
   const isOwn = a.designer_id === profile.id
 
   document.getElementById('art-title').textContent = a.name
-  document.getElementById('art-sub').textContent = `${a.category} · ${a.reference_source||'—'} · ${a.profiles?.full_name||'—'}`
+  document.getElementById('art-sub').textContent = `${a.category} · ${a.profiles?.full_name||'—'}`
 
   // Reset tabs
   const modal = document.getElementById('modal-article')
@@ -959,11 +959,16 @@ async function renderSamplesPane(a, isOwn) {
     return
   }
 
-  const [{ data: masters }, { data: vendors }, { data: cetakan }] = await Promise.all([
+  const [{ data: masters }, { data: vendors }, { data: cetakan }, { data: activeSews }] = await Promise.all([
     db.from('sample_masters').select('*, tailors(name)').eq('article_id', a.id).order('created_at'),
     db.from('sample_vendors').select('*').eq('article_id', a.id).order('created_at'),
-    db.from('article_cetakan').select('*').eq('article_id', a.id)
+    db.from('article_cetakan').select('*').eq('article_id', a.id),
+    db.from('sewing_assignments').select('tailor_id').eq('status','on_progress')
   ])
+
+  // Build WIP map for tailor dropdown
+  const smWl = {}
+  tailors.forEach(t => { smWl[t.id] = (activeSews||[]).filter(s => s.tailor_id === t.id).length })
 
   const cetakanVendor = cetakan?.find(c => c.type === 'vendor')
   const cetakanQC = cetakan?.find(c => c.type === 'qc')
@@ -1001,7 +1006,7 @@ async function renderSamplesPane(a, isOwn) {
   }
 
   html += masters?.length
-    ? `<table class="data-table"><thead><tr><th>Size</th><th>Color</th><th>Tailor</th><th>Status</th></tr></thead><tbody>${masters.map(m=>`<tr><td>${esc(m.size)}</td><td>${esc(m.color||'—')}</td><td>${esc(m.tailors?.name||'—')}</td><td><span class="badge badge-master">${m.status}</span></td></tr>`).join('')}</tbody></table>`
+    ? `<table class="data-table"><thead><tr><th>Size</th><th>Color</th><th>Tailor</th><th>Status</th>${isOwn?'<th></th>':''}</tr></thead><tbody>${masters.map(m=>`<tr><td>${esc(m.size)}</td><td>${esc(m.color||'—')}</td><td>${esc(m.tailors?.name||'—')}</td><td><span class="badge badge-master">${m.status}</span></td>${isOwn&&m.status==='in_progress'?`<td><button class="btn btn-sm btn-sage" onclick="markSampleMasterDone('${m.id}','${a.id}')">Done ✓</button></td>`:isOwn?'<td></td>':''}</tr>`).join('')}</tbody></table>`
     : '<div class="empty-sm">None yet.</div>'
 
   if (isOwn) html += `<div style="padding:12px;background:var(--cream);border-radius:2px;margin:10px 0 16px">
@@ -1017,7 +1022,7 @@ async function renderSamplesPane(a, isOwn) {
       </div>
       <div class="form-row" style="margin:0"><label class="form-label">Color</label><input type="text" id="sm-color" placeholder="e.g. Bistre"></div>
       <div class="form-row" style="margin:0"><label class="form-label">Tailor</label>
-        <select id="sm-tailor"><option value="">Select tailor...</option>${tailors.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select>
+        <select id="sm-tailor"><option value="">Select tailor...</option>${tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (opt)':''} — ${smWl[t.id]||0} WIP</option>`).join('')}</select>
       </div>
     </div>
     <button class="btn btn-dark btn-sm" onclick="addSampleMaster('${a.id}')">Add sample master</button>
@@ -1067,10 +1072,16 @@ async function renderSamplesPane(a, isOwn) {
   html += renderCetakanItem('vendor', cetakanVendor)
   html += renderCetakanItem('qc', cetakanQC)
 
-  // ── SAMPLE VENDOR (locked until cetakan done) ──
+  // ── SAMPLE VENDOR (locked until all masters done + cetakan done) ──
+  const allMastersDone = masters?.length > 0 && masters.every(m => ['done','approved'].includes(m.status))
+  const vendorUnlocked = allMastersDone && cetakanDone
+
   html += `<div class="section-label" style="margin-top:8px">Sample vendor</div>`
-  if (!cetakanDone) {
-    html += `<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-bottom:12px">🔒 Selesaikan cetakan vendor & QC dulu (atau request skip & tunggu approval).</div>`
+  if (!vendorUnlocked) {
+    const reasons = []
+    if (!allMastersDone) reasons.push('semua sample master harus done/approved')
+    if (!cetakanDone) reasons.push('cetakan vendor & QC harus selesai')
+    html += `<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-bottom:12px">🔒 ${reasons.join(' + ')}.</div>`
   } else {
     html += vendors?.length
       ? `<table class="data-table"><thead><tr><th>Vendor</th><th>Size</th><th>Status</th></tr></thead><tbody>${vendors.map(v=>`<tr><td>${esc(v.vendor_name)}</td><td>${esc(v.size||'—')}</td><td><span class="badge badge-vendor">${v.status}</span></td></tr>`).join('')}</tbody></table>`
@@ -1346,14 +1357,15 @@ async function confirmAdvanceToSewing(iterId) {
   const tailorId = document.getElementById('adv-tailor')?.value
   if (!tailorId) { toast('Please select a tailor.'); return }
 
-  // Get size from iteration's size_for_tailor
-  const { data: iterData } = await db.from('article_iterations').select('size_for_tailor').eq('id', iterId).single()
+  // Get size and label from iteration
+  const { data: iterData } = await db.from('article_iterations').select('size_for_tailor,label,type,part').eq('id', iterId).single()
+  const sewLabel = iterData ? (iterData.type==='mockup' ? `Mockup${iterData.part?' — '+iterData.part:''}` : iterData.label) : ''
 
   const [stageRes, sewRes] = await Promise.all([
     db.from('article_iterations').update({ stage: 'sewing' }).eq('id', iterId),
     db.from('sewing_assignments').insert({
       article_id: currentArticleId, iteration_id: iterId, tailor_id: tailorId,
-      size: iterData?.size_for_tailor || null,
+      size: iterData?.size_for_tailor || null, label: sewLabel || null,
       notes: document.getElementById('adv-notes')?.value?.trim() || null,
       status: 'on_progress', assigned_by: profile.id
     })
@@ -1776,7 +1788,7 @@ async function saveNewArticle() {
   })
 
   closeModal('modal-new-article')
-  await loadArticles()
+  await Promise.all([loadMasterData(), loadArticles()])
   toast('Article created and added to pola queue.')
 }
 
@@ -1826,7 +1838,7 @@ async function saveNewIteration() {
   })
 
   closeModal('modal-new-iteration')
-  await loadArticles()
+  await Promise.all([loadMasterData(), loadArticles()])
   const updated = allArticles.find(x => x.id === currentArticleId)
   if (updated) await renderIterationsPane(updated, updated.designer_id === profile.id)
   toast(`"${label}" created and added to pola queue.`)
@@ -1930,11 +1942,15 @@ async function openQueueDetail(queueId, iterId) {
 async function proceedToSewingFromQueue(iterId, queueId, sizeFromIter) {
   const tailorId = document.getElementById('qd-tailor')?.value
   if (!tailorId) { toast('Please select a tailor.'); return }
+  if (!currentArticleId) { toast('Error: no article selected. Close and try again.'); return }
+  // Get iteration label for sewing assignment
+  const { data: iterInfo } = await db.from('article_iterations').select('label,type,part').eq('id', iterId).single()
+  const sewLabel = iterInfo ? (iterInfo.type==='mockup' ? `Mockup${iterInfo.part?' — '+iterInfo.part:''}` : iterInfo.label) : ''
   const [stageRes, sewRes, qRes] = await Promise.all([
     db.from('article_iterations').update({ stage: 'sewing' }).eq('id', iterId),
     db.from('sewing_assignments').insert({
       article_id: currentArticleId, iteration_id: iterId, tailor_id: tailorId,
-      size: sizeFromIter || null,
+      size: sizeFromIter || null, label: sewLabel || null,
       notes: document.getElementById('qd-notes')?.value?.trim() || null,
       status: 'on_progress', assigned_by: profile.id
     }),
@@ -2164,6 +2180,15 @@ async function addSampleMaster(articleId) {
   const updated = allArticles.find(x => x.id === articleId)
   if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
   toast('Sample master added.')
+}
+
+async function markSampleMasterDone(masterId, articleId) {
+  const { error } = await db.from('sample_masters').update({ status: 'done' }).eq('id', masterId)
+  if (error) { toast('Failed.'); return }
+  await loadArticles()
+  const updated = allArticles.find(x => x.id === articleId)
+  if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
+  toast('Sample master marked as done.')
 }
 
 async function addSampleVendor(articleId) {
