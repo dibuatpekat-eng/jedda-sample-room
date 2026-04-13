@@ -1855,8 +1855,10 @@ async function saveNewArticle() {
   if (['Outer','Jacket'].includes(cat2)) {
     const lData = getLiningData('na')
     if (lData) {
-      await db.from('iteration_lining').insert({ ...lData, iteration_id: iter.id }).catch(e => console.warn('iteration_lining insert warning:', e))
-      db.from('article_lining').insert({ ...lData, article_id: art.id }).catch(() => {})
+      const { error: liErr } = await db.from('iteration_lining').insert({ ...lData, iteration_id: iter.id })
+      if (liErr) console.warn('iteration_lining:', liErr.message)
+      // Mirror table — silent fail
+      try { await db.from('article_lining').insert({ ...lData, article_id: art.id }) } catch(e) {}
     }
   }
 
@@ -1864,16 +1866,18 @@ async function saveNewArticle() {
   if (cat2 !== 'Pants') {
     const inters = collectInts('na', naIntCount)
     if (inters.length) {
-      await db.from('iteration_interlining').insert(inters.map(i => ({ ...i, iteration_id: iter.id }))).catch(e => console.warn('iteration_interlining:', e))
-      db.from('article_interlining').insert(inters.map(i => ({ ...i, article_id: art.id }))).catch(() => {})
+      const { error: intErr } = await db.from('iteration_interlining').insert(inters.map(i => ({ ...i, iteration_id: iter.id })))
+      if (intErr) console.warn('iteration_interlining:', intErr.message)
+      try { await db.from('article_interlining').insert(inters.map(i => ({ ...i, article_id: art.id }))) } catch(e) {}
     }
   }
 
   // Save accessories
   const accs = collectAccs('na', naAccCount)
   if (accs.length) {
-    await db.from('iteration_accessories').insert(accs.map(a => ({ ...a, iteration_id: iter.id }))).catch(e => console.warn('iteration_accessories:', e))
-    db.from('article_accessories').insert(accs.map(a => ({ name: a.accessory_name, article_id: art.id }))).catch(() => {})
+    const { error: accErr } = await db.from('iteration_accessories').insert(accs.map(a => ({ ...a, iteration_id: iter.id })))
+    if (accErr) console.warn('iteration_accessories:', accErr.message)
+    try { await db.from('article_accessories').insert(accs.map(a => ({ name: a.accessory_name, article_id: art.id }))) } catch(e) {}
   }
 
   // Add to pola queue
@@ -2310,12 +2314,13 @@ async function addSampleMaster(articleId) {
 
   // Also create a sewing assignment so it appears in Sewing workload
   if (tailorId) {
-    await db.from('sewing_assignments').insert({
+    const { error: swErr } = await db.from('sewing_assignments').insert({
       article_id: articleId, tailor_id: tailorId,
       size, is_sample_master: true,
       label: `Sample Master — ${size}${color?' ('+color+')':''}`,
       status: 'on_progress', assigned_by: profile.id
-    }).catch(e => console.warn('SM sewing insert:', e))
+    })
+    if (swErr) console.warn('SM sewing insert:', swErr.message)
   }
 
   await loadArticles()
@@ -2332,7 +2337,6 @@ async function markSampleMasterDone(masterId, articleId) {
     .update({ status: 'done' })
     .eq('article_id', articleId)
     .eq('is_sample_master', true)
-    .catch(() => {})
   await loadArticles()
   const updated = allArticles.find(x => x.id === articleId)
   if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
