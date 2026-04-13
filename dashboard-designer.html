@@ -2276,20 +2276,37 @@ async function openSewingDetail(assignId, iterId, articleId) {
 }
 
 async function quickMarkSewingDone(assignId) {
-  // Get assignment to find iteration_id
-  const { data: assign } = await db.from('sewing_assignments').select('iteration_id,article_id').eq('id', assignId).single()
+  const { data: assign } = await db.from('sewing_assignments')
+    .select('iteration_id,article_id,is_sample_master,size')
+    .eq('id', assignId).single()
+
   await db.from('sewing_assignments').update({ status: 'done' }).eq('id', assignId)
-  // Also mark iteration stage as done
-  if (assign?.iteration_id) {
+
+  if (assign?.is_sample_master) {
+    // Mark the corresponding sample_master as done
+    await db.from('sample_masters')
+      .update({ status: 'done' })
+      .eq('article_id', assign.article_id)
+      .eq('size', assign.size)
+      .eq('status', 'in_progress')
+  } else if (assign?.iteration_id) {
+    // Regular iteration — mark stage done
     await db.from('article_iterations').update({ stage: 'done' }).eq('id', assign.iteration_id)
   }
+
   closeModal('modal-sewing-detail')
   await loadArticles()
   await renderSewing()
-  // If article modal is open, refresh it too
+
   if (assign?.article_id && currentArticleId === assign.article_id) {
     const a = allArticles.find(x => x.id === assign.article_id)
-    if (a) await renderIterationsPane(a, a.designer_id === profile.id)
+    if (a) {
+      if (assign.is_sample_master) {
+        await renderSamplesPane(a, a.designer_id === profile.id)
+      } else {
+        await renderIterationsPane(a, a.designer_id === profile.id)
+      }
+    }
   }
   toast('Sewing marked as done.')
 }
@@ -2316,6 +2333,7 @@ async function addSampleMaster(articleId) {
   const size = sizeEl?.value?.trim()
   if (!size || size === '__custom__') { toast('Size is required.'); return }
   const tailorId = document.getElementById('sm-tailor')?.value || null
+  if (!tailorId) { toast('Tailor is required.'); return }
   const color = document.getElementById('sm-color')?.value?.trim() || null
 
   const { data: sm, error } = await db.from('sample_masters').insert({
