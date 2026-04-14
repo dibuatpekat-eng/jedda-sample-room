@@ -11,27 +11,29 @@
   .page { display: none; flex-direction: column; flex: 1; }
   .page.active { display: flex; }
 
-  /* ── SIDEBAR USER ── */
-  .sidebar-user { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-top: 0.5px solid rgba(255,255,255,0.07); }
-  .sidebar-avatar { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .sidebar-user-name { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 400; }
-  .sidebar-user-role { font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 0.06em; text-transform: uppercase; }
-  .logout-btn { margin-left: auto; background: none; border: none; color: rgba(255,255,255,0.25); cursor: pointer; font-size: 16px; padding: 4px; transition: color 0.15s; }
+  /* ── SIDEBAR OVERRIDES ── */
+  .sidebar-user { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 0.5px solid rgba(255,255,255,0.07); }
+  .sidebar-avatar { width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sidebar-user-name { font-size: 11px; color: rgba(255,255,255,0.7); font-weight: 400; }
+  .sidebar-user-role { font-size: 9px; color: rgba(255,255,255,0.3); letter-spacing: 0.08em; text-transform: uppercase; }
+  .logout-btn { margin-left: auto; background: none; border: none; color: rgba(255,255,255,0.25); cursor: pointer; font-size: 15px; padding: 4px; transition: color 0.15s; }
   .logout-btn:hover { color: rgba(255,255,255,0.6); }
-  .nav-section { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.2); padding: 14px 24px 5px; }
+  /* Nav section label — uppercase, spasi rapi */
+  .nav-section { font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.2); padding: 16px 24px 4px; }
   .page-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; letter-spacing: 0.04em; }
 
-  /* ── LOGO ── */
-  .brand-logo-img { height: 28px; width: auto; display: block; filter: brightness(0) invert(1); }
-  .brand-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; letter-spacing: 0.14em; color: var(--warm-white); text-transform: uppercase; }
+  /* ── LOGO — positioned snug, same cap-height as text fallback ── */
+  .brand-logo-img { height: 22px; width: auto; display: block; filter: brightness(0) invert(1); margin-bottom: 1px; }
+  .brand-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; letter-spacing: 0.14em; color: var(--warm-white); text-transform: uppercase; line-height: 1; }
 
   /* ── SEASON SWITCHER ── */
-  .season-switcher { display: flex; align-items: center; gap: 8px; }
-  .season-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-30); }
-  .season-select { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 400; padding: 5px 10px; border: 0.5px solid var(--border); border-radius: 2px; background: var(--warm-white); color: var(--ink); cursor: pointer; min-width: 140px; }
+  .season-switcher { display: flex; align-items: center; gap: 7px; background: var(--cream); border: 0.5px solid var(--border); border-radius: 3px; padding: 5px 10px; transition: border-color 0.15s; }
+  .season-switcher:hover { border-color: var(--ink-30); }
+  .season-label { font-size: 8.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-30); }
+  .season-val-display { font-size: 11px; color: var(--ink); font-weight: 400; }
   .season-badge { font-size: 10px; letter-spacing: 0.06em; color: var(--ink-60); background: var(--cream); border: 0.5px solid var(--border); border-radius: 2px; padding: 4px 10px; }
 
-  /* ── SEASON PICKER OVERLAY (login) ── */
+  /* ── SEASON PICKER OVERLAY ── */
   .season-picker-overlay { position: fixed; inset: 0; background: var(--cream); display: flex; align-items: center; justify-content: center; z-index: 9999; }
   .season-picker-box { width: min(420px, 94vw); }
   .season-picker-brand { text-align: center; margin-bottom: 36px; }
@@ -56,6 +58,10 @@
   .prog-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
   .prog-dot.done { background: var(--sage); }
   .prog-dot.active { background: var(--gold); }
+
+  /* ── CONTENT SPACING — tighter untuk queue & sewing ── */
+  .content { padding: 20px 28px; flex: 1; }
+  .content-note { font-size: 11px; color: var(--ink-30); margin-bottom: 14px; line-height: 1.5; }
 
   /* ── MODAL ── */
   .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 400; letter-spacing: 0.04em; }
@@ -159,23 +165,24 @@
       <div id="picker-logo-text" class="season-picker-brand-name">Jedda</div>
       <div class="season-picker-brand-sub">Sample Room</div>
     </div>
-    <div class="season-picker-title">Pilih koleksi untuk sesi ini</div>
+    <div class="season-picker-title" id="season-picker-title">Pilih koleksi untuk sesi ini</div>
     <div id="season-options-list"></div>
-    <button class="btn btn-dark btn-full" style="margin-top:16px" onclick="confirmSeasonPick()">Masuk →</button>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-dark" style="flex:1" onclick="confirmSeasonPick()">Masuk →</button>
+      <button class="btn" id="season-picker-cancel" style="display:none" onclick="document.getElementById('season-picker-overlay').style.display='none'">Batal</button>
+    </div>
   </div>
 </div>
 
 <div class="shell">
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="sidebar-brand">
-      <div id="sidebar-logo-wrap">
-        <img id="brand-logo-img" class="brand-logo-img" src="images/jedda-logo.png" alt="Jedda"
-          style="display:none"
-          onload="this.style.display='block';document.getElementById('brand-logo-text').style.display='none'"
-          onerror="this.style.display='none'">
-        <div id="brand-logo-text" class="brand-name">Jedda</div>
-      </div>
+    <div class="sidebar-brand" style="display:flex;flex-direction:column;gap:5px">
+      <img id="brand-logo-img" class="brand-logo-img" src="images/jedda-logo.png" alt="Jedda"
+        style="display:none"
+        onload="this.style.display='block';document.getElementById('brand-logo-text').style.display='none'"
+        onerror="this.style.display='none'">
+      <div id="brand-logo-text" class="brand-name">Jedda</div>
       <div class="brand-sub">Sample Room</div>
     </div>
     <div class="sidebar-nav">
@@ -187,17 +194,17 @@
       <div class="nav-section">Production</div>
       <div class="nav-item" id="nav-queue" onclick="showPage('queue',this)">
         <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><line x1="1" y1="4" x2="13" y2="4"/><line x1="1" y1="7" x2="13" y2="7"/><line x1="1" y1="10" x2="13" y2="10"/></svg>
-        Pola queue
+        Pattern queue
       </div>
       <div class="nav-item" id="nav-sewing" onclick="showPage('sewing',this)">
         <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><circle cx="7" cy="7" r="5"/><circle cx="7" cy="7" r="2"/></svg>
-        Sewing workload
+        Sewing
       </div>
     </div>
     <div style="padding:12px 0;border-top:0.5px solid rgba(255,255,255,0.07)">
-      <div class="nav-item" id="nav-trash" onclick="showPage('trash',this)">
+      <div class="nav-item" id="nav-archive" onclick="showPage('archive',this)">
         <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><polyline points="2,3 12,3"/><path d="M5,3V2h4v1"/><rect x="3" y="3" width="8" height="9" rx="0.5"/><line x1="5" y1="6" x2="5" y2="10"/><line x1="9" y1="6" x2="9" y2="10"/></svg>
-        Trash
+        Archive
       </div>
     </div>
     <div class="sidebar-user">
@@ -216,13 +223,12 @@
     <!-- PAGE: ALL ARTICLES -->
     <div id="page-articles" class="page active">
       <div class="topbar">
-        <div class="page-title">Articles</div>
+        <div class="page-title">All articles</div>
         <div class="topbar-actions">
-          <div class="season-switcher">
-            <span class="season-label">Season</span>
-            <select class="season-select" id="season-switcher-select" onchange="switchSeason(this.value)">
-              <option value="">Loading...</option>
-            </select>
+          <div class="season-switcher" id="season-switcher-pill" onclick="showSeasonPicker()" style="cursor:pointer" title="Switch collection">
+            <span class="season-label">Collection</span>
+            <span class="season-val-display" id="season-display-val">—</span>
+            <span style="font-size:9px;color:var(--ink-30)">▾</span>
           </div>
           <button class="btn btn-dark" onclick="openNewArticleModal()">+ New article</button>
         </div>
@@ -235,27 +241,27 @@
       </div>
     </div>
 
-    <!-- PAGE: POLA QUEUE -->
+    <!-- PAGE: PATTERN QUEUE -->
     <div id="page-queue" class="page">
-      <div class="topbar"><div class="page-title">Pola queue</div></div>
+      <div class="topbar"><div class="page-title">Pattern queue</div></div>
       <div class="content">
-        <p style="font-size:12px;color:var(--ink-60);margin-bottom:16px">Antrian Bu Oki. Klik item untuk lihat detail dan update status.</p>
+        <p class="content-note">Bu Oki's pattern queue. Click an item to view spec and update status.</p>
         <div id="queue-list"></div>
       </div>
     </div>
 
-    <!-- PAGE: SEWING WORKLOAD -->
+    <!-- PAGE: SEWING -->
     <div id="page-sewing" class="page">
-      <div class="topbar"><div class="page-title">Sewing workload</div></div>
+      <div class="topbar"><div class="page-title">Sewing</div></div>
       <div class="content"><div id="sewing-list"></div></div>
     </div>
 
     <!-- PAGE: TRASH -->
-    <div id="page-trash" class="page">
-      <div class="topbar"><div class="page-title">Trash</div></div>
+    <div id="page-archive" class="page">
+      <div class="topbar"><div class="page-title">Archive</div></div>
       <div class="content">
-        <p style="font-size:12px;color:var(--ink-60);margin-bottom:16px">Archived articles and dropped iterations. Data is preserved.</p>
-        <div id="trash-list"></div>
+        <p class="content-note">Archived articles and dropped iterations. Data is preserved.</p>
+        <div id="archive-list"></div>
       </div>
     </div>
 
@@ -432,7 +438,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('modal-new-iteration')">Cancel</button>
-      <button class="btn btn-dark" onclick="saveNewIteration()">Save & add to pola queue</button>
+      <button class="btn btn-dark" onclick="saveNewIteration()">Save & add to pattern queue</button>
     </div>
   </div>
 </div>
@@ -485,7 +491,7 @@
 </div>
 
 <!-- ══════════════════════════════════════════ -->
-<!-- MODAL: POLA QUEUE DETAIL -->
+<!-- MODAL: PATTERN QUEUE DETAIL -->
 <!-- ══════════════════════════════════════════ -->
 <div class="overlay" id="modal-queue-detail">
   <div class="modal">
@@ -586,6 +592,10 @@ function showSeasonPicker() {
   const list = document.getElementById('season-options-list')
   overlay.style.display = 'flex'
 
+  // Show cancel button only if already in a session (switching, not first login)
+  const cancelBtn = document.getElementById('season-picker-cancel')
+  if (cancelBtn) cancelBtn.style.display = currentSeasonId ? 'block' : 'none'
+
   // Pre-select first season
   if (!currentSeasonId && allSeasons.length > 0) currentSeasonId = allSeasons[0].id
 
@@ -619,12 +629,10 @@ async function confirmSeasonPick() {
 }
 
 function renderSeasonSwitcher() {
-  const sel = document.getElementById('season-switcher-select')
-  if (!sel) return
-  sel.innerHTML = allSeasons.map(s =>
-    `<option value="${s.id}" ${s.id === currentSeasonId ? 'selected' : ''}>${esc(s.short_name)} — ${esc(s.name)}</option>`
-  ).join('')
-  if (allSeasons.length === 0) sel.innerHTML = '<option value="">No collections</option>'
+  const disp = document.getElementById('season-display-val')
+  if (!disp) return
+  const current = allSeasons.find(s => s.id === currentSeasonId)
+  disp.textContent = current ? current.short_name : '—'
 }
 
 async function switchSeason(seasonId) {
@@ -671,11 +679,11 @@ function showPage(name, el) {
   if (el) el.classList.add('active')
   if (name === 'queue') renderQueue()
   if (name === 'sewing') renderSewing()
-  if (name === 'trash') renderTrash()
+  if (name === 'archive') renderArchive()
 }
 
-async function renderTrash() {
-  const el = document.getElementById('trash-list')
+async function renderArchive() {
+  const el = document.getElementById('archive-list')
   // Archived articles
   const { data: archivedArticles } = await db.from('articles')
     .select('*, profiles!articles_designer_id_fkey(full_name)')
@@ -693,12 +701,15 @@ async function renderTrash() {
     html += `<div class="section-label">Archived articles (${archivedArticles.length})</div>`
     html += archivedArticles.map(a => `<div class="iter-card dropped">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div>
+        <div style="flex:1">
           <div class="iter-label">${esc(a.name)}</div>
           <div class="iter-meta">${a.category} · ${a.profiles?.full_name||'—'}</div>
           ${a.archive_reason?`<div style="font-size:11px;color:var(--terracota);margin-top:4px">Reason: ${esc(a.archive_reason)}</div>`:''}
         </div>
-        <span class="badge badge-dropped">ARCHIVED</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="badge badge-dropped">ARCHIVED</span>
+          <button class="btn btn-sm" onclick="restoreArticle('${a.id}')" style="font-size:9px">Restore ↩</button>
+        </div>
       </div>
       <div style="font-size:10px;color:var(--ink-30);margin-top:6px">${fmtDate(a.archived_at)}</div>
     </div>`).join('')
@@ -719,7 +730,7 @@ async function renderTrash() {
     </div>`).join('')
   }
 
-  if (!html) html = '<div class="empty">Trash is empty.</div>'
+  if (!html) html = '<div class="empty">Archive is empty.</div>'
   el.innerHTML = html
 }
 
@@ -895,7 +906,7 @@ async function renderIterationsPane(a, isOwn) {
   }
 
   if (archived.length) {
-    html += `<div class="section-label" style="margin-top:20px">Trash / dropped (${archived.length})</div>`
+    html += `<div class="section-label" style="margin-top:20px">Archive / dropped (${archived.length})</div>`
     html += archived.map(iter => {
       const typeLabel = iter.type === 'mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : 'Full garment'
       return `<div class="iter-card dropped" onclick="openIterationModal('${iter.id}','${a.id}')" style="cursor:pointer">
@@ -1454,7 +1465,7 @@ async function renderIterSpecPane(iter, isOwn, isDropped) {
       if (queueStatus === 'in_progress') {
         html += `<button class="btn btn-dark btn-sm" onclick="showSewingForm(true)">Proceed to Sewing — assign tailor ↓</button>`
       } else {
-        html += `<button class="btn btn-sm" disabled style="opacity:0.45;cursor:not-allowed" title="Toggle status ke In Progress di Pola Queue dulu">Proceed to Sewing ↓</button>
+        html += `<button class="btn btn-sm" disabled style="opacity:0.45;cursor:not-allowed" title="Toggle status ke In Progress di Pattern Queue dulu">Proceed to Sewing ↓</button>
         <span style="font-size:11px;color:var(--gold);align-self:center">⏳ Pola masih Waiting — toggle ke In Progress di queue dulu</span>`
       }
     } else if (iter.stage === 'sewing') {
@@ -1691,11 +1702,11 @@ function openArchiveModal(type, id) {
   document.getElementById('archive-reason').value = ''
   if (type === 'article') {
     document.getElementById('archive-modal-title').textContent = 'Archive article'
-    document.getElementById('archive-modal-desc').textContent = 'Article and all iterations will be archived. Data is preserved in trash.'
+    document.getElementById('archive-modal-desc').textContent = 'Article and all iterations will be archived. Data is preserved.'
     document.getElementById('archive-confirm-btn').textContent = 'Archive'
   } else {
     document.getElementById('archive-modal-title').textContent = 'Drop iteration'
-    document.getElementById('archive-modal-desc').textContent = 'Iteration will be dropped and moved to trash. Data is preserved.'
+    document.getElementById('archive-modal-desc').textContent = 'Iteration will be dropped and archived. Data is preserved.'
     document.getElementById('archive-confirm-btn').textContent = 'Drop'
   }
   openModal('modal-archive')
@@ -1731,8 +1742,24 @@ async function confirmArchive() {
       const updated = allArticles.find(x => x.id === currentArticleId)
       if (updated) await renderIterationsPane(updated, updated.designer_id === profile.id)
     }
-    toast('Iteration dropped and moved to trash.')
+    // If dropped from queue (has pending queue id), mark queue as done too
+    if (window._pendingDropQueueId) {
+      await db.from('pattern_queue').update({ status: 'done' }).eq('id', window._pendingDropQueueId)
+      window._pendingDropQueueId = null
+    }
+    toast('Iteration dropped and archived.')
   }
+}
+
+async function restoreArticle(articleId) {
+  if (!confirm('Restore this article? It will become active again.')) return
+  const { error } = await db.from('articles').update({
+    status: 'active', archive_reason: null, archived_by: null, archived_at: null
+  }).eq('id', articleId)
+  if (error) { toast('Failed to restore.'); return }
+  await loadArticles()
+  await renderArchive()
+  toast('Article restored.')
 }
 
 // ══════════════════════════════════════════
@@ -2049,7 +2076,7 @@ async function saveNewArticle() {
     try { await db.from('article_accessories').insert(accs.map(a => ({ name: a.accessory_name, article_id: art.id }))) } catch(e) {}
   }
 
-  // Add to pola queue
+  // Add to pattern queue
   const { data: qd } = await db.from('pattern_queue').select('queue_order').order('queue_order', { ascending: false }).limit(1)
   await db.from('pattern_queue').insert({
     article_id: art.id, iteration_id: iter.id,
@@ -2059,7 +2086,7 @@ async function saveNewArticle() {
 
   closeModal('modal-new-article')
   await Promise.all([loadMasterData(), loadArticles()])
-  toast('Article created and added to pola queue.')
+  toast('Article created and added to pattern queue.')
 }
 
 // ══════════════════════════════════════════
@@ -2098,7 +2125,7 @@ async function saveNewIteration() {
   const accs = collectAccs('ni', niAccCount)
   if (accs.length) await db.from('iteration_accessories').insert(accs.map(a => ({ ...a, iteration_id: iter.id })))
 
-  // Add to pola queue
+  // Add to pattern queue
   const a = allArticles.find(x => x.id === currentArticleId)
   const { data: qd } = await db.from('pattern_queue').select('queue_order').order('queue_order', { ascending: false }).limit(1)
   await db.from('pattern_queue').insert({
@@ -2111,11 +2138,11 @@ async function saveNewIteration() {
   await Promise.all([loadMasterData(), loadArticles()])
   const updated = allArticles.find(x => x.id === currentArticleId)
   if (updated) await renderIterationsPane(updated, updated.designer_id === profile.id)
-  toast(`"${label}" created and added to pola queue.`)
+  toast(`"${label}" created and added to pattern queue.`)
 }
 
 // ══════════════════════════════════════════
-// POLA QUEUE
+// PATTERN QUEUE
 // ══════════════════════════════════════════
 async function renderQueue() {
   const { data } = await db.from('pattern_queue')
@@ -2123,7 +2150,7 @@ async function renderQueue() {
     .neq('status','done')
     .order('queue_order')
   const el = document.getElementById('queue-list')
-  if (!data?.length) { el.innerHTML = '<div class="empty">No items in pola queue.</div>'; return }
+  if (!data?.length) { el.innerHTML = '<div class="empty">No items in pattern queue.</div>'; return }
   el.innerHTML = data.map((q, i) => {
     const isInProgress = q.status === 'in_progress'
     const cls = isInProgress ? 'badge-sewing' : 'badge-active'
@@ -2131,7 +2158,10 @@ async function renderQueue() {
     return `<div class="queue-item ${isInProgress?'current':''}" onclick="openQueueDetail('${q.id}','${q.iteration_id||''}')">
       <div class="queue-num">${i+1}</div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:400">${esc(q.label||q.articles?.name||'—')}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="font-size:13px;font-weight:400">${esc(q.label||q.articles?.name||'—')}</div>
+          ${q.label&&q.label.toLowerCase().includes('mockup')?'<span class="badge badge-pattern" style="font-size:8px;padding:1px 5px">MOCKUP</span>':''}
+        </div>
         <div style="font-size:11px;color:var(--ink-60)">${q.articles?.category||'—'}</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
@@ -2215,7 +2245,7 @@ async function openQueueDetail(queueId, iterId) {
         ? `<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--cream);border-radius:2px;border:0.5px solid var(--gold)">
             <span style="font-size:16px">⏳</span>
             <div>
-              <div style="font-weight:400;color:var(--ink);margin-bottom:2px">Masih menunggu Bu Oki</div>
+              <div style="font-weight:400;color:var(--ink);margin-bottom:2px">Masih menunggu Bu Oki (Pattern Queue)</div>
               <div style="font-size:11px;color:var(--ink-60)">Status pola harus <strong>In Progress</strong> sebelum bisa assign ke sewing. Toggle status dari badge di daftar antrian.</div>
             </div>
           </div>`
@@ -2259,16 +2289,10 @@ async function proceedToSewingFromQueue(iterId, queueId, sizeFromIter) {
 }
 
 async function dropFromQueue(iterId, queueId) {
-  const reason = prompt('Reason for dropping?')
-  if (!reason) return
-  await Promise.all([
-    db.from('article_iterations').update({ status: 'dropped', notes: 'Dropped: ' + reason }).eq('id', iterId),
-    db.from('pattern_queue').update({ status: 'done' }).eq('id', queueId)
-  ])
+  // Store queueId for use in confirmArchive
+  window._pendingDropQueueId = queueId
   closeModal('modal-queue-detail')
-  await loadArticles()
-  renderQueue()
-  toast('Iteration dropped.')
+  openArchiveModal('iteration', iterId)
 }
 
 async function moveQueue(queueId, dir) {
@@ -2284,7 +2308,7 @@ async function moveQueue(queueId, dir) {
 }
 
 // ══════════════════════════════════════════
-// SEWING WORKLOAD
+// SEWING
 // ══════════════════════════════════════════
 async function renderSewing() {
   const el = document.getElementById('sewing-list')
@@ -2313,11 +2337,11 @@ async function renderSewing() {
 
   el.innerHTML = tailorList.map(t => {
     const works = assigns.filter(a => a.tailor_id === t.id)
-    return `<div class="card" style="margin-bottom:10px">
+    return `<div class="card" style="margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
         <div style="font-size:13px;font-weight:400">${esc(t.name)}</div>
         ${t.type==='optional'?'<span style="font-size:9px;color:var(--ink-30)">(optional)</span>':''}
-        <span style="margin-left:auto;font-size:11px;color:${works.length>2?'var(--terracota)':'var(--ink-60)'}">${works.length} active${works.length>2?' — busy':''}</span>
+        <span style="margin-left:auto;font-size:11px;color:${works.length>2?'var(--terracota)':'var(--ink-30)'}">${works.length} WIP${works.length>2?' · overloaded':''}</span>
       </div>
       ${works.map(w => {
         const iter = w.iteration_id ? iterMap[w.iteration_id] : null
