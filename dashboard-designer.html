@@ -21,6 +21,31 @@
   .nav-section { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.2); padding: 14px 24px 5px; }
   .page-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; letter-spacing: 0.04em; }
 
+  /* ── LOGO ── */
+  .brand-logo-img { height: 28px; width: auto; display: block; filter: brightness(0) invert(1); }
+  .brand-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; letter-spacing: 0.14em; color: var(--warm-white); text-transform: uppercase; }
+
+  /* ── SEASON SWITCHER ── */
+  .season-switcher { display: flex; align-items: center; gap: 8px; }
+  .season-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-30); }
+  .season-select { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 400; padding: 5px 10px; border: 0.5px solid var(--border); border-radius: 2px; background: var(--warm-white); color: var(--ink); cursor: pointer; min-width: 140px; }
+  .season-badge { font-size: 10px; letter-spacing: 0.06em; color: var(--ink-60); background: var(--cream); border: 0.5px solid var(--border); border-radius: 2px; padding: 4px 10px; }
+
+  /* ── SEASON PICKER OVERLAY (login) ── */
+  .season-picker-overlay { position: fixed; inset: 0; background: var(--cream); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  .season-picker-box { width: min(420px, 94vw); }
+  .season-picker-brand { text-align: center; margin-bottom: 36px; }
+  .season-picker-brand-name { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink); }
+  .season-picker-brand-sub { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-30); margin-top: 4px; }
+  .season-picker-title { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-60); margin-bottom: 16px; text-align: center; }
+  .season-option { background: var(--warm-white); border: 0.5px solid var(--border); border-radius: 2px; padding: 16px 20px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s; display: flex; align-items: center; justify-content: space-between; }
+  .season-option:hover { border-color: var(--ink-30); }
+  .season-option.selected { border-color: var(--ink); background: var(--cream); }
+  .season-option-name { font-size: 14px; font-weight: 400; color: var(--ink); }
+  .season-option-meta { font-size: 11px; color: var(--ink-60); margin-top: 2px; }
+  .season-option-check { width: 18px; height: 18px; border-radius: 50%; border: 0.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .season-option.selected .season-option-check { background: var(--ink); border-color: var(--ink); color: var(--warm-white); font-size: 10px; }
+
   /* ── LIST ROW ── */
   .list-head { display: grid; padding: 8px 14px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-30); border-bottom: 0.5px solid var(--border); }
   .list-row { display: grid; padding: 12px 14px; border-bottom: 0.5px solid var(--border); cursor: pointer; transition: background 0.1s; align-items: center; }
@@ -124,11 +149,31 @@
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 
+<!-- SEASON PICKER OVERLAY -->
+<div id="season-picker-overlay" class="season-picker-overlay" style="display:none">
+  <div class="season-picker-box">
+    <div class="season-picker-brand">
+      <img id="picker-logo-img" style="height:32px;width:auto;display:block;margin:0 auto 6px;" src="images/jedda-logo.png" alt="Jedda"
+        onerror="this.style.display='none';document.getElementById('picker-logo-text').style.display='block'">
+      <div id="picker-logo-text" class="season-picker-brand-name" style="display:none">Jedda</div>
+      <div class="season-picker-brand-sub">Sample Room</div>
+    </div>
+    <div class="season-picker-title">Pilih koleksi untuk sesi ini</div>
+    <div id="season-options-list"></div>
+    <button class="btn btn-dark btn-full" style="margin-top:16px" onclick="confirmSeasonPick()">Masuk →</button>
+  </div>
+</div>
+
 <div class="shell">
   <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-name">Jedda</div>
+      <div id="sidebar-logo-wrap">
+        <!-- Logo image — ganti src dengan path logo kamu, misal: images/jedda-logo.png -->
+        <img id="brand-logo-img" class="brand-logo-img" src="images/jedda-logo.png" alt="Jedda"
+          onerror="this.style.display='none';document.getElementById('brand-logo-text').style.display='block'">
+        <div id="brand-logo-text" class="brand-name" style="display:none">Jedda</div>
+      </div>
       <div class="brand-sub">Sample Room</div>
     </div>
     <div class="sidebar-nav">
@@ -171,6 +216,12 @@
       <div class="topbar">
         <div class="page-title">Articles</div>
         <div class="topbar-actions">
+          <div class="season-switcher">
+            <span class="season-label">Season</span>
+            <select class="season-select" id="season-switcher-select" onchange="switchSeason(this.value)">
+              <option value="">Loading...</option>
+            </select>
+          </div>
           <button class="btn btn-dark" onclick="openNewArticleModal()">+ New article</button>
         </div>
       </div>
@@ -478,6 +529,8 @@ let currentIterationId = null
 let pendingArchiveId = null
 let pendingArchiveType = null // 'article' | 'iteration'
 let naFabCount = 0, naIntCount = 0, naAccCount = 0
+let allSeasons = []
+let currentSeasonId = null  // null = semua koleksi
 let niFabCount = 0, niIntCount = 0, niAccCount = 0
 
 // Iteration flow: design → pattern → sewing → done
@@ -496,7 +549,87 @@ async function init() {
   if (!profile) return
   document.getElementById('user-name').textContent = profile.full_name
   document.getElementById('user-avatar').textContent = profile.full_name.charAt(0).toUpperCase()
+
+  // Load seasons first
+  await loadSeasons()
+
+  // Check if user has a saved season preference for this session
+  const savedSeasonId = sessionStorage.getItem('jedda_season_id')
+  if (savedSeasonId && allSeasons.find(s => s.id === savedSeasonId)) {
+    currentSeasonId = savedSeasonId
+    renderSeasonSwitcher()
+    await Promise.all([loadMasterData(), loadArticles()])
+  } else if (allSeasons.length <= 1) {
+    // Only one or zero seasons — skip picker, use the only one
+    currentSeasonId = allSeasons[0]?.id || null
+    if (currentSeasonId) sessionStorage.setItem('jedda_season_id', currentSeasonId)
+    renderSeasonSwitcher()
+    await Promise.all([loadMasterData(), loadArticles()])
+  } else {
+    // Multiple seasons — show picker overlay
+    showSeasonPicker()
+  }
+}
+
+// ══════════════════════════════════════════
+// SEASONS
+// ══════════════════════════════════════════
+async function loadSeasons() {
+  const { data } = await db.from('collections').select('*').eq('is_active', true).order('created_at', { ascending: false })
+  allSeasons = data || []
+}
+
+function showSeasonPicker() {
+  const overlay = document.getElementById('season-picker-overlay')
+  const list = document.getElementById('season-options-list')
+  overlay.style.display = 'flex'
+
+  // Pre-select first season
+  if (!currentSeasonId && allSeasons.length > 0) currentSeasonId = allSeasons[0].id
+
+  list.innerHTML = allSeasons.map(s => `
+    <div class="season-option ${s.id === currentSeasonId ? 'selected' : ''}"
+      onclick="selectSeasonOption('${s.id}', this)">
+      <div>
+        <div class="season-option-name">${esc(s.name)}</div>
+        <div class="season-option-meta">${s.year || ''} ${s.season || ''}</div>
+      </div>
+      <div class="season-option-check">${s.id === currentSeasonId ? '✓' : ''}</div>
+    </div>`).join('')
+}
+
+function selectSeasonOption(seasonId, el) {
+  currentSeasonId = seasonId
+  document.querySelectorAll('.season-option').forEach(o => {
+    o.classList.remove('selected')
+    o.querySelector('.season-option-check').textContent = ''
+  })
+  el.classList.add('selected')
+  el.querySelector('.season-option-check').textContent = '✓'
+}
+
+async function confirmSeasonPick() {
+  if (!currentSeasonId) { toast('Pilih koleksi dulu.'); return }
+  sessionStorage.setItem('jedda_season_id', currentSeasonId)
+  document.getElementById('season-picker-overlay').style.display = 'none'
+  renderSeasonSwitcher()
   await Promise.all([loadMasterData(), loadArticles()])
+}
+
+function renderSeasonSwitcher() {
+  const sel = document.getElementById('season-switcher-select')
+  if (!sel) return
+  sel.innerHTML = allSeasons.map(s =>
+    `<option value="${s.id}" ${s.id === currentSeasonId ? 'selected' : ''}>${esc(s.short_name)} — ${esc(s.name.split('—')[0].trim())}</option>`
+  ).join('')
+  if (allSeasons.length === 0) sel.innerHTML = '<option value="">No collections</option>'
+}
+
+async function switchSeason(seasonId) {
+  currentSeasonId = seasonId
+  sessionStorage.setItem('jedda_season_id', seasonId)
+  await loadArticles()
+  toast('Switched to: ' + (allSeasons.find(s => s.id === seasonId)?.short_name || ''))
 }
 
 async function loadMasterData() {
@@ -513,10 +646,15 @@ async function loadMasterData() {
 }
 
 async function loadArticles() {
-  const { data } = await db.from('articles')
+  let query = db.from('articles')
     .select('*, profiles!articles_designer_id_fkey(full_name), article_iterations(*)')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
+
+  // Filter by season if one is selected
+  if (currentSeasonId) query = query.eq('collection_id', currentSeasonId)
+
+  const { data } = await query
   allArticles = data || []
   renderArticles()
 }
@@ -1863,7 +2001,8 @@ async function saveNewArticle() {
     size_range: document.getElementById('na-size').value.trim() || null,
     reference_source: refSource,
     reference_notes: document.getElementById('na-ref-notes').value.trim() || null,
-    stage: 'pattern', status: 'active'
+    stage: 'pattern', status: 'active',
+    collection_id: currentSeasonId || null
   }).select().single()
   if (artErr) { toast('Failed to create article.'); console.error(artErr); return }
 
