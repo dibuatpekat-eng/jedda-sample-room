@@ -153,9 +153,10 @@
 <div id="season-picker-overlay" class="season-picker-overlay" style="display:none">
   <div class="season-picker-box">
     <div class="season-picker-brand">
-      <img id="picker-logo-img" style="height:32px;width:auto;display:block;margin:0 auto 6px;" src="images/jedda-logo.png" alt="Jedda"
-        onerror="this.style.display='none';document.getElementById('picker-logo-text').style.display='block'">
-      <div id="picker-logo-text" class="season-picker-brand-name" style="display:none">Jedda</div>
+      <img id="picker-logo-img" style="height:32px;width:auto;display:none;margin:0 auto 6px;" src="images/jedda-logo.png" alt="Jedda"
+        onload="this.style.display='block';document.getElementById('picker-logo-text').style.display='none'"
+        onerror="this.style.display='none'">
+      <div id="picker-logo-text" class="season-picker-brand-name">Jedda</div>
       <div class="season-picker-brand-sub">Sample Room</div>
     </div>
     <div class="season-picker-title">Pilih koleksi untuk sesi ini</div>
@@ -169,10 +170,11 @@
   <div class="sidebar">
     <div class="sidebar-brand">
       <div id="sidebar-logo-wrap">
-        <!-- Logo image — ganti src dengan path logo kamu, misal: images/jedda-logo.png -->
         <img id="brand-logo-img" class="brand-logo-img" src="images/jedda-logo.png" alt="Jedda"
-          onerror="this.style.display='none';document.getElementById('brand-logo-text').style.display='block'">
-        <div id="brand-logo-text" class="brand-name" style="display:none">Jedda</div>
+          style="display:none"
+          onload="this.style.display='block';document.getElementById('brand-logo-text').style.display='none'"
+          onerror="this.style.display='none'">
+        <div id="brand-logo-text" class="brand-name">Jedda</div>
       </div>
       <div class="brand-sub">Sample Room</div>
     </div>
@@ -620,7 +622,7 @@ function renderSeasonSwitcher() {
   const sel = document.getElementById('season-switcher-select')
   if (!sel) return
   sel.innerHTML = allSeasons.map(s =>
-    `<option value="${s.id}" ${s.id === currentSeasonId ? 'selected' : ''}>${esc(s.short_name)} — ${esc(s.name.split('—')[0].trim())}</option>`
+    `<option value="${s.id}" ${s.id === currentSeasonId ? 'selected' : ''}>${esc(s.short_name)} — ${esc(s.name)}</option>`
   ).join('')
   if (allSeasons.length === 0) sel.innerHTML = '<option value="">No collections</option>'
 }
