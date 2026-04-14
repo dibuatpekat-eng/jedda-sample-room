@@ -40,8 +40,8 @@
   .tab-pane.active { display: block; }
 
   /* ── SPEC ── */
-  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 16px; }
-  .spec-cell { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 16px; border: 0.5px solid var(--border); border-radius: 2px; overflow: hidden; }
+  .spec-cell { padding: 12px 16px; border-bottom: 0.5px solid var(--border); }
   .spec-cell:nth-child(odd) { padding-right: 16px; }
   .spec-cell:nth-child(even) { padding-left: 16px; border-left: 0.5px solid var(--border); }
   .spec-cell.span-2 { grid-column: span 2; padding-left: 0; border-left: none; }
@@ -619,7 +619,8 @@ function calcProgress(a) {
   if (iters.some(i => i.is_final_spec)) score++ // final spec set
   if (a.size_range) score++ // size range filled
   // size_pack confirmed and prod notes checked async — use stage as proxy for now
-  if (['sample_master','sample_vendor','production'].includes(a.stage)) score += 2
+  if (a.stage === 'production') score = 6
+  else if (['sample_master','sample_vendor'].includes(a.stage)) score = Math.max(score, 5)
   return score
 }
 
@@ -1283,12 +1284,14 @@ async function openIterationModal(iterId, articleId) {
 
 // ── Iter Spec pane ──
 async function renderIterSpecPane(iter, isOwn, isDropped) {
-  const [{ data: fabs }, { data: lins }, { data: ints }, { data: accs }] = await Promise.all([
+  const [{ data: fabs }, { data: lins }, { data: ints }, { data: accs }, { data: queueRows }] = await Promise.all([
     db.from('iteration_fabrics').select('*').eq('iteration_id', iter.id),
     db.from('iteration_lining').select('*').eq('iteration_id', iter.id),
     db.from('iteration_interlining').select('*').eq('iteration_id', iter.id),
-    db.from('iteration_accessories').select('*').eq('iteration_id', iter.id).order('sort_order')
+    db.from('iteration_accessories').select('*').eq('iteration_id', iter.id).order('sort_order'),
+    db.from('pattern_queue').select('status').eq('iteration_id', iter.id).neq('status','done')
   ])
+  const queueStatus = queueRows?.[0]?.status || null
   const lining = lins?.[0] || null
   const fabStr = fabs?.map(f => `${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>') || '—'
   const lStr = !lining ? '—' : lining.lining_type==='none' ? 'None' : lining.lining_type==='dfc' ? 'DFC' : `Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
@@ -1307,8 +1310,13 @@ async function renderIterSpecPane(iter, isOwn, isDropped) {
     html += `<hr class="divider"><div class="action-bar" style="flex-wrap:wrap;gap:8px">`
 
     if (iter.stage === 'pattern') {
-      // Only option from pola: advance to sewing
-      html += `<button class="btn btn-dark btn-sm" onclick="showSewingForm(true)">Proceed to Sewing — assign tailor ↓</button>`
+      // Only allow proceed to sewing if queue is in_progress
+      if (queueStatus === 'in_progress') {
+        html += `<button class="btn btn-dark btn-sm" onclick="showSewingForm(true)">Proceed to Sewing — assign tailor ↓</button>`
+      } else {
+        html += `<button class="btn btn-sm" disabled style="opacity:0.45;cursor:not-allowed" title="Toggle status ke In Progress di Pola Queue dulu">Proceed to Sewing ↓</button>
+        <span style="font-size:11px;color:var(--gold);align-self:center">⏳ Pola masih Waiting — toggle ke In Progress di queue dulu</span>`
+      }
     } else if (iter.stage === 'sewing') {
       // Mark as done
       html += `<button class="btn btn-dark btn-sm" onclick="markIterDone('${iter.id}')">Mark as done ✓</button>`
@@ -1439,6 +1447,8 @@ async function markIterDone(iterId) {
   const { error } = await db.from('article_iterations').update({ stage: 'done' }).eq('id', iterId)
   if (error) { toast('Failed.'); return }
   await db.from('pattern_queue').update({ status: 'done' }).eq('iteration_id', iterId)
+  // Juga mark semua sewing_assignments untuk iteration ini sebagai done
+  await db.from('sewing_assignments').update({ status: 'done' }).eq('iteration_id', iterId).eq('status', 'on_progress')
   await loadArticles()
   closeModal('modal-iteration')
   await openArticle(currentArticleId)
@@ -2000,14 +2010,15 @@ async function toggleQueueStatus(queueId, currentStatus) {
 
 async function openQueueDetail(queueId, iterId) {
   if (!iterId) { toast('No iteration linked to this queue item.'); return }
-  // Fetch iteration + spec + tailor workloads
-  const [{ data: iter }, { data: fabs }, { data: lins }, { data: ints }, { data: accs }, { data: activeSews }] = await Promise.all([
+  // Fetch iteration + spec + tailor workloads + queue status
+  const [{ data: iter }, { data: fabs }, { data: lins }, { data: ints }, { data: accs }, { data: activeSews }, { data: queueRow }] = await Promise.all([
     db.from('article_iterations').select('*, articles(name,category)').eq('id', iterId).single(),
     db.from('iteration_fabrics').select('*').eq('iteration_id', iterId),
     db.from('iteration_lining').select('*').eq('iteration_id', iterId),
     db.from('iteration_interlining').select('*').eq('iteration_id', iterId),
     db.from('iteration_accessories').select('*').eq('iteration_id', iterId).order('sort_order'),
-    db.from('sewing_assignments').select('tailor_id').eq('status','on_progress')
+    db.from('sewing_assignments').select('tailor_id').eq('status','on_progress'),
+    db.from('pattern_queue').select('status').eq('id', queueId).single()
   ])
   if (!iter) return
   currentArticleId = iter.article_id
@@ -2026,7 +2037,8 @@ async function openQueueDetail(queueId, iterId) {
   document.getElementById('qd-title').textContent = `${esc(iter.articles?.name||'—')} — ${esc(iter.label)}`
   document.getElementById('qd-sub').textContent = `${iter.type==='mockup'?'Mockup'+(iter.part?' — '+iter.part:''):'Full garment'} · ${fmtDate(iter.created_at)}`
 
-  const canProceed = iter.stage === 'pattern'
+  const queueStatus = queueRow?.status || 'waiting'
+  const canProceed = iter.stage === 'pattern' && queueStatus === 'in_progress'
 
   document.getElementById('qd-body').innerHTML = `
     <div class="spec-grid">
@@ -2058,7 +2070,16 @@ async function openQueueDetail(queueId, iterId) {
       </div>
     </div>` : `
     <div style="font-size:12px;color:var(--ink-60)">
-      Status: <strong>${iter.stage}</strong> — this iteration is no longer in pola stage.
+      ${iter.stage === 'pattern' && queueStatus === 'waiting'
+        ? `<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--cream);border-radius:2px;border:0.5px solid var(--gold)">
+            <span style="font-size:16px">⏳</span>
+            <div>
+              <div style="font-weight:400;color:var(--ink);margin-bottom:2px">Masih menunggu Bu Oki</div>
+              <div style="font-size:11px;color:var(--ink-60)">Status pola harus <strong>In Progress</strong> sebelum bisa assign ke sewing. Toggle status dari badge di daftar antrian.</div>
+            </div>
+          </div>`
+        : `Status: <strong>${iter.stage}</strong> — this iteration is no longer in pola stage.`
+      }
     </div>`}
   `
 
