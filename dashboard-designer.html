@@ -67,9 +67,9 @@
   /* ── SPEC ── */
   .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 16px; border: 0.5px solid var(--border); border-radius: 2px; overflow: hidden; }
   .spec-cell { padding: 12px 16px; border-bottom: 0.5px solid var(--border); }
-  .spec-cell:nth-child(odd) { padding-right: 16px; }
-  .spec-cell:nth-child(even) { padding-left: 16px; border-left: 0.5px solid var(--border); }
-  .spec-cell.span-2 { grid-column: span 2; padding-left: 0; border-left: none; }
+  .spec-cell:nth-child(odd) { padding: 12px 16px; border-right: 0.5px solid var(--border); }
+  .spec-cell:nth-child(even) { padding: 12px 16px; }
+  .spec-cell.span-2 { grid-column: span 2; border-right: none; }
   .spec-cell:last-child { border-bottom: none; }
   .spec-cell:nth-last-child(2):not(.span-2) { border-bottom: none; }
   .spec-label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin-bottom: 4px; }
