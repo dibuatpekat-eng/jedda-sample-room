@@ -8,8 +8,9 @@
 <style>
   /* ── PAGE LAYOUT ── */
   .shell { display: flex; flex-direction: column; min-height: 100vh; background: var(--cream); }
-  .main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  body .main, .main { flex: 1 !important; display: flex !important; flex-direction: column !important; min-height: 0; margin-left: 0 !important; width: 100% !important; }
   .page { display: none; flex-direction: column; flex: 1; min-height: calc(100vh - 46px); background: var(--cream); }
+  .sidebar { display: none !important; } /* sidebar removed */
   .page.active { display: flex; }
 
   /* ── SIDEBAR OVERRIDES ── */
@@ -37,9 +38,9 @@
   /* ── SEASON PICKER OVERLAY ── */
   .season-picker-overlay { position: fixed; inset: 0; background: var(--cream); display: flex; align-items: center; justify-content: center; z-index: 9999; }
   .season-picker-box { width: min(420px, 94vw); }
-  .season-picker-brand { text-align: center; margin-bottom: 36px; }
+  .season-picker-brand { text-align: center; margin-bottom: 36px; display: flex; flex-direction: column; align-items: center; gap: 0; }
   .season-picker-brand-name { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink); }
-  .season-picker-brand-sub { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-30); margin-top: 4px; }
+  .season-picker-brand-sub { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-30); margin-top: 10px; }
   .season-picker-title { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-60); margin-bottom: 16px; text-align: center; }
   .season-option { background: var(--warm-white); border: 0.5px solid var(--border); border-radius: 2px; padding: 16px 20px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s; display: flex; align-items: center; justify-content: space-between; }
   .season-option:hover { border-color: var(--ink-30); }
@@ -221,7 +222,7 @@
           <span style="font-size:9px;opacity:0.6">▾</span>
         </button>
         <div id="user-menu-dropdown" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#2a2a26;border:0.5px solid rgba(255,255,255,0.1);border-radius:3px;min-width:120px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,0.3)">
-          <button onclick="logout()" style="width:100%;text-align:left;padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.6);background:none;border:none;cursor:pointer;display:block" onmouseenter="this.style.background='rgba(255,255,255,0.07)'" onmouseleave="this.style.background='none'">Sign out ↪</button>
+          <button onclick="logout()" style="width:100%;text-align:left;padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.6);background:none;border:none;cursor:pointer;display:block" onmouseenter="this.style.background='rgba(255,255,255,0.07)'" onmouseleave="this.style.background='none'">Sign out</button>
         </div>
       </div>
     </div>
@@ -581,6 +582,21 @@ function toggleUserMenu() {
       })
     }, 0)
   }
+}
+
+
+function showUndoToast(msg, undoFn) {
+  // Remove existing undo toast if any
+  const existing = document.getElementById('_undo_toast')
+  if (existing) { clearTimeout(existing._timer); existing.remove() }
+
+  const t = document.createElement('div')
+  t.id = '_undo_toast'
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--warm-white);padding:10px 16px;border-radius:3px;font-size:12px;z-index:9999;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,0.2)'
+  t.innerHTML = `<span>${msg}</span><button onclick="this.closest('#_undo_toast')._undoFn()" style="font-size:11px;color:var(--gold);background:none;border:none;cursor:pointer;padding:0;font-weight:500">Undo</button>`
+  t._undoFn = async () => { clearTimeout(t._timer); t.remove(); await undoFn() }
+  document.body.appendChild(t)
+  t._timer = setTimeout(() => { if (t.parentNode) t.remove() }, 10000)
 }
 
 async function init() {
@@ -2253,11 +2269,16 @@ async function renderQueue() {
 }
 
 async function toggleQueueStatus(queueId, currentStatus) {
-  const newStatus = currentStatus === 'in_progress' ? 'waiting' : 'in_progress'
-  const updateData = { status: newStatus }
-  if (newStatus === 'in_progress') updateData.started_at = new Date().toISOString()
-  await db.from('pattern_queue').update(updateData).eq('id', queueId)
+  // Only allow waiting → in_progress (not reversible)
+  if (currentStatus !== 'waiting') return
+  const now = new Date().toISOString()
+  await db.from('pattern_queue').update({ status: 'in_progress', started_at: now }).eq('id', queueId)
   await renderQueue()
+  // Undo window: 10 seconds
+  showUndoToast('Marked as In Progress', async () => {
+    await db.from('pattern_queue').update({ status: 'waiting', started_at: null }).eq('id', queueId)
+    await renderQueue()
+  })
 }
 
 async function openQueueDetail(queueId, iterId) {
@@ -2421,7 +2442,8 @@ async function renderSewing() {
     db.from('tailors').select('*').eq('is_active', true).order('name'),
     db.from('sewing_assignments')
       .select('*, articles(name,category), tailors!sewing_assignments_tailor_id_fkey(name,type)')
-      .in('status', ['waiting','in_progress'])
+      .neq('status','done')
+      .neq('status','transferred')
       .order('created_at')
   ])
 
@@ -2586,12 +2608,17 @@ async function openSewingDetail(assignId, iterId, articleId) {
 }
 
 async function toggleSewingStatus(assignId, currentStatus) {
-  const newStatus = currentStatus === 'in_progress' ? 'waiting' : 'in_progress'
-  const updateData = { status: newStatus }
-  if (newStatus === 'in_progress') updateData.started_at = new Date().toISOString()
-  const { error } = await db.from('sewing_assignments').update(updateData).eq('id', assignId)
+  // Only allow waiting → in_progress (not reversible)
+  if (currentStatus !== 'waiting') return
+  const now = new Date().toISOString()
+  const { error } = await db.from('sewing_assignments').update({ status: 'in_progress', started_at: now }).eq('id', assignId)
   if (error) { toast('Failed.'); return }
   await renderSewing()
+  // Undo window: 10 seconds
+  showUndoToast('Marked as In Progress', async () => {
+    await db.from('sewing_assignments').update({ status: 'waiting', started_at: null }).eq('id', assignId)
+    await renderSewing()
+  })
 }
 
 async function quickMarkSewingDone(assignId) {
