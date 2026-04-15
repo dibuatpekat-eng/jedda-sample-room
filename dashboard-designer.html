@@ -7,7 +7,8 @@
 <link rel="stylesheet" href="css/style.css">
 <style>
   /* ── PAGE LAYOUT ── */
-  .main { flex: 1; margin-left: var(--sidebar-w); display: flex; flex-direction: column; min-height: 100vh; }
+  .shell { display: flex; flex-direction: column; min-height: 100vh; }
+  .main { flex: 1; display: flex; flex-direction: column; }
   .page { display: none; flex-direction: column; flex: 1; }
   .page.active { display: flex; }
 
@@ -116,7 +117,7 @@
   .section-label:first-child { margin-top: 0; }
 
   /* ── FORM ── */
-  .form-section { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); }
+  .form-section { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); font-weight: 400; }
   .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .fabric-row-wrap { margin-bottom: 8px; }
 
@@ -137,6 +138,8 @@
   .badge-sewing { background: #EBF5EF; color: #4A7C5F; border: 0.5px solid #4A7C5F; }
   .badge-dropped { background: var(--terracota-light); color: var(--terracota); border: 0.5px solid var(--terracota); }
   .badge-done { background: var(--sage-light); color: var(--sage); border: 0.5px solid var(--sage); }
+  .badge-waiting { background: var(--cream); color: var(--ink-60); border: 0.5px solid var(--border); }
+  .badge-inprog { background: #FDF3DC; color: #9A7B2A; border: 0.5px solid #C9A84C; }
   .badge-master { background: var(--gold-light); color: var(--gold); border: 0.5px solid var(--gold); }
 
   /* ── MISC ── */
@@ -147,6 +150,27 @@
   .action-bar { display: flex; gap: 8px; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 0.5px solid var(--border); }
   .info-box { background: var(--cream); border-radius: 2px; padding: 10px 12px; font-size: 11px; color: var(--ink-60); margin-bottom: 12px; }
   .info-box-label { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-30); margin-bottom: 4px; }
+
+  /* ── TOPBAR NAVIGATION ── */
+  .topbar-nav { background: #1c1c19; height: 46px; display: flex; align-items: center; padding: 0 24px; gap: 0; flex-shrink: 0; position: sticky; top: 0; z-index: 100; }
+  .topbar-logo { height: 17px; width: auto; display: block; margin-right: 28px; flex-shrink: 0; }
+  .topbar-logo-text { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 300; letter-spacing: 0.2em; color: #e8e4d8; text-transform: uppercase; margin-right: 28px; flex-shrink: 0; line-height: 1; }
+  .topbar-nav-links { display: flex; align-items: center; flex: 1; gap: 0; }
+  .topbar-link { font-size: 11px; letter-spacing: 0.04em; color: rgba(255,255,255,0.45); padding: 0 14px; height: 46px; display: flex; align-items: center; cursor: pointer; border-bottom: 1.5px solid transparent; transition: color 0.12s; white-space: nowrap; }
+  .topbar-link:hover { color: rgba(255,255,255,0.75); }
+  .topbar-link.active { color: #e8e4d8; border-bottom-color: #e8e4d8; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .topbar-season-btn { font-size: 10px; color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.06); border: 0.5px solid rgba(255,255,255,0.12); border-radius: 2px; padding: 4px 10px; cursor: pointer; transition: background 0.12s; }
+  .topbar-season-btn:hover { background: rgba(255,255,255,0.1); }
+  .topbar-new-btn { font-size: 10px; background: #e8e4d8; color: #1c1c19; border: none; border-radius: 2px; padding: 5px 12px; cursor: pointer; font-weight: 500; }
+  .topbar-new-btn:hover { opacity: 0.88; }
+  .topbar-logout { font-size: 14px; color: rgba(255,255,255,0.25); background: none; border: none; cursor: pointer; padding: 4px 6px; transition: color 0.12s; }
+  .topbar-logout:hover { color: rgba(255,255,255,0.55); }
+  /* ── PAGE FOOTER (archive link) ── */
+  .page-footer { padding: 20px 28px; margin-top: auto; display: flex; align-items: center; border-top: 0.5px solid var(--border); }
+  .footer-archive-link { font-size: 11px; color: var(--ink-30); cursor: pointer; background: none; border: none; padding: 0; transition: color 0.12s; }
+  .footer-archive-link:hover { color: var(--ink-60); }
+  .footer-user { font-size: 11px; color: var(--ink-30); margin-left: auto; }
 </style>
 </head>
 <body>
@@ -175,47 +199,26 @@
 </div>
 
 <div class="shell">
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-brand" style="display:flex;flex-direction:column;gap:5px">
-      <img id="brand-logo-img" class="brand-logo-img" src="images/jedda-logo.png" alt="Jedda"
-        style="display:none"
-        onload="this.style.display='block';document.getElementById('brand-logo-text').style.display='none'"
-        onerror="this.style.display='none'">
-      <div id="brand-logo-text" class="brand-name">Jedda</div>
-      <div class="brand-sub">Sample Room</div>
+
+  <!-- ══ TOPBAR NAVIGATION ══ -->
+  <nav class="topbar-nav">
+    <img class="topbar-logo" src="images/jedda-logo.png" alt="Jedda"
+      style="display:none"
+      onload="this.style.display='block';document.getElementById('topbar-logo-text').style.display='none'"
+      onerror="this.style.display='none'">
+    <div id="topbar-logo-text" class="topbar-logo-text">Jedda</div>
+    <div class="topbar-nav-links">
+      <div class="topbar-link active" id="nav-articles" onclick="showPage('articles',this)">All articles</div>
+      <div class="topbar-link" id="nav-queue" onclick="showPage('queue',this)">Pattern</div>
+      <div class="topbar-link" id="nav-sewing" onclick="showPage('sewing',this)">Sewing</div>
     </div>
-    <div class="sidebar-nav">
-      <div class="nav-section">Overview</div>
-      <div class="nav-item active" id="nav-articles" onclick="showPage('articles',this)">
-        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><rect x="1" y="2" width="12" height="10" rx="0.5"/><line x1="4" y1="5" x2="10" y2="5"/><line x1="4" y1="7.5" x2="10" y2="7.5"/><line x1="4" y1="10" x2="7" y2="10"/></svg>
-        All articles
-      </div>
-      <div class="nav-section">Production</div>
-      <div class="nav-item" id="nav-queue" onclick="showPage('queue',this)">
-        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><line x1="1" y1="4" x2="13" y2="4"/><line x1="1" y1="7" x2="13" y2="7"/><line x1="1" y1="10" x2="13" y2="10"/></svg>
-        Pattern queue
-      </div>
-      <div class="nav-item" id="nav-sewing" onclick="showPage('sewing',this)">
-        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><circle cx="7" cy="7" r="5"/><circle cx="7" cy="7" r="2"/></svg>
-        Sewing
-      </div>
+    <div class="topbar-right">
+      <button class="topbar-season-btn" id="season-switcher-btn" onclick="showSeasonPicker()">—</button>
+      <button class="topbar-new-btn" onclick="openNewArticleModal()">+ New article</button>
+      <span style="font-size:10px;color:rgba(255,255,255,0.3)" id="user-name-topbar"></span>
+      <button class="topbar-logout" onclick="logout()" title="Sign out">↪</button>
     </div>
-    <div style="padding:12px 0;border-top:0.5px solid rgba(255,255,255,0.07)">
-      <div class="nav-item" id="nav-archive" onclick="showPage('archive',this)">
-        <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1"><polyline points="2,3 12,3"/><path d="M5,3V2h4v1"/><rect x="3" y="3" width="8" height="9" rx="0.5"/><line x1="5" y1="6" x2="5" y2="10"/><line x1="9" y1="6" x2="9" y2="10"/></svg>
-        Archive
-      </div>
-    </div>
-    <div class="sidebar-user">
-      <div class="sidebar-avatar" id="user-avatar">—</div>
-      <div>
-        <div class="sidebar-user-name" id="user-name">Loading...</div>
-        <div class="sidebar-user-role">Designer</div>
-      </div>
-      <button class="logout-btn" onclick="logout()" title="Sign out">↪</button>
-    </div>
-  </div>
+  </nav>
 
   <!-- MAIN -->
   <div class="main">
@@ -224,14 +227,6 @@
     <div id="page-articles" class="page active">
       <div class="topbar">
         <div class="page-title">All articles</div>
-        <div class="topbar-actions">
-          <div class="season-switcher" id="season-switcher-pill" onclick="showSeasonPicker()" style="cursor:pointer" title="Switch collection">
-            <span class="season-label">Collection</span>
-            <span class="season-val-display" id="season-display-val">—</span>
-            <span style="font-size:9px;color:var(--ink-30)">▾</span>
-          </div>
-          <button class="btn btn-dark" onclick="openNewArticleModal()">+ New article</button>
-        </div>
       </div>
       <div class="content">
         <div class="list-head" style="grid-template-columns:2fr 1fr 1.5fr 1fr 1fr">
@@ -239,14 +234,21 @@
         </div>
         <div id="articles-list"></div>
       </div>
+      <div class="page-footer">
+        <button class="footer-archive-link" onclick="showPage('archive',null)">Archive</button>
+        <span class="footer-user" id="user-name"></span>
+      </div>
     </div>
 
     <!-- PAGE: PATTERN QUEUE -->
     <div id="page-queue" class="page">
-      <div class="topbar"><div class="page-title">Pattern queue</div></div>
+      <div class="topbar"><div class="page-title">Pattern</div></div>
       <div class="content">
         <p class="content-note">Bu Oki's pattern queue. Click an item to view spec and update status.</p>
         <div id="queue-list"></div>
+      </div>
+      <div class="page-footer">
+        <button class="footer-archive-link" onclick="showPage('archive',null)">Archive</button>
       </div>
     </div>
 
@@ -254,6 +256,9 @@
     <div id="page-sewing" class="page">
       <div class="topbar"><div class="page-title">Sewing</div></div>
       <div class="content"><div id="sewing-list"></div></div>
+      <div class="page-footer">
+        <button class="footer-archive-link" onclick="showPage('archive',null)">Archive</button>
+      </div>
     </div>
 
     <!-- PAGE: TRASH -->
@@ -386,8 +391,8 @@
             <option value="mockup">Mockup — partial</option>
           </select>
         </div>
-        <div class="form-row"><label class="form-label">Label *</label>
-          <input type="text" id="ni-label" placeholder="e.g. Revision 1, Mockup Kerah">
+        <div class="form-row" id="ni-label-row"><label class="form-label">Label *</label>
+          <input type="text" id="ni-label" placeholder="e.g. Revisi 1, Revisi 2">
         </div>
       </div>
       <div id="ni-part-row" style="display:none">
@@ -556,6 +561,8 @@ async function init() {
   profile = await requireAuth(['designer','head'])
   if (!profile) return
   document.getElementById('user-name').textContent = profile.full_name
+  const topbarUser = document.getElementById('user-name-topbar')
+  if (topbarUser) topbarUser.textContent = profile.full_name
   document.getElementById('user-avatar').textContent = profile.full_name.charAt(0).toUpperCase()
 
   // Load seasons first
@@ -629,10 +636,10 @@ async function confirmSeasonPick() {
 }
 
 function renderSeasonSwitcher() {
-  const disp = document.getElementById('season-display-val')
-  if (!disp) return
   const current = allSeasons.find(s => s.id === currentSeasonId)
-  disp.textContent = current ? current.short_name : '—'
+  const label = current ? current.short_name : '—'
+  const btn = document.getElementById('season-switcher-btn')
+  if (btn) btn.textContent = label
 }
 
 async function switchSeason(seasonId) {
@@ -674,8 +681,8 @@ async function loadArticles() {
 // ══════════════════════════════════════════
 function showPage(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
-  document.getElementById('page-' + name).classList.add('active')
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  document.getElementById('page-' + name)?.classList.add('active')
+  document.querySelectorAll('.topbar-link').forEach(n => n.classList.remove('active'))
   if (el) el.classList.add('active')
   if (name === 'queue') renderQueue()
   if (name === 'sewing') renderSewing()
@@ -895,7 +902,7 @@ async function renderIterationsPane(a, isOwn) {
       return `<div class="iter-card" onclick="openIterationModal('${iter.id}','${a.id}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
-            <div class="iter-label">${esc(iter.label)}</div>
+            <div class="iter-label">${esc(iter.type==='mockup'?'Mockup'+(iter.part?' '+iter.part:''):iter.label)}</div>
             <div class="iter-meta">${typeLabel}${iter.notes?' · '+esc(iter.notes):''}</div>
           </div>
           <span class="badge ${badgeCls}">${badgeText}</span>
@@ -912,7 +919,7 @@ async function renderIterationsPane(a, isOwn) {
       return `<div class="iter-card dropped" onclick="openIterationModal('${iter.id}','${a.id}')" style="cursor:pointer">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
-            <div class="iter-label">${esc(iter.label)}</div>
+            <div class="iter-label">${esc(iter.type==='mockup'?'Mockup'+(iter.part?' '+iter.part:''):iter.label)}</div>
             <div class="iter-meta">${typeLabel}${iter.notes?' · '+esc(iter.notes):''}</div>
           </div>
           <span class="badge badge-dropped">DROPPED</span>
@@ -1013,12 +1020,11 @@ async function renderSizePackPane(a, isOwn) {
     }
   } else {
     // No size range set
-    html += `<div style="font-size:11px;color:var(--gold);margin-bottom:12px">⚠ Size range belum diisi di tab Spec & Size. Set dulu supaya size pack bisa ditrack per size.</div>`
+    html += `<div style="font-size:11px;color:var(--gold);margin-bottom:12px;background:var(--gold-light);border:0.5px solid var(--gold);border-radius:2px;padding:10px 12px">⚠ Size range belum diisi di tab Spec & Size. Set dulu supaya size pack bisa ditrack per size — upload baru bisa dilakukan setelah size range diisi.</div>`
     const sizeFiles = (spList||[]).filter(s => !s.size_label)
     html += `<div style="border:0.5px solid var(--border);border-radius:2px;overflow:hidden">`
     html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--warm-white);border-bottom:${sizeFiles.length?'0.5px solid var(--border)':'none'}">
       <div style="font-size:12px;font-weight:400;color:var(--ink-60)">General (no size)</div>
-      ${isOwn ? `<label class="btn btn-sm" style="margin-left:auto;cursor:pointer">+ Upload<input type="file" accept=".xlsx,.xls,.pdf,.csv" multiple style="display:none" onchange="uploadSizePackFiles('${a.id}',null,this)"></label>` : ''}
     </div>`
     html += sizeFiles.map(sp => `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:0.5px solid var(--border)">
@@ -1164,7 +1170,21 @@ async function proceedToSampleMaster(articleId) {
   if (error) { toast('Failed.'); return }
   await loadArticles()
   toast('Article advanced to Sample Master.')
-  closeModal('modal-article')
+  // Switch directly to Samples tab — no close/reopen
+  const modal = document.getElementById('modal-article')
+  const samplesTabBtn = modal?.querySelector('.tab[onclick*="dtab-samples"]')
+  if (samplesTabBtn) {
+    modal.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+    modal.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'))
+    samplesTabBtn.classList.add('active')
+    document.getElementById('dtab-samples').classList.add('active')
+  }
+  // Re-render samples and readiness panes
+  const updated = allArticles.find(x => x.id === articleId)
+  if (updated) {
+    await renderSamplesPane(updated, updated.designer_id === profile.id)
+    await renderReadinessPane(updated, updated.designer_id === profile.id)
+  }
 }
 
 // ── Samples pane ──
@@ -1185,7 +1205,7 @@ async function renderSamplesPane(a, isOwn) {
     db.from('sample_masters').select('*, tailors(name)').eq('article_id', a.id).order('created_at'),
     db.from('sample_vendors').select('*').eq('article_id', a.id).order('created_at'),
     db.from('article_cetakan').select('*').eq('article_id', a.id),
-    db.from('sewing_assignments').select('tailor_id').eq('status','on_progress'),
+    db.from('sewing_assignments').select('tailor_id').in('status',['waiting','in_progress']),
     db.from('size_packs').select('size_label,confirmed').eq('article_id', a.id)
   ])
 
@@ -1416,7 +1436,8 @@ async function openIterationModal(iterId, articleId) {
   const typeLabel = iter.type === 'mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : 'Full garment'
   const isDropped = iter.status !== 'active'
 
-  document.getElementById('iter-title').textContent = `${esc(a?.name||'')} — ${esc(iter.label)}`
+  const _iterDisplayName = iter.type==='mockup'?('Mockup'+(iter.part?' '+iter.part:'')):(iter.label||'—')
+  document.getElementById('iter-title').textContent = `${esc(a?.name||'')} — ${esc(_iterDisplayName)}`
   document.getElementById('iter-sub').textContent = `${typeLabel} · ${fmtDate(iter.created_at)}${isDropped?' · DROPPED':''}`
 
   // Reset tabs
@@ -1493,7 +1514,7 @@ async function renderIterSpecPane(iter, isOwn, isDropped) {
       <div class="form-grid-2">
         <div class="form-row"><label class="form-label">Tailor *</label>
           <select id="adv-tailor"><option value="">Select tailor...</option>
-            ${await (async()=>{const{data:asw}=await db.from('sewing_assignments').select('tailor_id').eq('status','on_progress');const wlm={};tailors.forEach(t=>{wlm[t.id]=(asw||[]).filter(s=>s.tailor_id===t.id).length});return tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (opt)':''} — ${wlm[t.id]||0} WIP</option>`).join('')})()}
+            ${await (async()=>{const{data:asw}=await db.from('sewing_assignments').select('tailor_id').in('status',['waiting','in_progress']);const wlm={};tailors.forEach(t=>{wlm[t.id]=(asw||[]).filter(s=>s.tailor_id===t.id).length});return tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (opt)':''} — ${wlm[t.id]||0} WIP</option>`).join('')})()}
           </select>
         </div>
         <div class="form-row"><label class="form-label">Notes for tailor</label><input type="text" id="adv-notes" placeholder="Optional"></div>
@@ -1515,28 +1536,55 @@ function showSewingForm(show) {
 
 // ── Iter Timeline pane ──
 async function renderIterTimelinePane(iter) {
+  // Fetch timestamps from queue and sewing
+  const [{ data: queueRow }, { data: sewRow }] = await Promise.all([
+    db.from('pattern_queue').select('created_at,started_at,status').eq('iteration_id', iter.id).maybeSingle(),
+    db.from('sewing_assignments').select('created_at,started_at,done_at,status').eq('iteration_id', iter.id).order('created_at').limit(1).maybeSingle()
+  ])
+
   const isMockup = iter.type === 'mockup'
   const stages = ITER_STAGES
   const isDone = iter.stage === 'done'
+  const isDropped = iter.status !== 'active'
   const curIdx = isDone ? stages.length : stages.indexOf(iter.stage)
 
   let html = `<div style="padding:8px 0">`
   stages.forEach((s, i) => {
     const isPast = isDone || i < curIdx
     const isCurrent = !isDone && s === iter.stage
-    const dotCls = isPast ? 'done' : isCurrent ? (iter.stage==='dropped'?'dropped':'active') : ''
+    const dotCls = isDropped && isCurrent ? 'dropped' : isPast ? 'done' : isCurrent ? 'active' : ''
     const statusText = isPast ? 'Completed' : isCurrent ? 'Current stage' : 'Pending'
     const statusCls = isPast ? 'tl-done' : isCurrent ? 'tl-active' : 'tl-pending'
-    // Timestamp: created_at for pattern (when iteration was made), updated at for others
-    const ts = s === 'pattern' ? fmtDate(iter.created_at) : (isPast && s === 'done' && iter.stage === 'done') ? fmtDate(iter.updated_at||iter.created_at) : ''
+
+    // Build timestamp detail lines per stage
+    let tsLines = ''
+    if (s === 'design' && iter.created_at) {
+      tsLines = `<div style="font-size:10px;color:var(--ink-30);margin-top:1px">Dibuat ${fmtDate(iter.created_at)}</div>`
+    }
+    if (s === 'pattern') {
+      if (queueRow?.created_at) tsLines += `<div style="font-size:10px;color:var(--ink-30);margin-top:1px">Masuk antrian ${fmtDate(queueRow.created_at)}</div>`
+      if (queueRow?.started_at) tsLines += `<div style="font-size:10px;color:var(--ink-30);margin-top:1px">Mulai dikerjakan ${fmtDate(queueRow.started_at)}</div>`
+      else if (isPast || isCurrent) tsLines += `<div style="font-size:10px;color:var(--ink-30);font-style:italic;margin-top:1px">Belum mulai dikerjakan</div>`
+    }
+    if (s === 'sewing') {
+      if (sewRow?.created_at) tsLines += `<div style="font-size:10px;color:var(--ink-30);margin-top:1px">Masuk sewing ${fmtDate(sewRow.created_at)}</div>`
+      if (sewRow?.started_at) tsLines += `<div style="font-size:10px;color:var(--ink-30);margin-top:1px">Tailor mulai ${fmtDate(sewRow.started_at)}</div>`
+      else if (isPast || isCurrent) tsLines += `<div style="font-size:10px;color:var(--ink-30);font-style:italic;margin-top:1px">Belum mulai dikerjakan</div>`
+    }
+    if (s === 'done' && isDone) {
+      const doneTs = sewRow?.done_at || iter.updated_at || null
+      if (doneTs) tsLines = `<div style="font-size:10px;color:var(--ink-30);margin-top:1px">Selesai ${fmtDate(doneTs)}</div>`
+    }
+
     html += `<div class="tl-item">
       <div class="tl-left">
         <div class="tl-dot ${dotCls}"></div>
         ${i < stages.length-1 ? '<div class="tl-line"></div>' : ''}
       </div>
-      <div>
+      <div style="padding-bottom:4px">
         <div class="tl-stage">${ITER_LABEL[s]||s}</div>
-        <div class="tl-status ${statusCls}">${statusText}${ts?' · <span style="color:var(--ink-30)">'+ts+'</span>':''}</div>
+        <div class="tl-status ${statusCls}">${statusText}</div>
+        ${tsLines}
       </div>
     </div>`
   })
@@ -1599,7 +1647,7 @@ async function markIterDone(iterId) {
   if (error) { toast('Failed.'); return }
   await db.from('pattern_queue').update({ status: 'done' }).eq('iteration_id', iterId)
   // Juga mark semua sewing_assignments untuk iteration ini sebagai done
-  await db.from('sewing_assignments').update({ status: 'done' }).eq('iteration_id', iterId).eq('status', 'on_progress')
+  await db.from('sewing_assignments').update({ status: 'done', done_at: new Date().toISOString() }).eq('iteration_id', iterId).in('status', ['waiting','in_progress'])
   await loadArticles()
   closeModal('modal-iteration')
   await openArticle(currentArticleId)
@@ -1611,7 +1659,7 @@ async function confirmAdvanceToSewing(iterId) {
   if (!tailorId) { toast('Please select a tailor.'); return }
 
   const { data: iterData } = await db.from('article_iterations').select('size_for_tailor,label,type,part').eq('id', iterId).single()
-  const sewLabel = iterData ? (iterData.type==='mockup' ? `Mockup${iterData.part?' — '+iterData.part:''}` : iterData.label) : ''
+  const sewLabel = iterData ? (iterData.type==='mockup' ? `Mockup${iterData.part?' '+iterData.part:''}` : iterData.label) : ''
 
   const [stageRes, sewRes] = await Promise.all([
     db.from('article_iterations').update({ stage: 'sewing' }).eq('id', iterId),
@@ -1619,7 +1667,7 @@ async function confirmAdvanceToSewing(iterId) {
       article_id: currentArticleId, iteration_id: iterId, tailor_id: tailorId,
       size: iterData?.size_for_tailor || null, label: sewLabel || null,
       notes: document.getElementById('adv-notes')?.value?.trim() || null,
-      status: 'on_progress', assigned_by: profile.id
+      status: 'waiting', assigned_by: profile.id
     })
   ])
   if (stageRes.error || sewRes.error) { toast('Failed. Please try again.'); return }
@@ -1636,7 +1684,7 @@ async function confirmAdvanceToSewing(iterId) {
 }
 
 async function markSewingDone(assignId, iterId) {
-  await db.from('sewing_assignments').update({ status: 'done' }).eq('id', assignId)
+  await db.from('sewing_assignments').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', assignId)
   const { data: iter } = await db.from('article_iterations').select('*').eq('id', iterId).single()
   const a = allArticles.find(x => x.id === currentArticleId)
   const isOwn = a?.designer_id === profile.id
@@ -1809,7 +1857,10 @@ function openNewIterationModal(articleId, articleName, articleCat) {
 }
 
 function onNiTypeChange() {
-  document.getElementById('ni-part-row').style.display = document.getElementById('ni-type').value === 'mockup' ? 'block' : 'none'
+  const isMockup = document.getElementById('ni-type').value === 'mockup'
+  document.getElementById('ni-part-row').style.display = isMockup ? 'block' : 'none'
+  const labelRow = document.getElementById('ni-label-row')
+  if (labelRow) labelRow.style.display = isMockup ? 'none' : ''
 }
 
 function onLiningChange(prefix) {
@@ -2093,9 +2144,10 @@ async function saveNewArticle() {
 // SAVE NEW ITERATION
 // ══════════════════════════════════════════
 async function saveNewIteration() {
-  const label = document.getElementById('ni-label').value.trim()
   const type = document.getElementById('ni-type').value
   const part = document.getElementById('ni-part').value.trim()
+  const rawLabel = document.getElementById('ni-label')?.value?.trim()
+  const label = type === 'mockup' ? ('Mockup' + (part ? ' ' + part : '')) : rawLabel
   const size = document.getElementById('ni-size')?.value?.trim() || null
   if (!label) { toast('Label is required.'); return }
   if (type === 'mockup' && !part) { toast('Part name is required for mockup.'); return }
@@ -2175,7 +2227,9 @@ async function renderQueue() {
 
 async function toggleQueueStatus(queueId, currentStatus) {
   const newStatus = currentStatus === 'in_progress' ? 'waiting' : 'in_progress'
-  await db.from('pattern_queue').update({ status: newStatus }).eq('id', queueId)
+  const updateData = { status: newStatus }
+  if (newStatus === 'in_progress') updateData.started_at = new Date().toISOString()
+  await db.from('pattern_queue').update(updateData).eq('id', queueId)
   await renderQueue()
 }
 
@@ -2188,7 +2242,7 @@ async function openQueueDetail(queueId, iterId) {
     db.from('iteration_lining').select('*').eq('iteration_id', iterId),
     db.from('iteration_interlining').select('*').eq('iteration_id', iterId),
     db.from('iteration_accessories').select('*').eq('iteration_id', iterId).order('sort_order'),
-    db.from('sewing_assignments').select('tailor_id').eq('status','on_progress'),
+    db.from('sewing_assignments').select('tailor_id').in('status',['waiting','in_progress']),
     db.from('pattern_queue').select('status').eq('id', queueId).single()
   ])
   if (!iter) return
@@ -2205,7 +2259,7 @@ async function openQueueDetail(queueId, iterId) {
   const accStr = accs?.map(a=>`${esc(a.accessory_name)}${a.notes?' — '+esc(a.notes):''}`).join('<br>')||'—'
   const sizeFromIter = iter.size_for_tailor || ''
 
-  document.getElementById('qd-title').textContent = `${esc(iter.articles?.name||'—')} — ${esc(iter.label)}`
+  document.getElementById('qd-title').textContent = `${esc(iter.articles?.name||'—')} — ${esc(iter.type==='mockup'?('Mockup'+(iter.part?' '+iter.part:'')):(iter.label||'—'))}`
   document.getElementById('qd-sub').textContent = `${iter.type==='mockup'?'Mockup'+(iter.part?' — '+iter.part:''):'Full garment'} · ${fmtDate(iter.created_at)}`
 
   const queueStatus = queueRow?.status || 'waiting'
@@ -2263,14 +2317,14 @@ async function proceedToSewingFromQueue(iterId, queueId, sizeFromIter) {
   if (!currentArticleId) { toast('Error: no article selected. Close and try again.'); return }
   // Get iteration label for sewing assignment
   const { data: iterInfo } = await db.from('article_iterations').select('label,type,part').eq('id', iterId).single()
-  const sewLabel = iterInfo ? (iterInfo.type==='mockup' ? `Mockup${iterInfo.part?' — '+iterInfo.part:''}` : iterInfo.label) : ''
+  const sewLabel = iterInfo ? (iterInfo.type==='mockup' ? `Mockup${iterInfo.part?' '+iterInfo.part:''}` : iterInfo.label) : ''
   const [stageRes, sewRes, qRes] = await Promise.all([
     db.from('article_iterations').update({ stage: 'sewing' }).eq('id', iterId),
     db.from('sewing_assignments').insert({
       article_id: currentArticleId, iteration_id: iterId, tailor_id: tailorId,
       size: sizeFromIter || null, label: sewLabel || null,
       notes: document.getElementById('qd-notes')?.value?.trim() || null,
-      status: 'on_progress', assigned_by: profile.id
+      status: 'waiting', assigned_by: profile.id
     }),
     db.from('pattern_queue').update({ status: 'done' }).eq('id', queueId)
   ])
@@ -2316,7 +2370,7 @@ async function renderSewing() {
 
   const [tailorRes, assignRes] = await Promise.all([
     db.from('tailors').select('*').eq('is_active', true),
-    db.from('sewing_assignments').select('*, articles(name,category), tailors!sewing_assignments_tailor_id_fkey(name,type)').eq('status', 'on_progress')
+    db.from('sewing_assignments').select('*, articles(name,category), tailors!sewing_assignments_tailor_id_fkey(name,type)').in('status', ['waiting','in_progress'])
   ])
 
   if (tailorRes.error) { el.innerHTML = `<div class="empty">Error loading tailors: ${tailorRes.error.message}</div>`; return }
@@ -2357,8 +2411,9 @@ async function renderSewing() {
             <div style="font-size:11px;color:var(--ink-60);margin-top:2px">${w.size?'Size: '+esc(w.size):'—'}</div>
           </div>
           <div style="display:flex;gap:6px">
+            <span class="badge ${w.status==='in_progress'?'badge-inprog':'badge-waiting'}" style="cursor:pointer" onclick="event.stopPropagation();toggleSewingStatus('${w.id}','${w.status}')">${w.status==='in_progress'?'In progress':'Waiting'}</span>
+            ${w.status==='in_progress'?`<button class="btn btn-sm btn-sage" onclick="event.stopPropagation();quickMarkSewingDone('${w.id}')">Done ✓</button>`:''}
             <button class="btn btn-sm" onclick="event.stopPropagation();openTransferModal('${w.id}')">Transfer</button>
-            <button class="btn btn-sm btn-sage" onclick="event.stopPropagation();quickMarkSewingDone('${w.id}')">Done ✓</button>
           </div>
         </div>`
       }).join('') || '<div style="font-size:11px;color:var(--ink-30);padding:8px 0">No active assignments.</div>'}
@@ -2371,7 +2426,7 @@ async function openTransferModal(assignId) {
   if (!assign) return
 
   // Count workload per tailor
-  const { data: allAssigns } = await db.from('sewing_assignments').select('tailor_id').eq('status','on_progress')
+  const { data: allAssigns } = await db.from('sewing_assignments').select('tailor_id').in('status',['waiting','in_progress'])
   const wl = {}
   tailors.forEach(t => { wl[t.id] = (allAssigns||[]).filter(a => a.tailor_id === t.id).length })
 
@@ -2468,12 +2523,21 @@ async function openSewingDetail(assignId, iterId, articleId) {
   openModal('modal-sewing-detail')
 }
 
+async function toggleSewingStatus(assignId, currentStatus) {
+  const newStatus = currentStatus === 'in_progress' ? 'waiting' : 'in_progress'
+  const updateData = { status: newStatus }
+  if (newStatus === 'in_progress') updateData.started_at = new Date().toISOString()
+  const { error } = await db.from('sewing_assignments').update(updateData).eq('id', assignId)
+  if (error) { toast('Failed.'); return }
+  await renderSewing()
+}
+
 async function quickMarkSewingDone(assignId) {
   const { data: assign } = await db.from('sewing_assignments')
     .select('iteration_id,article_id,is_sample_master,size')
     .eq('id', assignId).single()
 
-  await db.from('sewing_assignments').update({ status: 'done' }).eq('id', assignId)
+  await db.from('sewing_assignments').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', assignId)
 
   if (assign?.is_sample_master) {
     await db.from('sample_masters')
@@ -2586,7 +2650,7 @@ async function addSampleMaster(articleId, size, color, tailorId) {
     article_id: articleId, tailor_id: tailorId,
     size, is_sample_master: true,
     label: `Sample Master — ${size} (${color})`,
-    status: 'on_progress', assigned_by: profile.id
+    status: 'waiting', assigned_by: profile.id
   })
   if (swErr) console.warn('SM sewing insert:', swErr.message)
 
