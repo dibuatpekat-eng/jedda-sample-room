@@ -354,7 +354,12 @@
         </div>
         <div id="na-lining-fabric-row" style="display:none">
           <div class="form-row"><label class="form-label">Warna furing</label>
-            <input type="text" id="na-lining-color" placeholder="e.g. Krem, Hitam, Putih">
+            <select id="na-lining-color">
+              <option value="">Select color...</option>
+            </select>
+          </div>
+          <div class="form-row" style="margin-top:4px">
+            <input type="text" id="na-lining-newcolor" placeholder="+ Add new color" style="width:100%">
           </div>
         </div>
       </div>
@@ -463,7 +468,12 @@
         </div>
         <div id="ni-lining-fabric-row" style="display:none">
           <div class="form-row"><label class="form-label">Warna furing</label>
-            <input type="text" id="ni-lining-color" placeholder="e.g. Krem, Hitam, Putih">
+            <select id="ni-lining-color">
+              <option value="">Select color...</option>
+            </select>
+          </div>
+          <div class="form-row" style="margin-top:4px">
+            <input type="text" id="ni-lining-newcolor" placeholder="+ Add new color" style="width:100%">
           </div>
         </div>
       </div>
@@ -574,7 +584,9 @@ let profile = null
 let allArticles = []
 let masterFabrics = []
 let masterInterlinings = []
-let masterAccessories = []
+let masterButtons = []
+let masterZippers = []
+let masterLiningColors = []
 let tailors = []
 let currentArticleId = null
 let currentIterationId = null
@@ -735,16 +747,20 @@ async function switchSeason(seasonId) {
 }
 
 async function loadMasterData() {
-  const [f, i, t, a] = await Promise.all([
-    db.from('master_fabrics').select('*').order('name'),
+  const [f, i, t, b, z, lc] = await Promise.all([
+    db.from('master_fabrics').select('*').order('name').order('color'),
     db.from('master_interlinings').select('*').order('name'),
     db.from('tailors').select('*').eq('is_active', true),
-    db.from('master_accessories').select('*').order('name')
+    db.from('master_buttons').select('*').order('supplier').order('name'),
+    db.from('master_zippers').select('*').order('type').order('size'),
+    db.from('master_lining_colors').select('*').order('color')
   ])
   masterFabrics = f.data || []
   masterInterlinings = i.data || []
   tailors = t.data || []
-  masterAccessories = a.data || []
+  masterButtons = b.data || []
+  masterZippers = z.data || []
+  masterLiningColors = lc.data || []
 }
 
 async function loadArticles() {
@@ -1041,7 +1057,7 @@ async function renderSpecPane(a, isOwn) {
     const lin = finalSpec.iteration_lining?.[0]
     const lStr = !lin ? '—' : lin.lining_type==='none' ? 'None' : lin.lining_type==='dfc' ? 'DFC' : `Furing${lin.fabric_name?' — '+esc(lin.fabric_name):''}`
     const int = finalSpec.iteration_interlining?.map(i => `${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>') || '—'
-    const acc = finalSpec.iteration_accessories?.map(a => `${esc(a.accessory_name)}${a.notes?' — '+esc(a.notes):''}`).join('<br>') || '—'
+    const acc = finalSpec.iteration_accessories?.map(a => accLabel(a)).join('<br>') || '—'
     specHtml = `
       <div style="font-size:11px;color:var(--sage);background:var(--sage-light);border:0.5px solid var(--sage-mid);border-radius:2px;padding:8px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
         <span>From: <strong>${esc(finalSpec.label)}</strong></span>
@@ -1563,7 +1579,7 @@ async function renderIterSpecPane(iter, isOwn, isDropped) {
   const fabStr = fabs?.map(f => `${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>') || '—'
   const lStr = !lining ? '—' : lining.lining_type==='none' ? 'None' : lining.lining_type==='dfc' ? 'DFC' : `Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
   const intStr = ints?.map(i => `${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>') || '—'
-  const accStr = accs?.map(a => `${esc(a.accessory_name)}${a.notes?' — '+esc(a.notes):''}`).join('<br>') || '—'
+  const accStr = accs?.map(a => accLabel(a)).join('<br>') || '—'
 
   let html = `<div class="spec-grid">
     <div class="spec-cell"><div class="spec-label">Fabric</div><div class="spec-val">${fabStr}</div></div>
@@ -1925,7 +1941,6 @@ function openNewArticleModal() {
   document.getElementById('na-acc-rows').innerHTML = ''
   addFabRow('na')
   onNaCatChange()
-  fillSelect('na-lining-fabric', masterFabrics)
   openModal('modal-new-article')
 }
 
@@ -1953,7 +1968,6 @@ function openNewIterationModal(articleId, articleName, articleCat) {
   addFabRow('ni')
   document.getElementById('ni-lining-section').style.display = ['Outer','Jacket'].includes(articleCat) ? 'block' : 'none'
   document.getElementById('ni-interlining-section').style.display = articleCat !== 'Pants' ? 'block' : 'none'
-  fillSelect('ni-lining-fabric', masterFabrics)
   openModal('modal-new-iteration')
 }
 
@@ -1967,6 +1981,11 @@ function onNiTypeChange() {
 function onLiningChange(prefix) {
   const val = document.getElementById(`${prefix}-lining-type`).value
   document.getElementById(`${prefix}-lining-fabric-row`).style.display = val === 'furing' ? 'block' : 'none'
+  if (val === 'furing') {
+    const sel = document.getElementById(`${prefix}-lining-color`)
+    sel.innerHTML = '<option value="">Select color...</option>' +
+      masterLiningColors.map(lc => `<option value="${esc(lc.color)}">${esc(lc.color)}</option>`).join('')
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1979,25 +1998,35 @@ function addFabRow(prefix) {
   if (prefix === 'na') { i = naFabCount++ }
   else if (prefix === 'ni') { i = niFabCount++ }
   else { i = overrideFabCount++ }
+  const uniqueNames = [...new Set(masterFabrics.map(f => f.name))]
   const wrap = document.createElement('div')
   wrap.className = 'fabric-row-wrap'
   wrap.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:4px">
     <div class="form-row" style="margin:0"><label class="form-label">Fabric</label>
-      <select id="${prefix}-fab-${i}" onchange="onSelChange('${prefix}-fab-${i}','${prefix}-fab-new-${i}')">
+      <select id="${prefix}-fab-${i}" onchange="onFabNameChange('${prefix}',${i})">
         <option value="">Select fabric...</option>
-        ${masterFabrics.map(f=>`<option value="${f.id}" data-name="${esc(f.name)}">${esc(f.name)}</option>`).join('')}
-        <option value="__new__">+ Type new</option>
+        ${uniqueNames.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}
       </select>
     </div>
     <div class="form-row" style="margin:0"><label class="form-label">Color</label>
-      <input type="text" id="${prefix}-col-${i}" placeholder="e.g. Bistre">
+      <select id="${prefix}-col-${i}" disabled>
+        <option value="">—</option>
+      </select>
     </div>
     <button class="btn btn-sm btn-danger" onclick="this.closest('.fabric-row-wrap').remove()" style="align-self:flex-end">×</button>
-  </div>
-  <div id="${prefix}-fab-new-${i}" style="display:none;margin-bottom:8px">
-    <input type="text" id="${prefix}-fab-newname-${i}" placeholder="Type new fabric name" style="width:100%">
   </div>`
   document.getElementById(`${prefix}-fabric-rows`).appendChild(wrap)
+}
+
+function onFabNameChange(prefix, i) {
+  const name = document.getElementById(`${prefix}-fab-${i}`).value
+  const colorEl = document.getElementById(`${prefix}-col-${i}`)
+  colorEl.innerHTML = '<option value="">—</option>'
+  colorEl.disabled = true
+  if (!name) return
+  const colors = masterFabrics.filter(f => f.name === name).map(f => f.color).filter(Boolean)
+  colorEl.innerHTML = '<option value="">Select color...</option>' + colors.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')
+  colorEl.disabled = false
 }
 
 let overrideIntCount = 0
@@ -2044,25 +2073,16 @@ function fillSelect(selId, items) {
 function collectFabs(prefix, count) {
   const out = []
   for (let i = 0; i < count; i++) {
-    const sel = document.getElementById(`${prefix}-fab-${i}`)
-    if (!sel) continue
-    const newName = document.getElementById(`${prefix}-fab-newname-${i}`)?.value?.trim()
-    const name = sel.value === '__new__' ? newName : (sel.options[sel.selectedIndex]?.dataset?.name || '')
+    const nameEl = document.getElementById(`${prefix}-fab-${i}`)
+    if (!nameEl) continue
+    const name = nameEl.value
     if (!name) continue
-    // Auto-add new fabric to master list (fire and forget)
-    if (sel.value === '__new__' && newName) {
-      const lower = newName.toLowerCase()
-      const exists = masterFabrics.some(f => f.name.toLowerCase() === lower)
-      if (!exists) {
-        db.from('master_fabrics').insert({ name: newName }).then(({ data }) => {
-          if (data?.[0]) masterFabrics.push(data[0])
-        })
-      }
-    }
+    const color = document.getElementById(`${prefix}-col-${i}`)?.value || ''
+    const fabric = masterFabrics.find(f => f.name === name && f.color === color)
     out.push({
-      fabric_id: sel.value && sel.value !== '__new__' ? sel.value : null,
+      fabric_id: fabric?.id || null,
       fabric_name: name,
-      color: document.getElementById(`${prefix}-col-${i}`)?.value?.trim() || '',
+      color: color,
       sort_order: i
     })
   }
@@ -2104,65 +2124,223 @@ function addAccRow(prefix) {
   if (prefix === 'na') { i = naAccCount++ }
   else if (prefix === 'ni') { i = niAccCount++ }
   else { i = overrideAccCount++ }
+
   const wrap = document.createElement('div')
   wrap.className = 'fabric-row-wrap'
-  wrap.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:4px">
-    <div class="form-row" style="margin:0"><label class="form-label">Accessory</label>
-      <select id="${prefix}-acc-${i}" onchange="onSelChange('${prefix}-acc-${i}','${prefix}-acc-new-${i}')">
-        <option value="">Select...</option>
-        ${masterAccessories.map(a=>`<option value="${a.id}" data-name="${esc(a.name)}">${esc(a.name)}</option>`).join('')}
-        <option value="__new__">+ Type new</option>
-      </select>
-    </div>
-    <div class="form-row" style="margin:0"><label class="form-label">Notes</label>
-      <input type="text" id="${prefix}-acc-notes-${i}" placeholder="e.g. Sungwon 28L - Bistre">
-    </div>
-    <button class="btn btn-sm btn-danger" onclick="this.closest('.fabric-row-wrap').remove()" style="align-self:flex-end">×</button>
-  </div>
-  <div id="${prefix}-acc-new-${i}" style="display:none;margin-bottom:8px">
-    <input type="text" id="${prefix}-acc-newname-${i}" placeholder="Type new accessory name" style="width:100%">
-  </div>`
+  wrap.id = `${prefix}-acc-wrap-${i}`
+  wrap.innerHTML = `
+    <div style="display:grid;grid-template-columns:120px 1fr auto;gap:8px;align-items:start;margin-bottom:8px">
+      <div class="form-row" style="margin:0">
+        <label class="form-label">Category</label>
+        <select id="${prefix}-acc-cat-${i}" onchange="onAccCatChange('${prefix}',${i})">
+          <option value="">Select...</option>
+          <option value="button">Button</option>
+          <option value="zipper">Zipper</option>
+        </select>
+      </div>
+      <div id="${prefix}-acc-detail-${i}"></div>
+      <button class="btn btn-sm btn-danger" onclick="this.closest('.fabric-row-wrap').remove()" style="margin-top:18px">×</button>
+    </div>`
   document.getElementById(`${prefix}-acc-rows`).appendChild(wrap)
+}
+
+function onAccCatChange(prefix, i) {
+  const cat = document.getElementById(`${prefix}-acc-cat-${i}`).value
+  const detail = document.getElementById(`${prefix}-acc-detail-${i}`)
+  detail.innerHTML = ''
+  if (!cat) return
+
+  if (cat === 'button') {
+    const suppliers = [...new Set(masterButtons.map(b => b.supplier))]
+    detail.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
+        <div class="form-row" style="margin:0"><label class="form-label">Supplier</label>
+          <select id="${prefix}-acc-sup-${i}" onchange="onAccSupChange('${prefix}',${i})">
+            <option value="">Select...</option>
+            ${suppliers.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row" style="margin:0"><label class="form-label">Name</label>
+          <select id="${prefix}-acc-bname-${i}" onchange="onAccBNameChange('${prefix}',${i})" disabled>
+            <option value="">—</option>
+          </select>
+        </div>
+        <div class="form-row" style="margin:0"><label class="form-label">Color</label>
+          <select id="${prefix}-acc-bcolor-${i}" onchange="onAccBColorChange('${prefix}',${i})" disabled>
+            <option value="">—</option>
+          </select>
+        </div>
+        <div class="form-row" style="margin:0"><label class="form-label">Size</label>
+          <select id="${prefix}-acc-bsize-${i}" disabled>
+            <option value="">—</option>
+          </select>
+        </div>
+      </div>`
+  } else {
+    // Zipper — filter by article category
+    const artCat = document.getElementById('na-cat')?.value || ''
+    let allowedTypes = ['metal','vislon']
+    if (artCat === 'Outer') allowedTypes = ['metal']
+    else if (artCat === 'Shirt') allowedTypes = ['vislon']
+
+    const isBottom = artCat === 'Bottom' || artCat === 'Pants'
+    const sizeField = isBottom
+      ? `<select id="${prefix}-acc-zsize-${i}" onchange="onAccZSizeChange('${prefix}',${i})">
+           <option value="">Select size...</option>
+           <option value='7"'>7"</option>
+           <option value='10"'>10"</option>
+         </select>`
+      : `<input type="text" id="${prefix}-acc-zsize-${i}" placeholder='e.g. 7"' oninput="onAccZSizeChange('${prefix}',${i})">`
+
+    detail.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div class="form-row" style="margin:0"><label class="form-label">Type</label>
+          <select id="${prefix}-acc-ztype-${i}" onchange="onAccZTypeChange('${prefix}',${i})">
+            <option value="">Select...</option>
+            ${allowedTypes.map(t => `<option value="${t}">${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row" style="margin:0"><label class="form-label">Size</label>${sizeField}</div>
+        <div class="form-row" style="margin:0"><label class="form-label">Color code</label>
+          <select id="${prefix}-acc-zcolor-${i}" disabled>
+            <option value="">—</option>
+          </select>
+        </div>
+      </div>`
+  }
+}
+
+function onAccSupChange(prefix, i) {
+  const sup = document.getElementById(`${prefix}-acc-sup-${i}`).value
+  const nameEl = document.getElementById(`${prefix}-acc-bname-${i}`)
+  const colorEl = document.getElementById(`${prefix}-acc-bcolor-${i}`)
+  const sizeEl = document.getElementById(`${prefix}-acc-bsize-${i}`)
+  nameEl.innerHTML = '<option value="">Select...</option>'
+  colorEl.innerHTML = '<option value="">—</option>'
+  sizeEl.innerHTML = '<option value="">—</option>'
+  nameEl.disabled = !sup
+  colorEl.disabled = true
+  sizeEl.disabled = true
+  if (!sup) return
+  const names = [...new Set(masterButtons.filter(b => b.supplier === sup).map(b => b.name))]
+  nameEl.innerHTML = '<option value="">Select...</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')
+}
+
+function onAccBNameChange(prefix, i) {
+  const sup = document.getElementById(`${prefix}-acc-sup-${i}`).value
+  const name = document.getElementById(`${prefix}-acc-bname-${i}`).value
+  const colorEl = document.getElementById(`${prefix}-acc-bcolor-${i}`)
+  const sizeEl = document.getElementById(`${prefix}-acc-bsize-${i}`)
+  colorEl.innerHTML = '<option value="">—</option>'
+  sizeEl.innerHTML = '<option value="">—</option>'
+  colorEl.disabled = true
+  sizeEl.disabled = true
+  if (!name) return
+  const colors = [...new Set(masterButtons.filter(b => b.supplier === sup && b.name === name).map(b => b.color))]
+  colorEl.innerHTML = '<option value="">Select...</option>' + colors.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')
+  colorEl.disabled = false
+}
+
+function onAccBColorChange(prefix, i) {
+  const sup = document.getElementById(`${prefix}-acc-sup-${i}`).value
+  const name = document.getElementById(`${prefix}-acc-bname-${i}`).value
+  const color = document.getElementById(`${prefix}-acc-bcolor-${i}`).value
+  const sizeEl = document.getElementById(`${prefix}-acc-bsize-${i}`)
+  sizeEl.innerHTML = '<option value="">—</option>'
+  sizeEl.disabled = true
+  if (!color) return
+  const sizes = masterButtons.filter(b => b.supplier === sup && b.name === name && b.color === color).map(b => b.size)
+  sizeEl.innerHTML = '<option value="">Select...</option>' + sizes.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('')
+  sizeEl.disabled = false
+}
+
+function onAccZTypeChange(prefix, i) {
+  const type = document.getElementById(`${prefix}-acc-ztype-${i}`).value
+  const sizeVal = document.getElementById(`${prefix}-acc-zsize-${i}`)?.value || ''
+  if (sizeVal) onAccZSizeChange(prefix, i)
+  else {
+    const colorEl = document.getElementById(`${prefix}-acc-zcolor-${i}`)
+    colorEl.innerHTML = '<option value="">—</option>'
+    colorEl.disabled = true
+  }
+}
+
+function onAccZSizeChange(prefix, i) {
+  const type = document.getElementById(`${prefix}-acc-ztype-${i}`).value
+  const sizeEl = document.getElementById(`${prefix}-acc-zsize-${i}`)
+  const size = sizeEl?.value || sizeEl?.value || ''
+  const colorEl = document.getElementById(`${prefix}-acc-zcolor-${i}`)
+  colorEl.innerHTML = '<option value="">—</option>'
+  colorEl.disabled = true
+  if (!type || !size) return
+  const matches = masterZippers.filter(z => z.type === type && z.size === size)
+  if (!matches.length) return
+  colorEl.innerHTML = '<option value="">Select...</option>' + matches.map(z => `<option value="${z.id}" data-qty="${z.qty}">${esc(z.color_code)} (qty: ${z.qty})</option>`).join('')
+  colorEl.disabled = false
 }
 
 function collectAccs(prefix, count) {
   const out = []
   for (let i = 0; i < count; i++) {
-    const sel = document.getElementById(`${prefix}-acc-${i}`)
-    if (!sel) continue
-    const newName = document.getElementById(`${prefix}-acc-newname-${i}`)?.value?.trim()
-    const name = sel.value === '__new__' ? newName : (sel.options[sel.selectedIndex]?.dataset?.name || '')
-    if (!name) continue
-    // Auto-add new accessory to master list — check for duplicate first (case-insensitive)
-    if (sel.value === '__new__' && newName) {
-      const lower = newName.toLowerCase()
-      const exists = masterAccessories.some(a => a.name.toLowerCase() === lower)
-      if (!exists) {
-        db.from('master_accessories').insert({ name: newName }).then(({ data }) => {
-          if (data?.[0]) masterAccessories.push(data[0])
-        })
-      }
+    const catEl = document.getElementById(`${prefix}-acc-cat-${i}`)
+    if (!catEl) continue
+    const cat = catEl.value
+    if (!cat) continue
+
+    if (cat === 'button') {
+      const sup = document.getElementById(`${prefix}-acc-sup-${i}`)?.value
+      const name = document.getElementById(`${prefix}-acc-bname-${i}`)?.value
+      const color = document.getElementById(`${prefix}-acc-bcolor-${i}`)?.value
+      const size = document.getElementById(`${prefix}-acc-bsize-${i}`)?.value
+      if (!sup || !name || !color || !size) continue
+      const btn = masterButtons.find(b => b.supplier === sup && b.name === name && b.color === color && b.size === size)
+      out.push({ category: 'button', button_id: btn?.id || null, zipper_id: null, sort_order: i })
+    } else {
+      const colorEl = document.getElementById(`${prefix}-acc-zcolor-${i}`)
+      const zipperId = colorEl?.value
+      if (!zipperId) continue
+      out.push({ category: 'zipper', zipper_id: zipperId, button_id: null, sort_order: i })
     }
-    out.push({
-      accessory_id: sel.value && sel.value !== '__new__' ? sel.value : null,
-      accessory_name: name,
-      notes: document.getElementById(`${prefix}-acc-notes-${i}`)?.value?.trim() || null,
-      sort_order: i
-    })
   }
   return out
+}
+
+function accLabel(a) {
+  if (a.category === 'button' && a.button_id) {
+    const btn = masterButtons.find(b => b.id === a.button_id)
+    if (btn) return `${esc(btn.name)} — ${esc(btn.color)} ${esc(btn.size)} (${esc(btn.supplier)})`
+  }
+  if (a.category === 'zipper' && a.zipper_id) {
+    const zip = masterZippers.find(z => z.id === a.zipper_id)
+    if (zip) return `Zipper ${esc(zip.type)} ${esc(zip.size)} — ${esc(zip.color_code)}`
+  }
+  return '—'
 }
 
 function getLiningData(prefix) {
   const typeEl = document.getElementById(`${prefix}-lining-type`)
   if (!typeEl) return null
   const liningType = typeEl.value
-  const colorEl = document.getElementById(`${prefix}-lining-color`)
-  return {
-    lining_type: liningType,
-    fabric_id: null,
-    fabric_name: liningType === 'furing' ? (colorEl?.value?.trim() || null) : null
+  if (liningType !== 'furing') return { lining_type: liningType, fabric_id: null, fabric_name: null }
+
+  const colorSel = document.getElementById(`${prefix}-lining-color`)
+  const newColorInput = document.getElementById(`${prefix}-lining-newcolor`)
+  const newColor = newColorInput?.value?.trim()
+  const selectedColor = colorSel?.value
+
+  // If new color typed, save to master_lining_colors and use it
+  const color = newColor || selectedColor || null
+  if (newColor) {
+    const lower = newColor.toLowerCase()
+    const exists = masterLiningColors.some(lc => lc.color.toLowerCase() === lower)
+    if (!exists) {
+      db.from('master_lining_colors').insert({ color: newColor }).then(({ data }) => {
+        if (data?.[0]) masterLiningColors.push(data[0])
+      })
+    }
   }
+
+  return { lining_type: 'furing', fabric_id: null, fabric_name: color }
 }
 
 // ══════════════════════════════════════════
@@ -2225,7 +2403,6 @@ async function saveNewArticle() {
   if (accs.length) {
     const { error: accErr } = await db.from('iteration_accessories').insert(accs.map(a => ({ ...a, iteration_id: iter.id })))
     if (accErr) console.warn('iteration_accessories:', accErr.message)
-    try { await db.from('article_accessories').insert(accs.map(a => ({ name: a.accessory_name, article_id: art.id }))) } catch(e) {}
   }
 
   // Add to pattern queue
@@ -2360,7 +2537,7 @@ async function openQueueDetail(queueId, iterId) {
   const fabStr = fabs?.map(f=>`${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>')||'—'
   const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':`Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
   const intStr = ints?.map(i=>`${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>')||'—'
-  const accStr = accs?.map(a=>`${esc(a.accessory_name)}${a.notes?' — '+esc(a.notes):''}`).join('<br>')||'—'
+  const accStr = accs?.map(a => accLabel(a)).join('<br>')||'—'
   const sizeFromIter = iter.size_for_tailor || ''
 
   document.getElementById('qd-title').textContent = `${esc(iter.articles?.name||'—')} — ${esc(iter.type==='mockup'?('Mockup'+(iter.part?' '+iter.part:'')):(iter.label||'—'))}`
@@ -2640,7 +2817,7 @@ async function openSewingDetail(assignId, iterId, articleId) {
   const fabStr = fabs?.map(f=>`${esc(f.fabric_name)}${f.color?' — '+esc(f.color):''}`).join('<br>') || '—'
   const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':`Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
   const intStr = ints?.map(i=>`${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>') || '—'
-  const accStr = accs?.map(a=>`${esc(a.accessory_name)}${a.notes?' — '+esc(a.notes):''}`).join('<br>') || '—'
+  const accStr = accs?.map(a => accLabel(a)).join('<br>') || '—'
 
   document.getElementById('sd-title').textContent = `${esc(assign?.articles?.name||'—')}`
   document.getElementById('sd-sub').textContent = `Tailor: ${esc(assign?.tailors?.name||'—')} · Size: ${esc(assign?.size||'—')}`
@@ -2745,7 +2922,7 @@ async function confirmAddSampleMaster(articleId) {
   const lining = finalSpec?.iteration_lining?.[0]
   const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':`Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
   const intStr = finalSpec?.iteration_interlining?.map(i=>esc(i.interlining_name)).join(', ') || '—'
-  const accStr = finalSpec?.iteration_accessories?.map(a=>`${esc(a.accessory_name)}${a.notes?' ('+esc(a.notes)+')':''}`).join(', ') || '—'
+  const accStr = finalSpec?.iteration_accessories?.map(a => accLabel(a)).join(', ') || '—'
 
   // Build confirm modal dynamically
   let m = document.getElementById('modal-sm-confirm')
@@ -2874,7 +3051,7 @@ async function openSampleMasterDetail(masterId, articleId) {
   const lining = finalSpec?.iteration_lining?.[0]
   const lStr = !lining?'—':lining.lining_type==='none'?'None':lining.lining_type==='dfc'?'DFC':`Furing${lining.fabric_name?' — '+esc(lining.fabric_name):''}`
   const intStr = finalSpec?.iteration_interlining?.map(i=>`${esc(i.interlining_name)}${i.position?' · '+esc(i.position):''}`).join('<br>') || '—'
-  const accStr = finalSpec?.iteration_accessories?.map(a=>`${esc(a.accessory_name)}${a.notes?' — '+esc(a.notes):''}`).join('<br>') || '—'
+  const accStr = finalSpec?.iteration_accessories?.map(a => accLabel(a)).join('<br>') || '—'
 
   const smStatusLabel = { in_progress:'In Progress', done:'Done', qc_checked:'QC Checked', approved:'Approved' }
   const getStatusLabel = (s) => s?.startsWith('revision') ? s.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase()) : (smStatusLabel[s]||s)
