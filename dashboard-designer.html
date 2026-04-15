@@ -563,7 +563,8 @@ async function init() {
   document.getElementById('user-name').textContent = profile.full_name
   const topbarUser = document.getElementById('user-name-topbar')
   if (topbarUser) topbarUser.textContent = profile.full_name
-  document.getElementById('user-avatar').textContent = profile.full_name.charAt(0).toUpperCase()
+  const avatarEl = document.getElementById('user-avatar')
+  if (avatarEl) avatarEl.textContent = profile.full_name.charAt(0).toUpperCase()
 
   // Load seasons first
   await loadSeasons()
@@ -2803,6 +2804,45 @@ async function addNote(articleId) {
 // START
 // ══════════════════════════════════════════
 init()
+async function logout() {
+  await db.auth.signOut()
+  window.location.href = 'index.html'
+}
+
+function toast(msg, duration) {
+  let t = document.getElementById('_toast')
+  if (!t) {
+    t = document.createElement('div')
+    t.id = '_toast'
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--warm-white);padding:9px 18px;border-radius:3px;font-size:12px;z-index:9999;transition:opacity 0.2s;pointer-events:none;opacity:0'
+    document.body.appendChild(t)
+  }
+  t.textContent = msg
+  t.style.opacity = '1'
+  clearTimeout(t._timer)
+  t._timer = setTimeout(() => { t.style.opacity = '0' }, duration || 2500)
+}
+
+function fmtDate(d) {
+  if (!d) return ''
+  try { return new Date(d).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }) } catch(e) { return '' }
+}
+
+function esc(str) {
+  if (str === null || str === undefined) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+function openModal(id) {
+  const el = document.getElementById(id)
+  if (el) { el.style.display = 'flex'; void el.offsetWidth; el.classList.add('visible') }
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id)
+  if (el) { el.classList.remove('visible'); setTimeout(() => { if (!el.classList.contains('visible')) el.style.display = 'none' }, 200) }
+}
+
 </script>
 </body>
 </html>
