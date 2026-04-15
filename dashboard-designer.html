@@ -354,23 +354,25 @@
         </div>
         <div id="na-lining-fabric-row" style="display:none">
           <div class="form-row"><label class="form-label">Warna furing</label>
-            <select id="na-lining-color">
+            <select id="na-lining-color" onchange="onLiningColorChange('na')">
               <option value="">Select color...</option>
             </select>
           </div>
-          <div class="form-row" style="margin-top:4px">
-            <input type="text" id="na-lining-newcolor" placeholder="+ Add new color" style="width:100%">
+          <div id="na-lining-newcolor-row" style="display:none">
+            <div class="form-row"><label class="form-label">New color name</label>
+              <input type="text" id="na-lining-newcolor" placeholder="e.g. Khaki">
+            </div>
           </div>
         </div>
       </div>
 
-      <div id="na-interlining-section" style="margin-top:8px">
+      <div id="na-interlining-section">
         <div class="form-section">Interlining</div>
         <div id="na-interlining-rows"></div>
         <button class="btn btn-sm" onclick="addIntRow('na')" type="button">+ Add interlining</button>
       </div>
 
-      <div id="na-accessories-section" style="margin-top:8px">
+      <div id="na-accessories-section">
         <div class="form-section">Accessories <span style="font-weight:300;color:var(--ink-30)">(optional)</span></div>
         <div id="na-acc-rows"></div>
         <button class="btn btn-sm" onclick="addAccRow('na')" type="button">+ Add accessory</button>
@@ -468,23 +470,25 @@
         </div>
         <div id="ni-lining-fabric-row" style="display:none">
           <div class="form-row"><label class="form-label">Warna furing</label>
-            <select id="ni-lining-color">
+            <select id="ni-lining-color" onchange="onLiningColorChange('ni')">
               <option value="">Select color...</option>
             </select>
           </div>
-          <div class="form-row" style="margin-top:4px">
-            <input type="text" id="ni-lining-newcolor" placeholder="+ Add new color" style="width:100%">
+          <div id="ni-lining-newcolor-row" style="display:none">
+            <div class="form-row"><label class="form-label">New color name</label>
+              <input type="text" id="ni-lining-newcolor" placeholder="e.g. Khaki">
+            </div>
           </div>
         </div>
       </div>
 
-      <div id="ni-interlining-section" style="margin-top:8px">
+      <div id="ni-interlining-section">
         <div class="form-section">Interlining</div>
         <div id="ni-interlining-rows"></div>
         <button class="btn btn-sm" onclick="addIntRow('ni')" type="button">+ Add interlining</button>
       </div>
 
-      <div id="ni-accessories-section" style="margin-top:8px">
+      <div id="ni-accessories-section">
         <div class="form-section">Accessories <span style="font-weight:300;color:var(--ink-30)">(optional)</span></div>
         <div id="ni-acc-rows"></div>
         <button class="btn btn-sm" onclick="addAccRow('ni')" type="button">+ Add accessory</button>
@@ -1984,8 +1988,15 @@ function onLiningChange(prefix) {
   if (val === 'furing') {
     const sel = document.getElementById(`${prefix}-lining-color`)
     sel.innerHTML = '<option value="">Select color...</option>' +
-      masterLiningColors.map(lc => `<option value="${esc(lc.color)}">${esc(lc.color)}</option>`).join('')
+      masterLiningColors.map(lc => `<option value="${esc(lc.color)}">${esc(lc.color)}</option>`).join('') +
+      '<option value="__new__">+ Add new color</option>'
+    document.getElementById(`${prefix}-lining-newcolor-row`).style.display = 'none'
   }
+}
+
+function onLiningColorChange(prefix) {
+  const val = document.getElementById(`${prefix}-lining-color`).value
+  document.getElementById(`${prefix}-lining-newcolor-row`).style.display = val === '__new__' ? 'block' : 'none'
 }
 
 // ══════════════════════════════════════════
@@ -2009,11 +2020,16 @@ function addFabRow(prefix) {
       </select>
     </div>
     <div class="form-row" style="margin:0"><label class="form-label">Color</label>
-      <select id="${prefix}-col-${i}" disabled>
+      <select id="${prefix}-col-${i}" onchange="onFabColorChange('${prefix}',${i})" disabled>
         <option value="">—</option>
       </select>
     </div>
     <button class="btn btn-sm btn-danger" onclick="this.closest('.fabric-row-wrap').remove()" style="align-self:flex-end">×</button>
+  </div>
+  <div id="${prefix}-col-new-${i}" style="display:none;margin-bottom:8px">
+    <div class="form-row" style="margin:0"><label class="form-label">New color name</label>
+      <input type="text" id="${prefix}-col-newval-${i}" placeholder="e.g. Olive">
+    </div>
   </div>`
   document.getElementById(`${prefix}-fabric-rows`).appendChild(wrap)
 }
@@ -2021,12 +2037,22 @@ function addFabRow(prefix) {
 function onFabNameChange(prefix, i) {
   const name = document.getElementById(`${prefix}-fab-${i}`).value
   const colorEl = document.getElementById(`${prefix}-col-${i}`)
+  const newRow = document.getElementById(`${prefix}-col-new-${i}`)
   colorEl.innerHTML = '<option value="">—</option>'
   colorEl.disabled = true
+  if (newRow) newRow.style.display = 'none'
   if (!name) return
   const colors = masterFabrics.filter(f => f.name === name).map(f => f.color).filter(Boolean)
-  colorEl.innerHTML = '<option value="">Select color...</option>' + colors.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')
+  colorEl.innerHTML = '<option value="">Select color...</option>' +
+    colors.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('') +
+    '<option value="__new__">+ Add new color</option>'
   colorEl.disabled = false
+}
+
+function onFabColorChange(prefix, i) {
+  const val = document.getElementById(`${prefix}-col-${i}`).value
+  const newRow = document.getElementById(`${prefix}-col-new-${i}`)
+  if (newRow) newRow.style.display = val === '__new__' ? 'block' : 'none'
 }
 
 let overrideIntCount = 0
@@ -2077,14 +2103,26 @@ function collectFabs(prefix, count) {
     if (!nameEl) continue
     const name = nameEl.value
     if (!name) continue
-    const color = document.getElementById(`${prefix}-col-${i}`)?.value || ''
+    const colorSel = document.getElementById(`${prefix}-col-${i}`)
+    const isNewColor = colorSel?.value === '__new__'
+    const newColorVal = document.getElementById(`${prefix}-col-newval-${i}`)?.value?.trim()
+    const color = isNewColor ? newColorVal : (colorSel?.value || '')
+    if (!color) continue
+
+    // Auto-save new color to master_fabrics
+    if (isNewColor && newColorVal) {
+      const exists = masterFabrics.some(f => f.name === name && f.color.toLowerCase() === newColorVal.toLowerCase())
+      if (!exists) {
+        db.from('master_fabrics').insert({ name, color: newColorVal }).then(({ data }) => {
+          if (data?.[0]) {
+            masterFabrics.push(data[0])
+          }
+        })
+      }
+    }
+
     const fabric = masterFabrics.find(f => f.name === name && f.color === color)
-    out.push({
-      fabric_id: fabric?.id || null,
-      fabric_name: name,
-      color: color,
-      sort_order: i
-    })
+    out.push({ fabric_id: fabric?.id || null, fabric_name: name, color, sort_order: i })
   }
   return out
 }
@@ -2324,13 +2362,11 @@ function getLiningData(prefix) {
   if (liningType !== 'furing') return { lining_type: liningType, fabric_id: null, fabric_name: null }
 
   const colorSel = document.getElementById(`${prefix}-lining-color`)
-  const newColorInput = document.getElementById(`${prefix}-lining-newcolor`)
-  const newColor = newColorInput?.value?.trim()
-  const selectedColor = colorSel?.value
+  const isNew = colorSel?.value === '__new__'
+  const newColor = document.getElementById(`${prefix}-lining-newcolor`)?.value?.trim()
+  const color = isNew ? newColor : (colorSel?.value || null)
 
-  // If new color typed, save to master_lining_colors and use it
-  const color = newColor || selectedColor || null
-  if (newColor) {
+  if (isNew && newColor) {
     const lower = newColor.toLowerCase()
     const exists = masterLiningColors.some(lc => lc.color.toLowerCase() === lower)
     if (!exists) {
