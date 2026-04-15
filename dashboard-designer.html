@@ -359,13 +359,13 @@
         </div>
       </div>
 
-      <div id="na-interlining-section">
+      <div id="na-interlining-section" style="margin-top:8px">
         <div class="form-section">Interlining</div>
         <div id="na-interlining-rows"></div>
         <button class="btn btn-sm" onclick="addIntRow('na')" type="button">+ Add interlining</button>
       </div>
 
-      <div id="na-accessories-section">
+      <div id="na-accessories-section" style="margin-top:8px">
         <div class="form-section">Accessories <span style="font-weight:300;color:var(--ink-30)">(optional)</span></div>
         <div id="na-acc-rows"></div>
         <button class="btn btn-sm" onclick="addAccRow('na')" type="button">+ Add accessory</button>
@@ -468,13 +468,13 @@
         </div>
       </div>
 
-      <div id="ni-interlining-section">
+      <div id="ni-interlining-section" style="margin-top:8px">
         <div class="form-section">Interlining</div>
         <div id="ni-interlining-rows"></div>
         <button class="btn btn-sm" onclick="addIntRow('ni')" type="button">+ Add interlining</button>
       </div>
 
-      <div id="ni-accessories-section">
+      <div id="ni-accessories-section" style="margin-top:8px">
         <div class="form-section">Accessories <span style="font-weight:300;color:var(--ink-30)">(optional)</span></div>
         <div id="ni-acc-rows"></div>
         <button class="btn btn-sm" onclick="addAccRow('ni')" type="button">+ Add accessory</button>
@@ -1585,8 +1585,14 @@ async function renderIterSpecPane(iter, isOwn, isDropped) {
         <span style="font-size:11px;color:var(--gold);align-self:center">⏳ Pola masih Waiting — toggle ke In Progress di queue dulu</span>`
       }
     } else if (iter.stage === 'sewing') {
-      // Mark as done
-      html += `<button class="btn btn-dark btn-sm" onclick="markIterDone('${iter.id}')">Mark as done ✓</button>`
+      // Only allow done if sewing assignment is in_progress
+      const { data: _sewChk } = await db.from('sewing_assignments').select('id').eq('iteration_id', iter.id).eq('status','in_progress').limit(1)
+      if ((_sewChk||[]).length > 0) {
+        html += `<button class="btn btn-dark btn-sm" onclick="markIterDone('${iter.id}')">Mark as done ✓</button>`
+      } else {
+        html += `<button class="btn btn-sm" disabled style="opacity:0.4;cursor:not-allowed">Mark as done ✓</button>
+        <span style="font-size:11px;color:var(--gold);align-self:center">⏳ Toggle ke In Progress dulu di halaman Sewing</span>`
+      }
     } else if (iter.stage === 'done') {
       // Set as final spec only when done AND not a mockup
       if (iter.type !== 'mockup') {
@@ -2462,6 +2468,35 @@ async function moveQueue(queueId, dir) {
 // ══════════════════════════════════════════
 // SEWING
 // ══════════════════════════════════════════
+
+// ══ SEWING DRAG REORDER ══
+let _sewDragId = null
+let _sewDragTailorId = null
+
+function sewDragStart(e, assignId, tailorId) {
+  _sewDragId = assignId
+  _sewDragTailorId = tailorId
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', assignId)
+}
+
+async function sewDrop(e, targetId, tailorId) {
+  e.preventDefault()
+  if (!_sewDragId || _sewDragId === targetId) return
+  const { data } = await db.from('sewing_assignments').select('id,created_at').eq('tailor_id', tailorId).neq('status','done').neq('status','transferred').order('created_at')
+  if (!data) return
+  const fromIdx = data.findIndex(a => a.id === _sewDragId)
+  const toIdx = data.findIndex(a => a.id === targetId)
+  if (fromIdx < 0 || toIdx < 0) { _sewDragId = null; return }
+  const tsA = data[fromIdx].created_at, tsB = data[toIdx].created_at
+  await Promise.all([
+    db.from('sewing_assignments').update({ created_at: tsB }).eq('id', data[fromIdx].id),
+    db.from('sewing_assignments').update({ created_at: tsA }).eq('id', data[toIdx].id)
+  ])
+  _sewDragId = null
+  await renderSewing()
+}
+
 async function renderSewing() {
   const el = document.getElementById('sewing-list')
   el.innerHTML = '<div style="font-size:12px;color:var(--ink-30);padding:20px 0">Loading...</div>'
@@ -2489,7 +2524,7 @@ async function renderSewing() {
 
   el.innerHTML = tailorList.map(t => {
     const works = assigns.filter(a => a.tailor_id === t.id).sort((a,b) => new Date(a.created_at||a.assigned_at) - new Date(b.created_at||b.assigned_at))
-    return `<div class="card" style="margin-bottom:8px">
+    return `<div class="card" style="margin-bottom:8px" data-sew-tailor="${t.id}">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
         <div style="font-size:13px;font-weight:400">${esc(t.name)}</div>
         ${t.type==='optional'?'<span style="font-size:9px;color:var(--ink-30)">(optional)</span>':''}
@@ -2511,8 +2546,10 @@ async function renderSewing() {
             <div style="font-size:10px;color:var(--ink-30);margin-top:2px">${w.size?'Size '+esc(w.size):'—'}</div>
           </div>
           <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
-            ${idx>0?`<button class="btn btn-sm" style="padding:3px 7px" onclick="moveSewingOrder('${w.id}','${t.id}',-1)">↑</button>`:''}
-            ${idx<works.length-1?`<button class="btn btn-sm" style="padding:3px 7px" onclick="moveSewingOrder('${w.id}','${t.id}',1)">↓</button>`:''}
+            <div draggable="true"
+              ondragstart="sewDragStart(event,'${w.id}','${t.id}')"
+              ondragend="document.querySelectorAll('[data-sew-id]').forEach(el=>el.style.background='')"
+              style="cursor:grab;color:var(--ink-30);font-size:14px;padding:2px 4px;flex-shrink:0;user-select:none;line-height:1" title="Drag to reorder">⠿</div>
             <span class="badge ${isInProg?'badge-inprog':'badge-waiting'}" style="cursor:pointer" onclick="event.stopPropagation();toggleSewingStatus('${w.id}','${w.status}')">${isInProg?'In progress':'Waiting'}</span>
             ${isInProg?`<button class="btn btn-sm btn-sage" onclick="event.stopPropagation();quickMarkSewingDone('${w.id}')">Done ✓</button>`:''}
             <button class="btn btn-sm" onclick="event.stopPropagation();openTransferModal('${w.id}')">Transfer</button>
