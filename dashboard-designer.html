@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="css/style.css">
 <style>
   /* ── PAGE LAYOUT ── */
-  .shell { display: flex; flex-direction: column; min-height: 100vh; }
-  .main { flex: 1; display: flex; flex-direction: column; }
-  .page { display: none; flex-direction: column; flex: 1; }
+  .shell { display: flex; flex-direction: column; min-height: 100vh; background: var(--cream); }
+  .main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .page { display: none; flex-direction: column; flex: 1; min-height: calc(100vh - 46px); background: var(--cream); }
   .page.active { display: flex; }
 
   /* ── SIDEBAR OVERRIDES ── */
@@ -117,7 +117,7 @@
   .section-label:first-child { margin-top: 0; }
 
   /* ── FORM ── */
-  .form-section { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); font-weight: 400; }
+  .form-section { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); font-weight: 400; }
   .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .fabric-row-wrap { margin-bottom: 8px; }
 
@@ -183,17 +183,17 @@
 <div id="season-picker-overlay" class="season-picker-overlay" style="display:none">
   <div class="season-picker-box">
     <div class="season-picker-brand">
-      <img id="picker-logo-img" style="height:32px;width:auto;display:none;margin:0 auto 6px;" src="images/jedda-logo.png" alt="Jedda"
+      <img id="picker-logo-img" style="height:32px;width:auto;display:none;margin:0 auto 6px;filter:invert(1)" src="images/jedda-logo.png" alt="Jedda"
         onload="this.style.display='block';document.getElementById('picker-logo-text').style.display='none'"
         onerror="this.style.display='none'">
       <div id="picker-logo-text" class="season-picker-brand-name">Jedda</div>
       <div class="season-picker-brand-sub">Sample Room</div>
     </div>
-    <div class="season-picker-title" id="season-picker-title">Pilih koleksi untuk sesi ini</div>
+    <div class="season-picker-title" id="season-picker-title">Select a collection for this session</div>
     <div id="season-options-list"></div>
     <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="btn btn-dark" style="flex:1" onclick="confirmSeasonPick()">Masuk →</button>
-      <button class="btn" id="season-picker-cancel" style="display:none" onclick="document.getElementById('season-picker-overlay').style.display='none'">Batal</button>
+      <button class="btn btn-dark" style="flex:1" onclick="confirmSeasonPick()">Enter →</button>
+      <button class="btn" id="season-picker-cancel" style="display:none" onclick="document.getElementById('season-picker-overlay').style.display='none'">Cancel</button>
     </div>
   </div>
 </div>
@@ -215,8 +215,15 @@
     <div class="topbar-right">
       <button class="topbar-season-btn" id="season-switcher-btn" onclick="showSeasonPicker()">—</button>
       <button class="topbar-new-btn" onclick="openNewArticleModal()">+ New article</button>
-      <span style="font-size:10px;color:rgba(255,255,255,0.3)" id="user-name-topbar"></span>
-      <button class="topbar-logout" onclick="logout()" title="Sign out">↪</button>
+      <div style="position:relative;margin-left:12px">
+        <button id="user-menu-btn" onclick="toggleUserMenu()" style="font-size:11px;color:rgba(255,255,255,0.45);background:none;border:none;cursor:pointer;padding:4px 2px;display:flex;align-items:center;gap:4px">
+          <span id="user-name-topbar">—</span>
+          <span style="font-size:9px;opacity:0.6">▾</span>
+        </button>
+        <div id="user-menu-dropdown" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#2a2a26;border:0.5px solid rgba(255,255,255,0.1);border-radius:3px;min-width:120px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,0.3)">
+          <button onclick="logout()" style="width:100%;text-align:left;padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.6);background:none;border:none;cursor:pointer;display:block" onmouseenter="this.style.background='rgba(255,255,255,0.07)'" onmouseleave="this.style.background='none'">Sign out ↪</button>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -557,6 +564,25 @@ const PARENT_LABEL = { design:'Design', pattern:'Pattern', sewing:'Sewing', samp
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
+
+function toggleUserMenu() {
+  const d = document.getElementById('user-menu-dropdown')
+  if (!d) return
+  const isOpen = d.style.display !== 'none'
+  d.style.display = isOpen ? 'none' : 'block'
+  if (!isOpen) {
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', function closeMenu(e) {
+        if (!document.getElementById('user-menu-btn')?.contains(e.target)) {
+          d.style.display = 'none'
+          document.removeEventListener('click', closeMenu)
+        }
+      })
+    }, 0)
+  }
+}
+
 async function init() {
   profile = await requireAuth(['designer','head'])
   if (!profile) return
@@ -629,7 +655,7 @@ function selectSeasonOption(seasonId, el) {
 }
 
 async function confirmSeasonPick() {
-  if (!currentSeasonId) { toast('Pilih koleksi dulu.'); return }
+  if (!currentSeasonId) { toast('Please select a collection.'); return }
   sessionStorage.setItem('jedda_season_id', currentSeasonId)
   document.getElementById('season-picker-overlay').style.display = 'none'
   renderSeasonSwitcher()
@@ -2365,21 +2391,44 @@ async function moveQueue(queueId, dir) {
 // ══════════════════════════════════════════
 // SEWING
 // ══════════════════════════════════════════
+
+async function moveSewingOrder(assignId, tailorId, dir) {
+  // Get all assignments for this tailor in current order
+  const { data } = await db.from('sewing_assignments')
+    .select('id, created_at')
+    .eq('tailor_id', tailorId)
+    .in('status', ['waiting','in_progress'])
+    .order('created_at')
+  if (!data) return
+  const idx = data.findIndex(a => a.id === assignId)
+  const newIdx = idx + dir
+  if (newIdx < 0 || newIdx >= data.length) return
+  // Swap created_at timestamps to reorder
+  const tsA = data[idx].created_at
+  const tsB = data[newIdx].created_at
+  await Promise.all([
+    db.from('sewing_assignments').update({ created_at: tsB }).eq('id', data[idx].id),
+    db.from('sewing_assignments').update({ created_at: tsA }).eq('id', data[newIdx].id)
+  ])
+  await renderSewing()
+}
+
 async function renderSewing() {
   const el = document.getElementById('sewing-list')
   el.innerHTML = '<div style="font-size:12px;color:var(--ink-30);padding:20px 0">Loading...</div>'
 
   const [tailorRes, assignRes] = await Promise.all([
-    db.from('tailors').select('*').eq('is_active', true),
-    db.from('sewing_assignments').select('*, articles(name,category), tailors!sewing_assignments_tailor_id_fkey(name,type)').in('status', ['waiting','in_progress'])
+    db.from('tailors').select('*').eq('is_active', true).order('name'),
+    db.from('sewing_assignments')
+      .select('*, articles(name,category), tailors!sewing_assignments_tailor_id_fkey(name,type)')
+      .in('status', ['waiting','in_progress'])
+      .order('created_at')
   ])
 
-  if (tailorRes.error) { el.innerHTML = `<div class="empty">Error loading tailors: ${tailorRes.error.message}</div>`; return }
-  if (assignRes.error) { el.innerHTML = `<div class="empty">Error loading assignments: ${assignRes.error.message}</div>`; return }
+  if (tailorRes.error || assignRes.error) { el.innerHTML = '<div class="empty">Error loading.</div>'; return }
 
   const tailorList = tailorRes.data || []
   const assigns = assignRes.data || []
-
   if (!tailorList.length) { el.innerHTML = '<div class="empty">No active tailors found.</div>'; return }
 
   // Fetch iteration labels
@@ -2392,32 +2441,44 @@ async function renderSewing() {
 
   el.innerHTML = tailorList.map(t => {
     const works = assigns.filter(a => a.tailor_id === t.id)
-    return `<div class="card" style="margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+    if (!works.length) return `<div class="card" style="margin-bottom:8px;opacity:0.45">
+      <div style="display:flex;align-items:center;gap:8px">
         <div style="font-size:13px;font-weight:400">${esc(t.name)}</div>
         ${t.type==='optional'?'<span style="font-size:9px;color:var(--ink-30)">(optional)</span>':''}
-        <span style="margin-left:auto;font-size:11px;color:${works.length>2?'var(--terracota)':'var(--ink-30)'}">${works.length} WIP${works.length>2?' · overloaded':''}</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--ink-30)">0 WIP</span>
       </div>
-      ${works.map(w => {
+    </div>`
+
+    return `<div class="card" style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:0.5px solid var(--border)">
+        <div style="font-size:13px;font-weight:400">${esc(t.name)}</div>
+        ${t.type==='optional'?'<span style="font-size:9px;color:var(--ink-30)">(optional)</span>':''}
+        <span style="margin-left:auto;font-size:11px;color:${works.length>2?'var(--terracota)':'var(--ink-30)'}">${works.length} WIP</span>
+      </div>
+      ${works.map((w, idx) => {
         const iter = w.iteration_id ? iterMap[w.iteration_id] : null
-        const iterLabel = iter ? (iter.type==='mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : iter.label) : ''
+        const iterLabel = iter ? (iter.type==='mockup' ? ('Mockup' + (iter.part ? ' ' + iter.part : '')) : iter.label) : (w.label || '')
         const isSampleMaster = !!w.is_sample_master
-        return `<div style="padding:8px 0;border-top:0.5px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer" onclick="openSewingDetail('${w.id}','${w.iteration_id||''}','${w.article_id}')">
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <div style="font-size:12px;font-weight:400">${esc(w.articles?.name||'—')}</div>
-              ${iterLabel?`<span style="font-size:11px;color:var(--ink-60)">— ${esc(iterLabel)}</span>`:''}
-              ${isSampleMaster?`<span class="badge badge-master" style="font-size:9px;padding:1px 5px">SM</span>`:''}
+        const isInProg = w.status === 'in_progress'
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink-30);width:22px;text-align:center;flex-shrink:0">${idx+1}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:400;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span>${esc(w.articles?.name||'—')}</span>
+              ${iterLabel?`<span style="color:var(--ink-60)">— ${esc(iterLabel)}</span>`:''}
+              ${isSampleMaster?`<span class="badge badge-master" style="font-size:9px;padding:1px 6px">Sample Master</span>`:''}
             </div>
-            <div style="font-size:11px;color:var(--ink-60);margin-top:2px">${w.size?'Size: '+esc(w.size):'—'}</div>
+            <div style="font-size:10px;color:var(--ink-30);margin-top:2px">${w.size?'Size '+esc(w.size):'—'}</div>
           </div>
-          <div style="display:flex;gap:6px">
-            <span class="badge ${w.status==='in_progress'?'badge-inprog':'badge-waiting'}" style="cursor:pointer" onclick="event.stopPropagation();toggleSewingStatus('${w.id}','${w.status}')">${w.status==='in_progress'?'In progress':'Waiting'}</span>
-            ${w.status==='in_progress'?`<button class="btn btn-sm btn-sage" onclick="event.stopPropagation();quickMarkSewingDone('${w.id}')">Done ✓</button>`:''}
-            <button class="btn btn-sm" onclick="event.stopPropagation();openTransferModal('${w.id}')">Transfer</button>
+          <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
+            ${idx>0?`<button class="btn btn-sm" style="padding:3px 7px" onclick="moveSewingOrder('${w.id}','${t.id}',-1)" title="Move up">↑</button>`:''}
+            ${idx<works.length-1?`<button class="btn btn-sm" style="padding:3px 7px" onclick="moveSewingOrder('${w.id}','${t.id}',1)" title="Move down">↓</button>`:''}
+            <span class="badge ${isInProg?'badge-inprog':'badge-waiting'}" style="cursor:pointer" onclick="toggleSewingStatus('${w.id}','${w.status}')">${isInProg?'In progress':'Waiting'}</span>
+            ${isInProg?`<button class="btn btn-sm btn-sage" onclick="quickMarkSewingDone('${w.id}')">Done ✓</button>`:''}
+            <button class="btn btn-sm" onclick="openTransferModal('${w.id}')">Transfer</button>
           </div>
         </div>`
-      }).join('') || '<div style="font-size:11px;color:var(--ink-30);padding:8px 0">No active assignments.</div>'}
+      }).join('')}
     </div>`
   }).join('')
 }
