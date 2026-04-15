@@ -14,7 +14,6 @@
   .sidebar { display: none !important; }
   .with-sidebar { margin-left: 0 !important; }
   .topbar-nav { background: #1c1c19; height: 46px; display: flex; align-items: center; padding: 0 24px; flex-shrink: 0; position: sticky; top: 0; z-index: 100; }
-  .topbar-logo-text { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 300; letter-spacing: 0.2em; color: #e8e4d8; text-transform: uppercase; margin-right: 28px; flex-shrink: 0; line-height: 1; cursor: default; }
   .topbar-nav-links { display: flex; align-items: center; flex: 1; }
   .topbar-link { font-size: 11px; letter-spacing: 0.04em; color: rgba(255,255,255,0.45); padding: 0 14px; height: 46px; display: flex; align-items: center; cursor: pointer; border-bottom: 1.5px solid transparent; transition: color 0.12s; white-space: nowrap; }
   .topbar-link:hover { color: rgba(255,255,255,0.75); }
@@ -236,6 +235,10 @@
 <div class="shell">
 
   <nav class="topbar-nav">
+    <img src="images/jedda-logo.png" alt="Jedda"
+      style="height:17px;width:auto;display:none;margin-right:28px;flex-shrink:0"
+      onload="this.style.display='block';document.getElementById('topbar-logo-text').style.display='none'"
+      onerror="this.style.display='none'">
     <div id="topbar-logo-text" class="topbar-logo-text">Jedda</div>
     <div class="topbar-nav-links">
       <div class="topbar-link active" id="nav-articles" onclick="showPage('articles',this)">All articles</div>
@@ -624,15 +627,14 @@ function showUndoToast(msg, undoFn) {
 
 async function moveSewingOrder(assignId, tailorId, dir) {
   const { data } = await db.from('sewing_assignments').select('id,created_at').eq('tailor_id', tailorId).neq('status','done').neq('status','transferred').order('created_at')
-  if (!data) return
+  if (!data || data.length < 2) return
   const idx = data.findIndex(a => a.id === assignId)
   const newIdx = idx + dir
   if (newIdx < 0 || newIdx >= data.length) return
   const tsA = data[idx].created_at, tsB = data[newIdx].created_at
-  await Promise.all([
-    db.from('sewing_assignments').update({ created_at: tsB }).eq('id', data[idx].id),
-    db.from('sewing_assignments').update({ created_at: tsA }).eq('id', data[newIdx].id)
-  ])
+  const { error: e1 } = await db.from('sewing_assignments').update({ created_at: tsB }).eq('id', data[idx].id)
+  const { error: e2 } = await db.from('sewing_assignments').update({ created_at: tsA }).eq('id', data[newIdx].id)
+  if (e1 || e2) { toast('Failed to reorder.'); console.error(e1||e2); return }
   await renderSewing()
 }
 
@@ -938,14 +940,19 @@ async function openArticle(id) {
 
 // ── Iterations pane ──
 async function renderIterationsPane(a, isOwn) {
-  const [{ data: iters }, { data: queueItems }] = await Promise.all([
+  const [{ data: iters }, { data: queueItems }, { data: sewItems }] = await Promise.all([
     db.from('article_iterations').select('*').eq('article_id', a.id).order('created_at', { ascending: true }),
-    db.from('pattern_queue').select('iteration_id,status').eq('article_id', a.id).neq('status','done')
+    db.from('pattern_queue').select('iteration_id,status').eq('article_id', a.id).neq('status','done'),
+    db.from('sewing_assignments').select('iteration_id,status').eq('article_id', a.id).neq('status','done').neq('status','transferred')
   ])
 
   // Build queue status map: iteration_id -> queue status
   const queueMap = {}
   ;(queueItems||[]).forEach(q => { if (q.iteration_id) queueMap[q.iteration_id] = q.status })
+
+  // Build sewing status map: iteration_id -> sewing status
+  const sewMap = {}
+  ;(sewItems||[]).forEach(s => { if (s.iteration_id) sewMap[s.iteration_id] = s.status })
 
   const active = iters?.filter(i => i.status === 'active') || []
   const archived = iters?.filter(i => i.status !== 'active') || []
@@ -978,8 +985,13 @@ async function renderIterationsPane(a, isOwn) {
           badgeText = 'POLA'
           badgeCls = 'badge-pattern'
         }
+      } else if (iter.stage === 'sewing') {
+        // Check if sewing is in_progress
+        const sewStatus = sewMap ? sewMap[iter.id] : null
+        badgeCls = sewStatus === 'in_progress' ? 'badge-inprog' : 'badge-sewing'
+        badgeText = sewStatus === 'in_progress' ? 'SEWING — IN PROGRESS' : 'SEWING'
       } else {
-        badgeCls = { done:'badge-done', sewing:'badge-sewing', dropped:'badge-dropped' }[iter.stage] || 'badge-active'
+        badgeCls = { done:'badge-done', dropped:'badge-dropped' }[iter.stage] || 'badge-active'
         badgeText = (ITER_LABEL[iter.stage]||iter.stage).toUpperCase()
       }
       return `<div class="iter-card" onclick="openIterationModal('${iter.id}','${a.id}')">
@@ -1288,7 +1300,7 @@ async function renderSamplesPane(a, isOwn) {
     db.from('sample_masters').select('*, tailors(name)').eq('article_id', a.id).order('created_at'),
     db.from('sample_vendors').select('*').eq('article_id', a.id).order('created_at'),
     db.from('article_cetakan').select('*').eq('article_id', a.id),
-    db.from('sewing_assignments').select('tailor_id').in('status',['waiting','in_progress']),
+    db.from('sewing_assignments').select('tailor_id').neq('status','done').neq('status','transferred'),
     db.from('size_packs').select('size_label,confirmed').eq('article_id', a.id)
   ])
 
@@ -1597,7 +1609,7 @@ async function renderIterSpecPane(iter, isOwn, isDropped) {
       <div class="form-grid-2">
         <div class="form-row"><label class="form-label">Tailor *</label>
           <select id="adv-tailor"><option value="">Select tailor...</option>
-            ${await (async()=>{const{data:asw}=await db.from('sewing_assignments').select('tailor_id').in('status',['waiting','in_progress']);const wlm={};tailors.forEach(t=>{wlm[t.id]=(asw||[]).filter(s=>s.tailor_id===t.id).length});return tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (opt)':''} — ${wlm[t.id]||0} WIP</option>`).join('')})()}
+            ${await (async()=>{const{data:asw}=await db.from('sewing_assignments').select('tailor_id').neq('status','done').neq('status','transferred');const wlm={};tailors.forEach(t=>{wlm[t.id]=(asw||[]).filter(s=>s.tailor_id===t.id).length});return tailors.map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='optional'?' (opt)':''} — ${wlm[t.id]||0} WIP</option>`).join('')})()}
           </select>
         </div>
         <div class="form-row"><label class="form-label">Notes for tailor</label><input type="text" id="adv-notes" placeholder="Optional"></div>
@@ -1622,7 +1634,7 @@ async function renderIterTimelinePane(iter) {
   // Fetch timestamps from queue and sewing
   const [{ data: queueRow }, { data: sewRow }] = await Promise.all([
     db.from('pattern_queue').select('created_at,started_at,status').eq('iteration_id', iter.id).maybeSingle(),
-    db.from('sewing_assignments').select('created_at,started_at,done_at,status').eq('iteration_id', iter.id).order('created_at').limit(1).maybeSingle()
+    db.from('sewing_assignments').select('assigned_at,created_at,started_at,done_at,status').eq('iteration_id', iter.id).order('assigned_at').limit(1).maybeSingle()
   ])
 
   const isMockup = iter.type === 'mockup'
@@ -1650,7 +1662,7 @@ async function renderIterTimelinePane(iter) {
       else if (isPast || isCurrent) tsLines += `<div style="font-size:10px;color:var(--ink-30);font-style:italic;margin-top:1px">Belum mulai dikerjakan</div>`
     }
     if (s === 'sewing') {
-      if (sewRow?.created_at) tsLines += `<div style="font-size:10px;color:var(--ink-30);margin-top:1px">Masuk sewing ${fmtDate(sewRow.created_at)}</div>`
+      if (sewRow?.assigned_at||sewRow?.created_at) tsLines += `<div style="font-size:10px;color:var(--ink-30);margin-top:1px">Masuk sewing ${fmtDate(sewRow.assigned_at||sewRow.created_at)}</div>`
       if (sewRow?.started_at) tsLines += `<div style="font-size:10px;color:var(--ink-30);margin-top:1px">Tailor mulai ${fmtDate(sewRow.started_at)}</div>`
       else if (isPast || isCurrent) tsLines += `<div style="font-size:10px;color:var(--ink-30);font-style:italic;margin-top:1px">Belum mulai dikerjakan</div>`
     }
@@ -1730,7 +1742,7 @@ async function markIterDone(iterId) {
   if (error) { toast('Failed.'); return }
   await db.from('pattern_queue').update({ status: 'done' }).eq('iteration_id', iterId)
   // Juga mark semua sewing_assignments untuk iteration ini sebagai done
-  await db.from('sewing_assignments').update({ status: 'done', done_at: new Date().toISOString() }).eq('iteration_id', iterId).in('status', ['waiting','in_progress'])
+  await db.from('sewing_assignments').update({ status: 'done', done_at: new Date().toISOString() }).eq('iteration_id', iterId).neq('status','done').neq('status','transferred')
   await loadArticles()
   closeModal('modal-iteration')
   await openArticle(currentArticleId)
@@ -2328,7 +2340,7 @@ async function openQueueDetail(queueId, iterId) {
     db.from('iteration_lining').select('*').eq('iteration_id', iterId),
     db.from('iteration_interlining').select('*').eq('iteration_id', iterId),
     db.from('iteration_accessories').select('*').eq('iteration_id', iterId).order('sort_order'),
-    db.from('sewing_assignments').select('tailor_id').in('status',['waiting','in_progress']),
+    db.from('sewing_assignments').select('tailor_id').neq('status','done').neq('status','transferred'),
     db.from('pattern_queue').select('status').eq('id', queueId).single()
   ])
   if (!iter) return
@@ -2456,7 +2468,7 @@ async function renderSewing() {
 
   const [tailorRes, assignRes] = await Promise.all([
     db.from('tailors').select('*').eq('is_active', true),
-    db.from('sewing_assignments').select('*, articles(name,category), tailors!sewing_assignments_tailor_id_fkey(name,type)').in('status', ['waiting','in_progress'])
+    db.from('sewing_assignments').select('*, articles(name,category), tailors!sewing_assignments_tailor_id_fkey(name,type)').neq('status','done').neq('status','transferred')
   ])
 
   if (tailorRes.error) { el.innerHTML = `<div class="empty">Error loading tailors: ${tailorRes.error.message}</div>`; return }
@@ -2476,7 +2488,7 @@ async function renderSewing() {
   }
 
   el.innerHTML = tailorList.map(t => {
-    const works = assigns.filter(a => a.tailor_id === t.id)
+    const works = assigns.filter(a => a.tailor_id === t.id).sort((a,b) => new Date(a.created_at||a.assigned_at) - new Date(b.created_at||b.assigned_at))
     return `<div class="card" style="margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
         <div style="font-size:13px;font-weight:400">${esc(t.name)}</div>
@@ -2516,7 +2528,7 @@ async function openTransferModal(assignId) {
   if (!assign) return
 
   // Count workload per tailor
-  const { data: allAssigns } = await db.from('sewing_assignments').select('tailor_id').in('status',['waiting','in_progress'])
+  const { data: allAssigns } = await db.from('sewing_assignments').select('tailor_id').neq('status','done').neq('status','transferred')
   const wl = {}
   tailors.forEach(t => { wl[t.id] = (allAssigns||[]).filter(a => a.tailor_id === t.id).length })
 
