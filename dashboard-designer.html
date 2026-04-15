@@ -6,11 +6,45 @@
 <title>Jedda — Designer</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
-  /* ── PAGE LAYOUT ── */
-  .shell { display: flex; flex-direction: column; min-height: 100vh; background: var(--cream); }
+  /* ── TOPBAR NAV ── */
+  .shell { display: flex; flex-direction: column; min-height: 100vh; }
   body .main, .main { flex: 1 !important; display: flex !important; flex-direction: column !important; min-height: 0; margin-left: 0 !important; width: 100% !important; }
   .page { display: none; flex-direction: column; flex: 1; min-height: calc(100vh - 46px); background: var(--cream); }
-  .sidebar { display: none !important; } /* sidebar removed */
+  .page.active { display: flex; }
+  .sidebar { display: none !important; }
+  .with-sidebar { margin-left: 0 !important; }
+  .topbar-nav { background: #1c1c19; height: 46px; display: flex; align-items: center; padding: 0 24px; flex-shrink: 0; position: sticky; top: 0; z-index: 100; }
+  .topbar-logo-text { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 300; letter-spacing: 0.2em; color: #e8e4d8; text-transform: uppercase; margin-right: 28px; flex-shrink: 0; line-height: 1; cursor: default; }
+  .topbar-nav-links { display: flex; align-items: center; flex: 1; }
+  .topbar-link { font-size: 11px; letter-spacing: 0.04em; color: rgba(255,255,255,0.45); padding: 0 14px; height: 46px; display: flex; align-items: center; cursor: pointer; border-bottom: 1.5px solid transparent; transition: color 0.12s; white-space: nowrap; }
+  .topbar-link:hover { color: rgba(255,255,255,0.75); }
+  .topbar-link.active { color: #e8e4d8; border-bottom-color: #e8e4d8; }
+  .topbar-right { display: flex; align-items: center; gap: 0; margin-left: auto; }
+  .topbar-season-btn { font-size: 10px; color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.15); border-radius: 2px; padding: 4px 10px; cursor: pointer; margin-right: 10px; }
+  .topbar-new-btn { font-size: 11px; font-family: 'DM Sans', sans-serif; letter-spacing: 0.02em; background: #e8e4d8; color: #1c1c19; border: none; border-radius: 2px; padding: 6px 14px; cursor: pointer; font-weight: 400; margin-right: 16px; }
+  .topbar-new-btn:hover { opacity: 0.88; }
+  .topbar-user-wrap { position: relative; }
+  .topbar-user-btn { font-size: 11px; color: rgba(255,255,255,0.45); background: none; border: none; cursor: pointer; padding: 4px 2px; display: flex; align-items: center; gap: 4px; }
+  .topbar-user-btn:hover { color: rgba(255,255,255,0.8); }
+  .topbar-dropdown { display: none; position: absolute; right: 0; top: calc(100% + 6px); background: #2a2a26; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 3px; min-width: 120px; z-index: 200; }
+  .topbar-dropdown.open { display: block; }
+  .topbar-dropdown button { width: 100%; text-align: left; padding: 10px 14px; font-size: 11px; color: rgba(255,255,255,0.6); background: none; border: none; cursor: pointer; display: block; font-family: 'DM Sans', sans-serif; }
+  .topbar-dropdown button:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+  /* ── PAGE FOOTER ── */
+  .page-footer { padding: 16px 28px; display: flex; align-items: center; border-top: 0.5px solid var(--border); margin-top: auto; }
+  .footer-archive-link { font-size: 11px; color: var(--ink-30); cursor: pointer; background: none; border: none; padding: 0; }
+  .footer-archive-link:hover { color: var(--ink-60); }
+  /* ── BADGE ADDITIONS ── */
+  .badge-waiting { background: var(--cream); color: var(--ink-60); border: 0.5px solid var(--border); }
+  .badge-inprog { background: #FDF3DC; color: #9A7B2A; border: 0.5px solid #C9A84C; }
+  /* ── FORM SECTION SPACING ── */
+  .form-section { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); font-weight: 400; }
+  .form-section:first-child { margin-top: 0; }
+
+  /* ── PAGE LAYOUT ── */
+  .shell { display: flex; flex-direction: column; min-height: 100vh; }
+  .main { flex: 1; display: flex; flex-direction: column; }
+  .page { display: none; flex-direction: column; flex: 1; }
   .page.active { display: flex; }
 
   /* ── SIDEBAR OVERRIDES ── */
@@ -37,9 +71,9 @@
 
   /* ── SEASON PICKER OVERLAY ── */
   .season-picker-overlay { position: fixed; inset: 0; background: var(--cream); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-  .season-picker-box { width: min(420px, 94vw); }
-  .season-picker-brand { text-align: center; margin-bottom: 36px; display: flex; flex-direction: column; align-items: center; gap: 0; }
-  .season-picker-brand-name { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink); }
+  .season-picker-box { width: min(380px, 92vw); }
+  .season-picker-brand { text-align: center; margin-bottom: 28px; }
+  .season-picker-brand-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink); }
   .season-picker-brand-sub { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-30); margin-top: 10px; }
   .season-picker-title { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-60); margin-bottom: 16px; text-align: center; }
   .season-option { background: var(--warm-white); border: 0.5px solid var(--border); border-radius: 2px; padding: 16px 20px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s; display: flex; align-items: center; justify-content: space-between; }
@@ -118,7 +152,7 @@
   .section-label:first-child { margin-top: 0; }
 
   /* ── FORM ── */
-  .form-section { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); font-weight: 400; }
+  .form-section { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); font-weight: 400; }
   .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .fabric-row-wrap { margin-bottom: 8px; }
 
@@ -184,7 +218,7 @@
 <div id="season-picker-overlay" class="season-picker-overlay" style="display:none">
   <div class="season-picker-box">
     <div class="season-picker-brand">
-      <img id="picker-logo-img" style="height:32px;width:auto;display:none;margin:0 auto 6px;filter:invert(1)" src="images/jedda-logo.png" alt="Jedda"
+      <img id="picker-logo-img" style="height:26px;width:auto;display:none;margin:0 auto 6px;filter:invert(1)" src="images/jedda-logo.png" alt="Jedda"
         onload="this.style.display='block';document.getElementById('picker-logo-text').style.display='none'"
         onerror="this.style.display='none'">
       <div id="picker-logo-text" class="season-picker-brand-name">Jedda</div>
@@ -201,12 +235,7 @@
 
 <div class="shell">
 
-  <!-- ══ TOPBAR NAVIGATION ══ -->
   <nav class="topbar-nav">
-    <img class="topbar-logo" src="images/jedda-logo.png" alt="Jedda"
-      style="display:none"
-      onload="this.style.display='block';document.getElementById('topbar-logo-text').style.display='none'"
-      onerror="this.style.display='none'">
     <div id="topbar-logo-text" class="topbar-logo-text">Jedda</div>
     <div class="topbar-nav-links">
       <div class="topbar-link active" id="nav-articles" onclick="showPage('articles',this)">All articles</div>
@@ -216,19 +245,18 @@
     <div class="topbar-right">
       <button class="topbar-season-btn" id="season-switcher-btn" onclick="showSeasonPicker()">—</button>
       <button class="topbar-new-btn" onclick="openNewArticleModal()">+ New article</button>
-      <div style="position:relative;margin-left:12px">
-        <button id="user-menu-btn" onclick="toggleUserMenu()" style="font-size:11px;color:rgba(255,255,255,0.45);background:none;border:none;cursor:pointer;padding:4px 2px;display:flex;align-items:center;gap:4px">
-          <span id="user-name-topbar">—</span>
-          <span style="font-size:9px;opacity:0.6">▾</span>
+      <div class="topbar-user-wrap">
+        <button class="topbar-user-btn" id="user-menu-btn" onclick="toggleUserMenu()">
+          <span id="user-name-topbar">—</span><span style="font-size:9px;opacity:0.5">▾</span>
         </button>
-        <div id="user-menu-dropdown" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#2a2a26;border:0.5px solid rgba(255,255,255,0.1);border-radius:3px;min-width:120px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,0.3)">
-          <button onclick="logout()" style="width:100%;text-align:left;padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.6);background:none;border:none;cursor:pointer;display:block" onmouseenter="this.style.background='rgba(255,255,255,0.07)'" onmouseleave="this.style.background='none'">Sign out</button>
+        <div class="topbar-dropdown" id="user-menu-dropdown">
+          <button onclick="logout()">Sign out</button>
         </div>
       </div>
     </div>
   </nav>
 
-  <!-- MAIN -->
+<!-- MAIN -->
   <div class="main">
 
     <!-- PAGE: ALL ARTICLES -->
@@ -569,40 +597,53 @@ const PARENT_LABEL = { design:'Design', pattern:'Pattern', sewing:'Sewing', samp
 function toggleUserMenu() {
   const d = document.getElementById('user-menu-dropdown')
   if (!d) return
-  const isOpen = d.style.display !== 'none'
-  d.style.display = isOpen ? 'none' : 'block'
-  if (!isOpen) {
-    // Close on outside click
+  d.classList.toggle('open')
+  if (d.classList.contains('open')) {
     setTimeout(() => {
-      document.addEventListener('click', function closeMenu(e) {
+      document.addEventListener('click', function _close(e) {
         if (!document.getElementById('user-menu-btn')?.contains(e.target)) {
-          d.style.display = 'none'
-          document.removeEventListener('click', closeMenu)
+          d.classList.remove('open')
+          document.removeEventListener('click', _close)
         }
       })
     }, 0)
   }
 }
 
-
 function showUndoToast(msg, undoFn) {
-  // Remove existing undo toast if any
   const existing = document.getElementById('_undo_toast')
   if (existing) { clearTimeout(existing._timer); existing.remove() }
-
   const t = document.createElement('div')
   t.id = '_undo_toast'
-  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--warm-white);padding:10px 16px;border-radius:3px;font-size:12px;z-index:9999;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,0.2)'
-  t.innerHTML = `<span>${msg}</span><button onclick="this.closest('#_undo_toast')._undoFn()" style="font-size:11px;color:var(--gold);background:none;border:none;cursor:pointer;padding:0;font-weight:500">Undo</button>`
-  t._undoFn = async () => { clearTimeout(t._timer); t.remove(); await undoFn() }
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--warm-white);padding:10px 16px;border-radius:3px;font-size:12px;z-index:9999;display:flex;align-items:center;gap:12px'
+  t.innerHTML = `<span>${msg}</span><button onclick="this.closest('#_undo_toast')._undo()" style="font-size:11px;color:var(--gold);background:none;border:none;cursor:pointer;font-weight:500">Undo</button>`
+  t._undo = async () => { clearTimeout(t._timer); t.remove(); await undoFn() }
   document.body.appendChild(t)
-  t._timer = setTimeout(() => { if (t.parentNode) t.remove() }, 10000)
+  t._timer = setTimeout(() => t.remove(), 10000)
+}
+
+async function moveSewingOrder(assignId, tailorId, dir) {
+  const { data } = await db.from('sewing_assignments').select('id,created_at').eq('tailor_id', tailorId).neq('status','done').neq('status','transferred').order('created_at')
+  if (!data) return
+  const idx = data.findIndex(a => a.id === assignId)
+  const newIdx = idx + dir
+  if (newIdx < 0 || newIdx >= data.length) return
+  const tsA = data[idx].created_at, tsB = data[newIdx].created_at
+  await Promise.all([
+    db.from('sewing_assignments').update({ created_at: tsB }).eq('id', data[idx].id),
+    db.from('sewing_assignments').update({ created_at: tsA }).eq('id', data[newIdx].id)
+  ])
+  await renderSewing()
 }
 
 async function init() {
   profile = await requireAuth(['designer','head'])
   if (!profile) return
   document.getElementById('user-name').textContent = profile.full_name
+  const _topbarUser = document.getElementById('user-name-topbar')
+  if (_topbarUser) _topbarUser.textContent = profile.full_name
+  const _avatarEl = document.getElementById('user-avatar')
+  if (_avatarEl) _avatarEl.textContent = profile.full_name.charAt(0).toUpperCase()
   const topbarUser = document.getElementById('user-name-topbar')
   if (topbarUser) topbarUser.textContent = profile.full_name
   const avatarEl = document.getElementById('user-avatar')
@@ -680,9 +721,8 @@ async function confirmSeasonPick() {
 
 function renderSeasonSwitcher() {
   const current = allSeasons.find(s => s.id === currentSeasonId)
-  const label = current ? current.short_name : '—'
   const btn = document.getElementById('season-switcher-btn')
-  if (btn) btn.textContent = label
+  if (btn) btn.textContent = current ? current.short_name : '—'
 }
 
 async function switchSeason(seasonId) {
@@ -926,7 +966,7 @@ async function renderIterationsPane(a, isOwn) {
     html += '<div class="empty">No active iterations.</div>'
   } else {
     html += active.map(iter => {
-      const typeLabel = iter.type === 'mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : 'Full garment'
+      const typeLabel = iter.type === 'mockup' ? `Mockup${iter.part?' '+iter.part:''}` : 'Full garment'
       // Determine badge: if stage=pattern and queue is in_progress → show Pola — In Progress
       let badgeText, badgeCls
       if (iter.stage === 'pattern') {
@@ -958,7 +998,7 @@ async function renderIterationsPane(a, isOwn) {
   if (archived.length) {
     html += `<div class="section-label" style="margin-top:20px">Archive / dropped (${archived.length})</div>`
     html += archived.map(iter => {
-      const typeLabel = iter.type === 'mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : 'Full garment'
+      const typeLabel = iter.type === 'mockup' ? `Mockup${iter.part?' '+iter.part:''}` : 'Full garment'
       return `<div class="iter-card dropped" onclick="openIterationModal('${iter.id}','${a.id}')" style="cursor:pointer">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
@@ -1476,7 +1516,7 @@ async function openIterationModal(iterId, articleId) {
   const { data: iter } = await db.from('article_iterations').select('*').eq('id', iterId).single()
   if (!iter) return
   const isOwn = a?.designer_id === profile.id
-  const typeLabel = iter.type === 'mockup' ? `Mockup${iter.part?' — '+iter.part:''}` : 'Full garment'
+  const typeLabel = iter.type === 'mockup' ? `Mockup${iter.part?' '+iter.part:''}` : 'Full garment'
   const isDropped = iter.status !== 'active'
 
   const _iterDisplayName = iter.type==='mockup'?('Mockup'+(iter.part?' '+iter.part:'')):(iter.label||'—')
@@ -2269,12 +2309,10 @@ async function renderQueue() {
 }
 
 async function toggleQueueStatus(queueId, currentStatus) {
-  // Only allow waiting → in_progress (not reversible)
   if (currentStatus !== 'waiting') return
   const now = new Date().toISOString()
   await db.from('pattern_queue').update({ status: 'in_progress', started_at: now }).eq('id', queueId)
   await renderQueue()
-  // Undo window: 10 seconds
   showUndoToast('Marked as In Progress', async () => {
     await db.from('pattern_queue').update({ status: 'waiting', started_at: null }).eq('id', queueId)
     await renderQueue()
@@ -2412,45 +2450,21 @@ async function moveQueue(queueId, dir) {
 // ══════════════════════════════════════════
 // SEWING
 // ══════════════════════════════════════════
-
-async function moveSewingOrder(assignId, tailorId, dir) {
-  // Get all assignments for this tailor in current order
-  const { data } = await db.from('sewing_assignments')
-    .select('id, created_at')
-    .eq('tailor_id', tailorId)
-    .in('status', ['waiting','in_progress'])
-    .order('created_at')
-  if (!data) return
-  const idx = data.findIndex(a => a.id === assignId)
-  const newIdx = idx + dir
-  if (newIdx < 0 || newIdx >= data.length) return
-  // Swap created_at timestamps to reorder
-  const tsA = data[idx].created_at
-  const tsB = data[newIdx].created_at
-  await Promise.all([
-    db.from('sewing_assignments').update({ created_at: tsB }).eq('id', data[idx].id),
-    db.from('sewing_assignments').update({ created_at: tsA }).eq('id', data[newIdx].id)
-  ])
-  await renderSewing()
-}
-
 async function renderSewing() {
   const el = document.getElementById('sewing-list')
   el.innerHTML = '<div style="font-size:12px;color:var(--ink-30);padding:20px 0">Loading...</div>'
 
   const [tailorRes, assignRes] = await Promise.all([
-    db.from('tailors').select('*').eq('is_active', true).order('name'),
-    db.from('sewing_assignments')
-      .select('*, articles(name,category), tailors!sewing_assignments_tailor_id_fkey(name,type)')
-      .neq('status','done')
-      .neq('status','transferred')
-      .order('created_at')
+    db.from('tailors').select('*').eq('is_active', true),
+    db.from('sewing_assignments').select('*, articles(name,category), tailors!sewing_assignments_tailor_id_fkey(name,type)').in('status', ['waiting','in_progress'])
   ])
 
-  if (tailorRes.error || assignRes.error) { el.innerHTML = '<div class="empty">Error loading.</div>'; return }
+  if (tailorRes.error) { el.innerHTML = `<div class="empty">Error loading tailors: ${tailorRes.error.message}</div>`; return }
+  if (assignRes.error) { el.innerHTML = `<div class="empty">Error loading assignments: ${assignRes.error.message}</div>`; return }
 
   const tailorList = tailorRes.data || []
   const assigns = assignRes.data || []
+
   if (!tailorList.length) { el.innerHTML = '<div class="empty">No active tailors found.</div>'; return }
 
   // Fetch iteration labels
@@ -2463,28 +2477,20 @@ async function renderSewing() {
 
   el.innerHTML = tailorList.map(t => {
     const works = assigns.filter(a => a.tailor_id === t.id)
-    if (!works.length) return `<div class="card" style="margin-bottom:8px;opacity:0.45">
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="font-size:13px;font-weight:400">${esc(t.name)}</div>
-        ${t.type==='optional'?'<span style="font-size:9px;color:var(--ink-30)">(optional)</span>':''}
-        <span style="margin-left:auto;font-size:11px;color:var(--ink-30)">0 WIP</span>
-      </div>
-    </div>`
-
     return `<div class="card" style="margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:0.5px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
         <div style="font-size:13px;font-weight:400">${esc(t.name)}</div>
         ${t.type==='optional'?'<span style="font-size:9px;color:var(--ink-30)">(optional)</span>':''}
-        <span style="margin-left:auto;font-size:11px;color:${works.length>2?'var(--terracota)':'var(--ink-30)'}">${works.length} WIP</span>
+        <span style="margin-left:auto;font-size:11px;color:${works.length>2?'var(--terracota)':'var(--ink-30)'}">${works.length} WIP${works.length>2?' · overloaded':''}</span>
       </div>
       ${works.map((w, idx) => {
         const iter = w.iteration_id ? iterMap[w.iteration_id] : null
-        const iterLabel = iter ? (iter.type==='mockup' ? ('Mockup' + (iter.part ? ' ' + iter.part : '')) : iter.label) : (w.label || '')
+        const iterLabel = iter ? (iter.type==='mockup' ? `Mockup${iter.part?' '+iter.part:''}` : iter.label) : ''
         const isSampleMaster = !!w.is_sample_master
         const isInProg = w.status === 'in_progress'
-        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)">
+        return `<div style="padding:8px 0;border-top:0.5px solid var(--border);display:flex;align-items:center;gap:10px">
           <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink-30);width:22px;text-align:center;flex-shrink:0">${idx+1}</div>
-          <div style="flex:1;min-width:0">
+          <div style="flex:1;min-width:0;cursor:pointer" onclick="openSewingDetail('${w.id}','${w.iteration_id||''}','${w.article_id}')">
             <div style="font-size:12px;font-weight:400;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span>${esc(w.articles?.name||'—')}</span>
               ${iterLabel?`<span style="color:var(--ink-60)">— ${esc(iterLabel)}</span>`:''}
@@ -2493,14 +2499,14 @@ async function renderSewing() {
             <div style="font-size:10px;color:var(--ink-30);margin-top:2px">${w.size?'Size '+esc(w.size):'—'}</div>
           </div>
           <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
-            ${idx>0?`<button class="btn btn-sm" style="padding:3px 7px" onclick="moveSewingOrder('${w.id}','${t.id}',-1)" title="Move up">↑</button>`:''}
-            ${idx<works.length-1?`<button class="btn btn-sm" style="padding:3px 7px" onclick="moveSewingOrder('${w.id}','${t.id}',1)" title="Move down">↓</button>`:''}
-            <span class="badge ${isInProg?'badge-inprog':'badge-waiting'}" style="cursor:pointer" onclick="toggleSewingStatus('${w.id}','${w.status}')">${isInProg?'In progress':'Waiting'}</span>
-            ${isInProg?`<button class="btn btn-sm btn-sage" onclick="quickMarkSewingDone('${w.id}')">Done ✓</button>`:''}
-            <button class="btn btn-sm" onclick="openTransferModal('${w.id}')">Transfer</button>
+            ${idx>0?`<button class="btn btn-sm" style="padding:3px 7px" onclick="moveSewingOrder('${w.id}','${t.id}',-1)">↑</button>`:''}
+            ${idx<works.length-1?`<button class="btn btn-sm" style="padding:3px 7px" onclick="moveSewingOrder('${w.id}','${t.id}',1)">↓</button>`:''}
+            <span class="badge ${isInProg?'badge-inprog':'badge-waiting'}" style="cursor:pointer" onclick="event.stopPropagation();toggleSewingStatus('${w.id}','${w.status}')">${isInProg?'In progress':'Waiting'}</span>
+            ${isInProg?`<button class="btn btn-sm btn-sage" onclick="event.stopPropagation();quickMarkSewingDone('${w.id}')">Done ✓</button>`:''}
+            <button class="btn btn-sm" onclick="event.stopPropagation();openTransferModal('${w.id}')">Transfer</button>
           </div>
         </div>`
-      }).join('')}
+      }).join('') || '<div style="font-size:11px;color:var(--ink-30);padding:8px 0">No active assignments.</div>'}
     </div>`
   }).join('')
 }
@@ -2608,13 +2614,10 @@ async function openSewingDetail(assignId, iterId, articleId) {
 }
 
 async function toggleSewingStatus(assignId, currentStatus) {
-  // Only allow waiting → in_progress (not reversible)
   if (currentStatus !== 'waiting') return
   const now = new Date().toISOString()
-  const { error } = await db.from('sewing_assignments').update({ status: 'in_progress', started_at: now }).eq('id', assignId)
-  if (error) { toast('Failed.'); return }
+  await db.from('sewing_assignments').update({ status: 'in_progress', started_at: now }).eq('id', assignId)
   await renderSewing()
-  // Undo window: 10 seconds
   showUndoToast('Marked as In Progress', async () => {
     await db.from('sewing_assignments').update({ status: 'waiting', started_at: null }).eq('id', assignId)
     await renderSewing()
