@@ -39,6 +39,8 @@
   /* ── FORM SECTION SPACING ── */
   .form-section { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-30); margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 0.5px solid var(--border); font-weight: 400; }
   .form-section:first-child { margin-top: 0; }
+  .btn-sm + div > .form-section, .btn-sm + .form-section { margin-top: 28px; }
+  .fabric-row-wrap + .form-section { margin-top: 28px; }
 
   /* ── PAGE LAYOUT ── */
   .shell { display: flex; flex-direction: column; min-height: 100vh; }
@@ -341,7 +343,7 @@
 
       <div class="form-section">Fabric — Initial *</div>
       <div id="na-fabric-rows"></div>
-      <button class="btn btn-sm" onclick="addFabRow('na')" type="button">+ Add fabric</button>
+      <button class="btn btn-sm" onclick="addFabRow('na')" type="button" style="margin-bottom:32px">+ Add fabric</button>
 
       <div id="na-lining-section">
         <div class="form-section">Lining</div>
@@ -369,13 +371,13 @@
       <div id="na-interlining-section">
         <div class="form-section">Interlining</div>
         <div id="na-interlining-rows"></div>
-        <button class="btn btn-sm" onclick="addIntRow('na')" type="button">+ Add interlining</button>
+        <button class="btn btn-sm" onclick="addIntRow('na')" type="button" style="margin-bottom:20px">+ Add interlining</button>
       </div>
 
       <div id="na-accessories-section">
         <div class="form-section">Accessories <span style="font-weight:300;color:var(--ink-30)">(optional)</span></div>
         <div id="na-acc-rows"></div>
-        <button class="btn btn-sm" onclick="addAccRow('na')" type="button">+ Add accessory</button>
+        <button class="btn btn-sm" onclick="addAccRow('na')" type="button" style="margin-bottom:20px">+ Add accessory</button>
       </div>
     </div>
     <div class="modal-footer">
@@ -457,7 +459,7 @@
 
       <div class="form-section">Spec — fabric *</div>
       <div id="ni-fabric-rows"></div>
-      <button class="btn btn-sm" onclick="addFabRow('ni')" type="button">+ Add fabric</button>
+      <button class="btn btn-sm" onclick="addFabRow('ni')" type="button" style="margin-bottom:32px">+ Add fabric</button>
 
       <div id="ni-lining-section">
         <div class="form-section">Lining</div>
@@ -485,13 +487,13 @@
       <div id="ni-interlining-section">
         <div class="form-section">Interlining</div>
         <div id="ni-interlining-rows"></div>
-        <button class="btn btn-sm" onclick="addIntRow('ni')" type="button">+ Add interlining</button>
+        <button class="btn btn-sm" onclick="addIntRow('ni')" type="button" style="margin-bottom:20px">+ Add interlining</button>
       </div>
 
       <div id="ni-accessories-section">
         <div class="form-section">Accessories <span style="font-weight:300;color:var(--ink-30)">(optional)</span></div>
         <div id="ni-acc-rows"></div>
-        <button class="btn btn-sm" onclick="addAccRow('ni')" type="button">+ Add accessory</button>
+        <button class="btn btn-sm" onclick="addAccRow('ni')" type="button" style="margin-bottom:20px">+ Add accessory</button>
       </div>
     </div>
     <div class="modal-footer">
