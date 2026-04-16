@@ -6,66 +6,63 @@
 <title>Jedda — Supervisor</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
-.shell{display:flex;height:100vh;overflow:hidden}
+/* ── SHELL ── */
+.shell{display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
-/* SIDEBAR */
-.sidebar{width:180px;background:#1a1a1a;display:flex;flex-direction:column;flex-shrink:0}
-.brand{padding:18px 14px 14px;border-bottom:0.5px solid #2a2a2a}
-.brand-logo{height:22px;filter:brightness(0) invert(1)}
-.nav{flex:1;padding:8px 0;overflow-y:auto}
-.nav-section{font-size:9px;letter-spacing:0.1em;color:#444;padding:14px 14px 4px;text-transform:uppercase}
-.nav-item{padding:7px 14px;font-size:12px;color:#888;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:2px solid transparent;transition:color 0.1s;user-select:none}
-.nav-item.active{color:#fff;border-left-color:#fff;background:rgba(255,255,255,0.05)}
-.nav-item:hover:not(.active){color:#ccc}
-.nav-badge{margin-left:auto;font-size:9px;background:#3a2800;color:#EF9F27;padding:1px 6px;border-radius:8px;min-width:16px;text-align:center}
-.user-area{padding:10px 14px;border-top:0.5px solid #2a2a2a;display:flex;align-items:center;gap:8px}
-.uavatar{width:26px;height:26px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#aaa;flex-shrink:0}
-.uname{font-size:11px;color:#aaa;font-weight:500}
-.urole{font-size:9px;color:#444;margin-top:1px;text-transform:uppercase;letter-spacing:0.06em}
-.logout-btn{margin-left:auto;background:none;border:none;color:#555;cursor:pointer;font-size:14px;padding:2px}
+/* ── TOPBAR (dark) ── */
+.topbar-dark{height:48px;background:#1a1a1a;display:flex;align-items:center;padding:0 24px;gap:0;flex-shrink:0}
+.topbar-logo{height:20px;filter:brightness(0) invert(1);margin-right:32px}
+.topbar-nav{display:flex;align-items:center;gap:2px;flex:1}
+.tnav{padding:6px 14px;font-size:12px;color:#777;cursor:pointer;border-radius:4px;transition:all 0.1s;display:flex;align-items:center;gap:6px;white-space:nowrap;border:none;background:none}
+.tnav:hover{color:#ccc;background:rgba(255,255,255,0.06)}
+.tnav.active{color:#fff;background:rgba(255,255,255,0.1)}
+.tnav-badge{font-size:9px;background:#3a2800;color:#EF9F27;padding:1px 5px;border-radius:8px;min-width:14px;text-align:center}
+.topbar-right{display:flex;align-items:center;gap:12px;margin-left:auto}
+.season-pill{font-size:10px;padding:3px 10px;border-radius:10px;background:rgba(255,255,255,0.08);color:#888;border:0.5px solid #333}
+.user-btn{display:flex;align-items:center;gap:8px;cursor:pointer}
+.uavatar{width:26px;height:26px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#aaa}
+.uname{font-size:11px;color:#888}
+.logout-btn{background:none;border:none;color:#555;cursor:pointer;font-size:14px;padding:4px}
 .logout-btn:hover{color:#aaa}
 
-/* MAIN */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{padding:0 24px;height:50px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.page-title{font-size:13px;font-weight:500;color:var(--ink)}
-.season-pill{font-size:10px;padding:3px 10px;border-radius:10px;background:var(--cream);color:var(--ink-50);border:0.5px solid var(--border)}
+/* ── MAIN CONTENT AREA ── */
+.main{flex:1;display:flex;overflow:hidden}
 
-/* PAGES */
+/* ── PAGES ── */
 .page{display:none;flex-direction:column;flex:1;overflow:hidden}
 .page.active{display:flex}
 
-/* SPLIT LAYOUT: wide list + detail */
+/* ── SPLIT (list + detail) ── */
 .split{display:flex;flex:1;overflow:hidden}
-.split-list{width:340px;flex-shrink:0;border-right:0.5px solid var(--border);overflow-y:auto;padding:16px 14px 16px 20px}
-.split-detail{flex:1;overflow-y:auto;padding:28px 36px}
+.split-list{width:320px;flex-shrink:0;border-right:0.5px solid var(--border);overflow-y:auto;padding:16px 14px 20px 20px}
+.split-detail{flex:1;overflow-y:auto;padding:28px 40px}
 
-/* full-width content page */
-.content{flex:1;overflow-y:auto;padding:20px 28px}
+/* ── FULL CONTENT ── */
+.content-pad{flex:1;overflow-y:auto;padding:24px 32px}
 
-/* TABS */
+/* ── STAT PILLS ── */
+.stat-pills{display:flex;gap:8px;margin-bottom:16px}
+.stat-pill{background:var(--cream);border-radius:4px;padding:8px 14px;display:flex;flex-direction:column;align-items:center;min-width:70px}
+.sp-val{font-size:18px;font-weight:500;color:var(--ink)}
+.sp-label{font-size:9px;color:var(--ink-50);margin-top:1px;letter-spacing:0.03em}
+
+/* ── TAB ROW ── */
 .tab-row{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:14px}
-.tab{font-size:11px;padding:7px 14px;color:var(--ink-50);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-0.5px;white-space:nowrap;transition:color 0.15s}
+.tab{font-size:11px;padding:6px 14px;color:var(--ink-50);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-0.5px;white-space:nowrap;transition:color 0.15s}
 .tab.active{color:var(--ink);border-bottom-color:var(--ink)}
 .tab:hover:not(.active){color:var(--ink-30)}
 
-/* STATS */
-.stats-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
-.stat{background:var(--cream);border-radius:4px;padding:9px 12px}
-.stat-label{font-size:9px;color:var(--ink-50);margin-bottom:3px;letter-spacing:0.03em}
-.stat-val{font-size:18px;font-weight:500;color:var(--ink)}
-
-/* LIST CARDS */
+/* ── LIST CARDS ── */
 .art-group{margin-bottom:12px}
 .art-group-title{font-size:11px;font-weight:500;color:var(--ink);margin-bottom:5px;padding:0 2px}
-.art-group-cat{font-size:10px;font-weight:400;color:var(--ink-50)}
+.art-group-cat{font-weight:400;color:var(--ink-50);font-size:10px}
 .lcard{display:flex;align-items:center;gap:8px;padding:9px 11px;border:0.5px solid var(--border);border-radius:4px;margin-bottom:4px;background:var(--bg);cursor:pointer;transition:border-color 0.1s,background 0.1s}
 .lcard:hover{border-color:var(--ink-60);background:var(--cream)}
 .lcard.sel{border-color:var(--ink);background:var(--cream)}
-.ldot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ldot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .dot-blue{background:#378ADD}.dot-amber{background:#EF9F27}.dot-green{background:#639922}.dot-red{background:#E24B4A}.dot-gray{background:#B4B2A9}
 .lbody{flex:1;min-width:0}
-.lname{font-size:11px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lname{font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lmeta{font-size:10px;color:var(--ink-50);margin-top:2px}
 .chip{font-size:9px;padding:2px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0}
 .c-blue{background:#E6F1FB;color:#185FA5}
@@ -76,93 +73,94 @@
 .inline-add{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-60);padding:6px 10px;border:0.5px dashed var(--border);border-radius:4px;cursor:pointer;margin-bottom:4px;transition:all 0.1s}
 .inline-add:hover{border-color:var(--ink-50);color:var(--ink);background:var(--cream)}
 
-/* DETAIL AREA */
-.d-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:280px;color:var(--ink-60);font-size:12px;gap:8px;text-align:center}
-.d-art-name{font-size:20px;font-weight:500;color:var(--ink);margin-bottom:2px}
-.d-art-sub{font-size:12px;color:var(--ink-50);margin-bottom:20px}
+/* ── DETAIL ── */
+.d-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:var(--ink-60);font-size:12px;gap:8px;text-align:center}
+.d-title{font-size:22px;font-weight:500;color:var(--ink);margin-bottom:3px}
+.d-sub{font-size:12px;color:var(--ink-50);margin-bottom:24px}
 
-/* PROGRESS */
-.prog-wrap{display:flex;align-items:flex-start;margin-bottom:24px}
+/* ── PROGRESS ── */
+.prog-wrap{display:flex;align-items:flex-start;margin-bottom:28px}
 .prog-step{display:flex;flex-direction:column;align-items:center;flex:1}
-.prog-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0}
+.prog-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0}
 .prog-dot.done{background:#EAF3DE;color:#3B6D11;border:1px solid #97C459}
 .prog-dot.curr{background:#1a1a1a;color:#fff}
 .prog-dot.wait{background:var(--cream);color:var(--ink-60);border:0.5px solid var(--border)}
-.prog-label{font-size:9px;margin-top:4px;text-align:center;white-space:nowrap;color:var(--ink-50)}
+.prog-label{font-size:9px;margin-top:5px;text-align:center;white-space:nowrap;color:var(--ink-50)}
 .prog-label.lc{color:var(--ink);font-weight:500}
 .prog-label.ld{color:#3B6D11}
-.prog-line{flex:1;height:0.5px;background:var(--border);margin-top:12px}
+.prog-line{flex:1;height:0.5px;background:var(--border);margin-top:13px}
 
-/* SECTION HEADER */
+/* ── TWO-COL DETAIL GRID ── */
+.detail-2col{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:24px}
 .sec-hdr{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-60);margin-bottom:10px;padding-bottom:6px;border-bottom:0.5px solid var(--border)}
-.sec-hdr:not(:first-child){margin-top:24px}
-
-/* INFO GRID */
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:8px}
-.info-block{}
 .irow{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:0.5px solid var(--border)}
 .irow:last-child{border-bottom:none}
 .ikey{font-size:11px;color:var(--ink-50)}
-.ival{font-size:11px;color:var(--ink);text-align:right;max-width:60%}
+.ival{font-size:11px;color:var(--ink);text-align:right;max-width:58%}
 
-/* SPEC BOX */
+/* ── SPEC BOX ── */
 .spec-box{background:var(--cream);border-radius:4px;padding:12px 14px}
 .spec-row{display:flex;gap:10px;padding:5px 0;border-bottom:0.5px solid var(--border)}
 .spec-row:last-child{border-bottom:none}
-.spec-key{font-size:10px;color:var(--ink-50);width:80px;flex-shrink:0;padding-top:1px}
+.spec-key{font-size:10px;color:var(--ink-50);width:76px;flex-shrink:0;padding-top:1px}
 .spec-val{font-size:11px;color:var(--ink);flex:1;line-height:1.5}
 
-/* READINESS CHECKLIST */
-.readiness-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+/* ── READINESS ── */
+.readiness-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .rcard{border:0.5px solid var(--border);border-radius:4px;padding:12px 14px}
 .rcard-title{font-size:10px;font-weight:500;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .rcheck{width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0}
 .rcheck.ok{background:#EAF3DE;color:#3B6D11}
 .rcheck.no{background:#FCEBEB;color:#A32D2D}
 .rcheck.warn{background:#faeeda;color:#854F0B}
-.ritem{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;color:var(--ink-50)}
+.ritem{font-size:11px;color:var(--ink-50);padding:3px 0;display:flex;align-items:center;gap:8px}
 .ritem.ok{color:var(--ink)}
-.file-link{font-size:10px;color:#185FA5;cursor:pointer;text-decoration:underline}
-.file-link:hover{opacity:0.7}
+.file-link{font-size:10px;color:#185FA5;cursor:pointer;text-decoration:underline;margin-left:auto}
+.readiness-hint{font-size:10px;margin-top:4px;margin-bottom:4px}
+.readiness-ok{color:#3B6D11}
+.readiness-warn{color:#854F0B}
 
-/* REVISION BOX */
-.rev-box{background:#faeeda;border-radius:4px;padding:12px 14px;margin-bottom:20px}
+/* ── REVISION / APPROVE BOXES ── */
+.rev-box{background:#faeeda;border-radius:4px;padding:12px 14px;margin-bottom:24px}
 .rev-box-label{font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:#854F0B;margin-bottom:5px}
 .rev-note{font-size:11px;color:#633806;line-height:1.5}
-
-/* APPROVED BANNER */
-.ok-banner{background:#EAF3DE;border-radius:4px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.ok-banner{background:#EAF3DE;border-radius:4px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:24px}
 .ok-banner-text{font-size:12px;color:#3B6D11;font-weight:500}
-.ok-banner-sub{font-size:11px;color:#639922;margin-top:1px}
+.ok-banner-sub{font-size:11px;color:#639922;margin-top:2px}
 
-/* ACTION */
-.action-row{display:flex;gap:8px;padding-top:16px;border-top:0.5px solid var(--border);flex-wrap:wrap;align-items:center;margin-top:20px}
+/* ── ACTION ROW ── */
+.action-row{display:flex;gap:8px;padding-top:16px;border-top:0.5px solid var(--border);flex-wrap:wrap;align-items:center;margin-top:8px}
 
-/* FORM */
-.add-form-wrap{margin-top:20px}
+/* ── FORM ── */
+.add-form-wrap{background:var(--cream);border-radius:4px;padding:16px;margin-top:16px;border:0.5px solid var(--border)}
 .flabel{font-size:10px;color:var(--ink-50);margin-bottom:4px;display:block;letter-spacing:0.03em}
 .finput{width:100%;font-size:11px;padding:7px 9px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--ink);outline:none;margin-bottom:10px}
 .finput:focus{border-color:var(--ink)}
-.fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.fgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.finput:last-child{margin-bottom:0}
+.fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 
-/* MATERIAL ROWS */
-.mat-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border:0.5px solid var(--border);border-radius:4px;margin-bottom:5px}
+/* ── MATERIAL ROWS ── */
+.mat-row{display:flex;align-items:center;gap:8px;padding:8px 11px;border:0.5px solid var(--border);border-radius:4px;margin-bottom:5px}
 .mat-body{flex:1;min-width:0}
-.mat-name{font-size:11px;color:var(--ink)}
+.mat-name{font-size:11px;color:var(--ink);font-weight:500}
 .mat-type{font-size:10px;color:var(--ink-50);margin-top:1px}
 .mtog{display:flex;gap:3px;flex-shrink:0}
-.mbtn{font-size:10px;padding:3px 7px;border-radius:4px;border:0.5px solid var(--border);background:var(--bg);color:var(--ink-50);cursor:pointer;transition:all 0.1s}
+.mbtn{font-size:10px;padding:3px 8px;border-radius:4px;border:0.5px solid var(--border);background:var(--bg);color:var(--ink-50);cursor:pointer;transition:all 0.1s}
+.mbtn:hover{border-color:var(--ink-50)}
 .mbtn.ar{background:#EAF3DE;border-color:#97C459;color:#3B6D11}
 .mbtn.ao{background:#E6F1FB;border-color:#85B7EB;color:#185FA5}
 .mbtn.am{background:#FCEBEB;border-color:#F09595;color:#A32D2D}
 
-/* MASTER LIST */
+/* ── MASTER LIST ROWS ── */
 .mrow{display:flex;align-items:center;gap:10px;padding:9px 12px;border:0.5px solid var(--border);border-radius:4px;margin-bottom:5px}
 .mrow-name{font-size:12px;font-weight:500;color:var(--ink);flex:1}
 .mrow-sub{font-size:10px;color:var(--ink-50)}
+.mrow-badge{font-size:9px;padding:2px 8px;border-radius:10px;background:var(--cream);color:var(--ink-50)}
+.mlist-section{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-60);margin:16px 0 8px;padding-bottom:5px;border-bottom:0.5px solid var(--border)}
+.mlist-section:first-child{margin-top:0}
 
-/* BTNS */
+/* ── BTNS ── */
 .btn{font-size:11px;padding:7px 14px;border-radius:4px;border:0.5px solid var(--border);background:var(--bg);color:var(--ink);cursor:pointer;transition:all 0.1s}
 .btn:hover{background:var(--cream)}
 .btn-dark{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -184,64 +182,43 @@
 <script src="js/utils.js"></script>
 
 <div class="shell">
-  <div class="sidebar">
-    <div class="brand">
-      <img src="images/jedda-logo.png" class="brand-logo" alt="Jedda">
-    </div>
-    <div class="nav">
-      <div class="nav-section">Sample room</div>
-      <div class="nav-item active" onclick="navTo('sample-vendor',this)">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="3" width="10" height="7" rx="1"/><path d="M4 3V2a2 2 0 014 0v1"/></svg>
+
+  <!-- ══ TOPBAR GELAP ══ -->
+  <div class="topbar-dark">
+    <img src="images/jedda-logo.png" class="topbar-logo" alt="Jedda">
+    <div class="topbar-nav">
+      <button class="tnav active" id="tnav-sv" onclick="navTo('sample-vendor',this)">
         Sample vendor
-        <span class="nav-badge" id="nb-sv" style="display:none">0</span>
-      </div>
-      <div class="nav-item" onclick="navTo('material-prep',this)">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 2h10l-1 8H2L1 2z"/><path d="M4 2V1h4v1"/></svg>
+        <span class="tnav-badge" id="nb-sv" style="display:none">0</span>
+      </button>
+      <button class="tnav" id="tnav-mat" onclick="navTo('material-prep',this)">
         Material prep
-        <span class="nav-badge" id="nb-mat" style="display:none">0</span>
-      </div>
-      <div class="nav-section">Master lists</div>
-      <div class="nav-item" onclick="navTo('master-fabrics',this)">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="2" width="10" height="8" rx="1"/><line x1="1" y1="5" x2="11" y2="5"/></svg>
-        Fabrics
-      </div>
-      <div class="nav-item" onclick="navTo('master-interlinings',this)">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="2" width="10" height="8" rx="1"/><line x1="1" y1="5" x2="11" y2="5"/><line x1="4" y1="2" x2="4" y2="10"/></svg>
-        Interlinings
-      </div>
-      <div class="nav-item" onclick="navTo('master-vendors',this)">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="6" cy="4" r="2.5"/><path d="M1 11c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg>
-        Vendors
-      </div>
+        <span class="tnav-badge" id="nb-mat" style="display:none">0</span>
+      </button>
     </div>
-    <div class="user-area">
+    <div class="topbar-right">
+      <div class="season-pill" id="season-label">—</div>
       <div class="uavatar" id="user-avatar">—</div>
-      <div>
-        <div class="uname" id="user-name">Loading...</div>
-        <div class="urole">Supervisor</div>
-      </div>
+      <span class="uname" id="user-name">Loading...</span>
       <button class="logout-btn" onclick="logout()" title="Sign out">↪</button>
     </div>
   </div>
 
+  <!-- ══ MAIN ══ -->
   <div class="main">
 
-    <!-- ══ SAMPLE VENDOR ══ -->
+    <!-- ═══ SAMPLE VENDOR ═══ -->
     <div class="page active" id="page-sample-vendor">
-      <div class="topbar">
-        <div class="page-title">Sample vendor</div>
-        <div class="season-pill" id="sv-season">—</div>
-      </div>
       <div class="split">
         <div class="split-list">
-          <div class="stats-row">
-            <div class="stat"><div class="stat-label">In progress</div><div class="stat-val" id="sv-s1">—</div></div>
-            <div class="stat"><div class="stat-label">Awaiting</div><div class="stat-val" id="sv-s2">—</div></div>
-            <div class="stat"><div class="stat-label">Approved</div><div class="stat-val" id="sv-s3">—</div></div>
+          <div class="stat-pills">
+            <div class="stat-pill"><div class="sp-val" id="sv-s1">—</div><div class="sp-label">In progress</div></div>
+            <div class="stat-pill"><div class="sp-val" id="sv-s2">—</div><div class="sp-label">Awaiting</div></div>
+            <div class="stat-pill"><div class="sp-val" id="sv-s3">—</div><div class="sp-label">Approved</div></div>
           </div>
           <div class="tab-row">
-            <div class="tab active" id="svt-prog"    onclick="svTab('in_progress',this)">In progress</div>
-            <div class="tab"        id="svt-await"   onclick="svTab('awaiting_head',this)">Awaiting</div>
+            <div class="tab active" id="svt-prog"     onclick="svTab('in_progress',this)">In progress</div>
+            <div class="tab"        id="svt-await"    onclick="svTab('awaiting_head',this)">Awaiting head</div>
             <div class="tab"        id="svt-approved" onclick="svTab('approved',this)">Approved</div>
           </div>
           <div id="sv-list"><div class="empty">Loading...</div></div>
@@ -255,15 +232,11 @@
       </div>
     </div>
 
-    <!-- ══ MATERIAL PREP ══ -->
+    <!-- ═══ MATERIAL PREP ═══ -->
     <div class="page" id="page-material-prep">
-      <div class="topbar">
-        <div class="page-title">Material prep</div>
-        <div class="season-pill" id="mat-season">—</div>
-      </div>
       <div class="split">
         <div class="split-list">
-          <div class="empty" style="margin-bottom:8px;font-style:normal;font-size:10px;color:var(--ink-50)">Artikel yang sudah masuk sample master</div>
+          <div style="font-size:10px;color:var(--ink-50);margin-bottom:12px">Semua artikel aktif stage sample master ke atas</div>
           <div id="mat-list"><div class="empty">Loading...</div></div>
         </div>
         <div class="split-detail" id="mat-detail">
@@ -275,51 +248,33 @@
       </div>
     </div>
 
-    <!-- ══ MASTER FABRICS ══ -->
-    <div class="page" id="page-master-fabrics">
-      <div class="topbar"><div class="page-title">Master fabrics</div></div>
-      <div class="content" id="fab-content"><div class="empty">Loading...</div></div>
-    </div>
+  </div><!-- end .main -->
 
-    <!-- ══ MASTER INTERLININGS ══ -->
-    <div class="page" id="page-master-interlinings">
-      <div class="topbar"><div class="page-title">Master interlinings</div></div>
-      <div class="content" id="int-content"><div class="empty">Loading...</div></div>
-    </div>
-
-    <!-- ══ MASTER VENDORS ══ -->
-    <div class="page" id="page-master-vendors">
-      <div class="topbar"><div class="page-title">Master vendors</div></div>
-      <div class="content" id="vend-content"><div class="empty">Loading...</div></div>
-    </div>
-
-  </div>
-</div>
+</div><!-- end .shell -->
 
 <script>
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 // STATE
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 let profile = null
-let allArticles = []
-let allSvItems  = []
-let allSmItems  = []
-let allMatItems = []
+let allArticles   = []
+let allSvItems    = []
+let allSmItems    = []
+let allMatItems   = []
 let masterFabrics = [], masterInterlinings = [], masterVendors = []
 let konveksiVendors = []
 let masterButtons = [], masterZippers = []
 let svTabMode = 'in_progress'
-let selectedSvId = null
+let selectedSvId  = null
 let selectedMatId = null
-let seasonLabel = '—'
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 // INIT
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 async function init() {
   profile = await requireAuth(['supervisor','head'])
   if (!profile) return
-  document.getElementById('user-name').textContent = profile.full_name
+  document.getElementById('user-name').textContent   = profile.full_name
   document.getElementById('user-avatar').textContent = profile.full_name.charAt(0).toUpperCase()
   await loadAll()
 }
@@ -329,12 +284,13 @@ async function loadAll() {
     db.from('articles')
       .select(`id, name, category, stage, size_range,
         profiles!articles_designer_id_fkey(full_name),
-        article_iterations(id,label,is_final_spec,
-          iteration_fabrics(fabric_name,color),
-          iteration_interlining(interlining_name,position),
-          iteration_accessories(category,button_id,zipper_id,sort_order)),
-        size_packs(id,size_label,file_path,file_name,confirmed),
-        article_cetakan(id,type,file_path,file_name,skip_approved)`)
+        article_iterations(id, label, is_final_spec,
+          iteration_fabrics(fabric_name, color),
+          iteration_interlining(interlining_name, position),
+          iteration_lining(lining_type, fabric_id, master_lining_colors(color)),
+          iteration_accessories(category, button_id, zipper_id, sort_order)),
+        size_packs(id, size_label, file_path, file_name, confirmed),
+        article_cetakan(id, type, file_path, file_name, skip_approved)`)
       .eq('status','active')
       .in('stage',['sample_master','sample_vendor','production'])
       .order('created_at',{ascending:false}),
@@ -344,25 +300,24 @@ async function loadAll() {
     db.from('master_fabrics').select('*').order('name'),
     db.from('master_interlinings').select('*').order('name'),
     db.from('master_vendors').select('*').order('name'),
-    db.from('master_buttons').select('id,name,color,size,supplier'),
+    db.from('master_buttons').select('id,supplier,name,color,size'),
     db.from('master_zippers').select('id,type,size,color_code'),
     db.from('collections').select('*').eq('is_active',true).limit(1),
   ])
 
-  allArticles       = arts.data || []
-  allSvItems        = svs.data  || []
-  allSmItems        = sms.data  || []
-  allMatItems       = mats.data || []
-  masterFabrics     = fabs.data || []
-  masterInterlinings= ints.data || []
-  masterVendors     = vens.data || []
-  masterButtons     = btns.data || []
-  masterZippers     = zips.data || []
-  konveksiVendors   = masterVendors.filter(v => v.supply_category === 'konveksi')
+  allArticles        = arts.data || []
+  allSvItems         = svs.data  || []
+  allSmItems         = sms.data  || []
+  allMatItems        = mats.data || []
+  masterFabrics      = fabs.data || []
+  masterInterlinings = ints.data || []
+  masterVendors      = vens.data || []
+  masterButtons      = btns.data || []
+  masterZippers      = zips.data || []
+  konveksiVendors    = masterVendors.filter(v => v.supply_category === 'konveksi')
 
-  seasonLabel = seasons.data?.[0]?.short_name || '—'
-  document.getElementById('sv-season').textContent  = seasonLabel
-  document.getElementById('mat-season').textContent = seasonLabel
+  const sl = seasons.data?.[0]?.short_name || '—'
+  document.getElementById('season-label').textContent = sl
 
   renderSvList()
   updateSvStats()
@@ -370,22 +325,19 @@ async function loadAll() {
   updateBadges()
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 // NAV
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 function navTo(page, el) {
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  document.querySelectorAll('.tnav').forEach(n => n.classList.remove('active'))
   el.classList.add('active')
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
   document.getElementById('page-'+page).classList.add('active')
-  if (page==='master-fabrics')      renderFabrics()
-  if (page==='master-interlinings') renderInterlinings()
-  if (page==='master-vendors')      renderVendors()
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 // HELPERS
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 function fmtDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})
@@ -394,108 +346,101 @@ function fmtDate(d) {
 function accLabel(ac) {
   if (ac.category === 'button' && ac.button_id) {
     const b = masterButtons.find(x => x.id === ac.button_id)
-    return b ? `Button ${esc(b.name||'')} ${esc(b.color||'')} ${esc(b.size||'')}`.trim() : 'Button —'
+    return b ? `Button ${b.name||''} ${b.color||''} ${b.size||''}`.trim() : 'Button —'
   }
   if (ac.category === 'zipper' && ac.zipper_id) {
     const z = masterZippers.find(x => x.id === ac.zipper_id)
-    return z ? `Zipper ${esc(z.type||'')} ${esc(z.size||'')} ${esc(z.color_code||'')}`.trim() : 'Zipper —'
+    return z ? `Zipper ${z.type||''} ${z.size||''} ${z.color_code||''}`.trim() : 'Zipper —'
   }
   return '—'
 }
 
-async function getSignedUrl(filePath) {
-  if (!filePath) return null
+async function openFile(filePath) {
+  if (!filePath) return
   const { data } = await db.storage.from('jedda-files').createSignedUrl(filePath, 60)
-  return data?.signedUrl || null
+  if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+  else toast('Gagal load file.')
 }
 
+// Build spec HTML from final iteration
 function buildSpecHtml(a) {
-  const finalIter = (a.article_iterations||[]).find(i => i.is_final_spec)
-  if (!finalIter) return '<div class="empty">Belum ada final spec.</div>'
-  const fabrics = (finalIter.iteration_fabrics||[])
-    .map(f => `${esc(f.fabric_name||'—')}${f.color?' · '+esc(f.color):''}`)
+  const it = (a.article_iterations||[]).find(i => i.is_final_spec)
+  if (!it) return '<div class="empty">Belum ada final spec.</div>'
+
+  const fabs = (it.iteration_fabrics||[])
+    .map(f => esc(f.fabric_name||'—') + (f.color ? ' · '+esc(f.color) : ''))
     .join('<br>') || '—'
-  const ints_ = (finalIter.iteration_interlining||[])
-    .map(i => `${esc(i.interlining_name||'—')}${i.position?' ('+esc(i.position)+')':''}`)
+
+  const ints_ = (it.iteration_interlining||[])
+    .map(i => esc(i.interlining_name||'—') + (i.position ? ' ('+esc(i.position)+')':''))
     .join('<br>') || '—'
-  const accs = (finalIter.iteration_accessories||[])
+
+  const lining = it.iteration_lining
+  let liningStr = '—'
+  if (lining && lining.lining_type && lining.lining_type !== 'none') {
+    const lc = lining.master_lining_colors?.color || ''
+    liningStr = esc(lining.lining_type) + (lc ? ' · '+esc(lc) : '')
+  }
+
+  const accs = (it.iteration_accessories||[])
     .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
     .map(ac => accLabel(ac))
     .join('<br>') || '—'
+
   return `<div class="spec-box">
-    <div class="spec-row"><span class="spec-key">Fabric</span><span class="spec-val">${fabrics}</span></div>
+    <div class="spec-row"><span class="spec-key">Fabric</span><span class="spec-val">${fabs}</span></div>
     <div class="spec-row"><span class="spec-key">Interlining</span><span class="spec-val">${ints_}</span></div>
+    <div class="spec-row"><span class="spec-key">Lining</span><span class="spec-val">${liningStr}</span></div>
     <div class="spec-row"><span class="spec-key">Accessories</span><span class="spec-val">${accs}</span></div>
   </div>`
 }
 
-function buildReadinessHtml(a, svId) {
-  // Size packs
+// Build readiness checklist HTML
+function buildReadinessHtml(a) {
   const sps = (a.size_packs||[])
-  const spConfirmed = sps.filter(s=>s.confirmed)
-  const spTotal = sps.length
-  const spOk = spConfirmed.length > 0
-
-  const spItems = spConfirmed.length
-    ? spConfirmed.map(sp => `<div class="ritem ok">
-        <span>${esc(sp.size_label||'—')}</span>
-        ${sp.file_path
-          ? `<span class="file-link" onclick="openFile('${sp.file_path}')">Lihat file</span>`
-          : ''}
+  const confirmed = sps.filter(s=>s.confirmed)
+  const spOk = confirmed.length > 0
+  const spItems = confirmed.length
+    ? confirmed.map(sp=>`<div class="ritem ok">${esc(sp.size_label||'—')}
+        ${sp.file_path?`<span class="file-link" onclick="openFile('${sp.file_path}')">Lihat</span>`:''}
       </div>`).join('')
     : '<div class="ritem">Belum ada size pack confirmed</div>'
 
-  // Cetakan
-  const cetakans = (a.article_cetakan||[])
-  const cetVendor = cetakans.find(c=>c.type==='vendor')
-  const cetQC     = cetakans.find(c=>c.type==='qc')
-  const cetVendorOk = !!(cetVendor?.file_path || cetVendor?.skip_approved)
-  const cetQCOk     = !!(cetQC?.file_path    || cetQC?.skip_approved)
+  const cets = (a.article_cetakan||[])
+  const cv   = cets.find(c=>c.type==='vendor')
+  const cq   = cets.find(c=>c.type==='qc')
+  const cvOk = !!(cv?.file_path||cv?.skip_approved)
+  const cqOk = !!(cq?.file_path||cq?.skip_approved)
 
-  const cetVendorHtml = cetVendorOk
-    ? `<div class="ritem ok">
-        Cetakan vendor
-        ${cetVendor?.file_path ? `<span class="file-link" onclick="openFile('${cetVendor.file_path}')">Lihat foto</span>` : '(skip approved)'}
-      </div>`
+  const cvHtml = cvOk
+    ? `<div class="ritem ok">Cetakan vendor ${cv?.file_path?`<span class="file-link" onclick="openFile('${cv.file_path}')">Lihat foto</span>`:'(skip)'}</div>`
     : '<div class="ritem">Cetakan vendor belum ada</div>'
-
-  const cetQCHtml = cetQCOk
-    ? `<div class="ritem ok">
-        Cetakan QC
-        ${cetQC?.file_path ? `<span class="file-link" onclick="openFile('${cetQC.file_path}')">Lihat foto</span>` : '(skip approved)'}
-      </div>`
+  const cqHtml = cqOk
+    ? `<div class="ritem ok">Cetakan QC ${cq?.file_path?`<span class="file-link" onclick="openFile('${cq.file_path}')">Lihat foto</span>`:'(skip)'}</div>`
     : '<div class="ritem">Cetakan QC belum ada</div>'
 
-  const allReady = spOk && cetVendorOk && cetQCOk
-
+  const allOk = spOk && cvOk && cqOk
   return `<div class="readiness-grid">
     <div class="rcard">
-      <div class="rcard-title">
-        <div class="rcheck ${spOk?'ok':'no'}">${spOk?'✓':'✗'}</div>
-        Size pack
-      </div>
+      <div class="rcard-title"><div class="rcheck ${spOk?'ok':'no'}">${spOk?'✓':'✗'}</div>Size pack</div>
       ${spItems}
     </div>
     <div class="rcard">
-      <div class="rcard-title">
-        <div class="rcheck ${cetVendorOk&&cetQCOk?'ok':cetVendorOk||cetQCOk?'warn':'no'}">${cetVendorOk&&cetQCOk?'✓':cetVendorOk||cetQCOk?'!':'✗'}</div>
-        Cetakan
-      </div>
-      ${cetVendorHtml}
-      ${cetQCHtml}
+      <div class="rcard-title"><div class="rcheck ${cvOk&&cqOk?'ok':cvOk||cqOk?'warn':'no'}">${cvOk&&cqOk?'✓':cvOk||cqOk?'!':'✗'}</div>Cetakan</div>
+      ${cvHtml}${cqHtml}
     </div>
   </div>
-  <div style="font-size:10px;color:${allReady?'#3B6D11':'#854F0B'};margin-top:4px;margin-bottom:8px">
-    ${allReady ? '✓ Semua readiness terpenuhi — boleh turun ke vendor.' : '⚠ Readiness belum lengkap.'}
+  <div class="readiness-hint ${allOk?'readiness-ok':'readiness-warn'}">
+    ${allOk?'✓ Semua readiness terpenuhi.':'⚠ Readiness belum lengkap.'}
   </div>`
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 // SAMPLE VENDOR — LIST
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 function svTab(mode, el) {
   svTabMode = mode; selectedSvId = null
-  document.querySelectorAll('#page-sample-vendor .tab').forEach(t => t.classList.remove('active'))
+  document.querySelectorAll('#page-sample-vendor .tab').forEach(t=>t.classList.remove('active'))
   el.classList.add('active')
   renderSvList()
   clearSvDetail()
@@ -505,18 +450,18 @@ function renderSvList() {
   const el = document.getElementById('sv-list')
   let html = ''
   allArticles.forEach(a => {
-    const items = allSvItems.filter(sv => sv.article_id===a.id && sv.status===svTabMode)
+    const items = allSvItems.filter(sv=>sv.article_id===a.id && sv.status===svTabMode)
     if (svTabMode!=='in_progress' && !items.length) return
     const itemsHtml = items.map(sv => {
       const dot = sv.status==='in_progress'?'dot-blue':sv.status==='awaiting_head'?'dot-amber':'dot-green'
       const chp = sv.status==='in_progress'?'c-blue':sv.status==='awaiting_head'?'c-amber':'c-green'
       const lbl = sv.status==='in_progress'?'In progress':sv.status==='awaiting_head'?'Awaiting':'Approved'
-      const warn = sv.revision_count>0 && sv.revision_note ? ' ⚠' : ''
+      const warn= (sv.revision_count>0 && sv.revision_note)?'  ⚠':''
       return `<div class="lcard ${selectedSvId===sv.id?'sel':''}" onclick="selectSv('${sv.id}')">
         <div class="ldot ${dot}"></div>
         <div class="lbody">
           <div class="lname">${esc(sv.size||'—')} · ${esc(sv.color||'—')}${warn}</div>
-          <div class="lmeta">${esc(sv.vendor_name||'—')} · ${fmtDate(sv.sent_at)}</div>
+          <div class="lmeta">${esc(sv.vendor_name||'—')}</div>
         </div>
         <span class="chip ${chp}">${lbl}</span>
       </div>`
@@ -542,9 +487,9 @@ function updateSvStats() {
   document.getElementById('sv-s3').textContent = allSvItems.filter(s=>s.status==='approved').length
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 // SAMPLE VENDOR — DETAIL
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 function selectSv(svId) {
   selectedSvId = svId
   renderSvList()
@@ -573,9 +518,8 @@ function renderSvDetail(sv, a) {
     : ''
 
   const okBanner = sv.status==='approved'
-    ? `<div class="ok-banner"><div style="font-size:18px;color:#3B6D11">✓</div>
-        <div><div class="ok-banner-text">Head approved</div>
-        <div class="ok-banner-sub">${fmtDate(sv.approved_at)}</div></div>
+    ? `<div class="ok-banner"><div style="font-size:20px;color:#3B6D11">✓</div>
+        <div><div class="ok-banner-text">Head approved</div><div class="ok-banner-sub">${fmtDate(sv.approved_at)}</div></div>
       </div>` : ''
 
   let actions = ''
@@ -591,15 +535,14 @@ function renderSvDetail(sv, a) {
   }
 
   document.getElementById('sv-detail').innerHTML = `
-    <div class="d-art-name">${esc(a.name)}</div>
-    <div class="d-art-sub">${esc(a.category)} · by ${esc(a.profiles?.full_name||'—')}</div>
+    <div class="d-title">${esc(a.name)}</div>
+    <div class="d-sub">${esc(a.category)} · by ${esc(a.profiles?.full_name||'—')}</div>
     ${prog}
     ${okBanner}
     ${revHtml}
-
-    <div class="sec-hdr">Detail sample vendor</div>
-    <div class="info-grid">
-      <div class="info-block">
+    <div class="detail-2col">
+      <div>
+        <div class="sec-hdr">Detail sample</div>
         <div class="irow"><span class="ikey">Size</span><span class="ival">${esc(sv.size||'—')}</span></div>
         <div class="irow"><span class="ikey">Color</span><span class="ival">${esc(sv.color||'—')}</span></div>
         <div class="irow"><span class="ikey">Vendor</span><span class="ival">${esc(sv.vendor_name||'—')}</span></div>
@@ -607,16 +550,14 @@ function renderSvDetail(sv, a) {
         <div class="irow"><span class="ikey">Notes</span><span class="ival">${esc(sv.notes||'—')}</span></div>
         <div class="irow"><span class="ikey">Revisi</span><span class="ival">${sv.revision_count||0}×</span></div>
       </div>
-      <div class="info-block">
-        <div class="sec-hdr" style="margin-top:0">Final spec</div>
+      <div>
+        <div class="sec-hdr">Final spec</div>
         ${buildSpecHtml(a)}
       </div>
     </div>
-
     <div class="sec-hdr">Readiness check</div>
-    ${buildReadinessHtml(a, sv.id)}
-
-    ${actions ? `<div class="action-row">${actions}</div>` : ''}
+    ${buildReadinessHtml(a)}
+    ${actions?`<div class="action-row">${actions}</div>`:''}
   `
 }
 
@@ -627,23 +568,16 @@ function clearSvDetail() {
   </div>`
 }
 
-async function openFile(filePath) {
-  const url = await getSignedUrl(filePath)
-  if (url) window.open(url, '_blank')
-  else toast('Gagal load file.')
-}
-
-// ══════════════════════════════════════
-// ADD FORM
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
+// ADD FORM — spec & readiness muncul dulu
+// ═══════════════════════════════════════════
 function showAddSvForm(articleId) {
   selectedSvId = null; renderSvList()
   const a = allArticles.find(x=>x.id===articleId)
 
-  // Sizes from done sample masters only
   const doneSizes = allSmItems
-    .filter(sm => sm.article_id===articleId && sm.status==='done')
-    .map(sm => sm.size).filter(Boolean)
+    .filter(sm=>sm.article_id===articleId && sm.status==='done')
+    .map(sm=>sm.size).filter(Boolean)
 
   const sizeOpts = doneSizes.length
     ? doneSizes.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')
@@ -653,32 +587,33 @@ function showAddSvForm(articleId) {
     .map(v=>`<option value="${esc(v.name)}">${esc(v.name)}</option>`).join('')
 
   document.getElementById('sv-detail').innerHTML = `
-    <div class="d-art-name">Add sample vendor</div>
-    <div class="d-art-sub">${esc(a?.name||'—')}</div>
+    <div class="d-title">Add sample vendor</div>
+    <div class="d-sub">${esc(a?.name||'—')} · ${esc(a?.category||'—')}</div>
 
-    <div class="sec-hdr" style="margin-top:0">Final spec</div>
-    ${buildSpecHtml(a)}
-
-    <div class="sec-hdr">Readiness check</div>
-    ${buildReadinessHtml(a, null)}
+    <div class="detail-2col" style="margin-bottom:0">
+      <div>
+        <div class="sec-hdr" style="margin-top:0">Final spec</div>
+        ${buildSpecHtml(a)}
+      </div>
+      <div>
+        <div class="sec-hdr" style="margin-top:0">Readiness check</div>
+        ${buildReadinessHtml(a)}
+      </div>
+    </div>
 
     <div class="sec-hdr">Detail sample vendor</div>
     <div class="add-form-wrap">
-      <div class="fgrid3">
+      <div class="fgrid2">
         <div>
-          <label class="flabel">Size * <span style="color:var(--ink-60)">(dari SM done)</span></label>
+          <label class="flabel">Size * <span style="color:var(--ink-60);font-size:9px">(dari sample master done)</span></label>
           <select class="finput" id="ns-size">${sizeOpts}</select>
         </div>
         <div>
           <label class="flabel">Color *</label>
           <input class="finput" id="ns-color" placeholder="e.g. Bistre">
         </div>
-        <div>
-          <label class="flabel">Tanggal turun</label>
-          <input class="finput" id="ns-sent" type="date" value="${new Date().toISOString().split('T')[0]}">
-        </div>
       </div>
-      <label class="flabel">Vendor konveksi *</label>
+      <label class="flabel">Vendor *</label>
       <select class="finput" id="ns-vendor">
         <option value="">Pilih vendor...</option>
         ${vendorOpts}
@@ -694,16 +629,15 @@ function showAddSvForm(articleId) {
 }
 
 async function saveNewSv(articleId) {
-  const size       = document.getElementById('ns-size').value
-  const color      = document.getElementById('ns-color').value.trim()
-  const vendor_name= document.getElementById('ns-vendor').value
-  const sent_at    = document.getElementById('ns-sent').value
-  const notes      = document.getElementById('ns-notes').value.trim()
+  const size        = document.getElementById('ns-size').value
+  const color       = document.getElementById('ns-color').value.trim()
+  const vendor_name = document.getElementById('ns-vendor').value
+  const notes       = document.getElementById('ns-notes').value.trim()
   if (!size||!color||!vendor_name) { toast('Isi size, color, dan vendor dulu.'); return }
 
   const { data, error } = await db.from('sample_vendors').insert({
     article_id: articleId, size, color, vendor_name,
-    sent_at: sent_at||null,
+    sent_at: new Date().toISOString(),
     notes: notes||null,
     status: 'in_progress',
     submitted_by: profile.id
@@ -716,82 +650,83 @@ async function saveNewSv(articleId) {
   toast('Sample vendor ditambahkan.')
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 // SV ACTIONS
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 async function submitSvToHead(svId) {
   const { error } = await db.from('sample_vendors').update({
-    status: 'awaiting_head',
-    submitted_at: new Date().toISOString(),
-    submitted_by: profile.id
-  }).eq('id', svId)
+    status:'awaiting_head', submitted_at:new Date().toISOString(), submitted_by:profile.id
+  }).eq('id',svId)
   if (error) { toast('Gagal: '+error.message); return }
-  patchSv(svId, {status:'awaiting_head',submitted_at:new Date().toISOString()})
+  patchSv(svId,{status:'awaiting_head',submitted_at:new Date().toISOString()})
   updateSvStats(); updateBadges()
   svTab('awaiting_head', document.getElementById('svt-await'))
-  selectedSvId = svId; renderSvList(); selectSv(svId)
+  selectedSvId=svId; renderSvList(); selectSv(svId)
   toast('Submitted ke head.')
 }
 
 async function simulateApprove(svId) {
   const { error } = await db.from('sample_vendors').update({
     status:'approved', approved_by:profile.id, approved_at:new Date().toISOString()
-  }).eq('id', svId)
+  }).eq('id',svId)
   if (error) { toast('Gagal: '+error.message); return }
-  patchSv(svId, {status:'approved',approved_at:new Date().toISOString()})
+  patchSv(svId,{status:'approved',approved_at:new Date().toISOString()})
   updateSvStats(); updateBadges()
   svTab('approved', document.getElementById('svt-approved'))
-  selectedSvId = svId; renderSvList(); selectSv(svId)
+  selectedSvId=svId; renderSvList(); selectSv(svId)
   toast('Approved ✓')
 }
 
 async function simulateRevision(svId) {
   const note = prompt('Revision note dari head:')
-  if (note === null) return
+  if (note === null) return       // user cancel
   if (!note.trim()) { toast('Isi revision note dulu.'); return }
   const sv = allSvItems.find(s=>s.id===svId)
   const newCount = (sv?.revision_count||0)+1
   const { error } = await db.from('sample_vendors').update({
     status:'revision', revision_note:note.trim(), revision_count:newCount
-  }).eq('id', svId)
+  }).eq('id',svId)
   if (error) { toast('Gagal: '+error.message); return }
-  patchSv(svId, {status:'revision',revision_note:note.trim(),revision_count:newCount})
+  patchSv(svId,{status:'revision',revision_note:note.trim(),revision_count:newCount})
   updateSvStats()
+  // switch to in_progress tab and show item
   svTab('in_progress', document.getElementById('svt-prog'))
-  selectedSvId = svId; renderSvList(); selectSv(svId)
-  toast('Revision dicatat.')
+  selectedSvId=svId; renderSvList(); selectSv(svId)
+  toast('Revision dicatat — item kembali ke In progress.')
 }
 
 async function resubmitSv(svId) {
   const { error } = await db.from('sample_vendors').update({
     status:'awaiting_head', submitted_at:new Date().toISOString()
-  }).eq('id', svId)
+  }).eq('id',svId)
   if (error) { toast('Gagal: '+error.message); return }
-  patchSv(svId, {status:'awaiting_head'})
+  patchSv(svId,{status:'awaiting_head'})
   updateSvStats(); updateBadges()
   svTab('awaiting_head', document.getElementById('svt-await'))
-  selectedSvId = svId; renderSvList(); selectSv(svId)
-  toast('Re-submitted.')
+  selectedSvId=svId; renderSvList(); selectSv(svId)
+  toast('Re-submitted ke head.')
 }
 
 function patchSv(svId, patch) {
   const i = allSvItems.findIndex(s=>s.id===svId)
-  if (i>-1) allSvItems[i] = {...allSvItems[i], ...patch}
+  if (i>-1) allSvItems[i] = {...allSvItems[i],...patch}
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 // MATERIAL PREP
-// ══════════════════════════════════════
+// Material items di-generate otomatis dari final spec
+// Siti hanya update statusnya
+// ═══════════════════════════════════════════
 function renderMatList() {
   const el = document.getElementById('mat-list')
   if (!allArticles.length) { el.innerHTML='<div class="empty">Loading...</div>'; return }
   el.innerHTML = allArticles.map(a => {
     const items = allMatItems.filter(m=>m.article_id===a.id)
-    const allReady = items.length && items.every(m=>m.material_status==='ready')
+    const allReady = items.length>0 && items.every(m=>m.material_status==='ready')
     const hasMiss  = items.some(m=>m.material_status==='missing')
     const dot = allReady?'dot-green':hasMiss?'dot-red':'dot-amber'
     const chp = allReady?'c-green':hasMiss?'c-red':'c-amber'
-    const lbl = allReady?'All ready':hasMiss?'Missing':items.length?'In progress':'No items'
+    const lbl = allReady?'All ready':hasMiss?'Missing':items.length?'In progress':'Belum ada'
     return `<div class="lcard ${selectedMatId===a.id?'sel':''}" onclick="selectMat('${a.id}')">
       <div class="ldot ${dot}"></div>
       <div class="lbody">
@@ -803,28 +738,94 @@ function renderMatList() {
   }).join('')
 }
 
+// Build material items from final spec automatically
+function buildMatItemsFromSpec(a) {
+  const it = (a.article_iterations||[]).find(i=>i.is_final_spec)
+  if (!it) return []
+  const items = []
+
+  // Fabrics
+  ;(it.iteration_fabrics||[]).forEach(f => {
+    items.push({
+      source: 'spec',
+      material_type: 'fabric',
+      material_name: f.fabric_name + (f.color?' · '+f.color:'')
+    })
+  })
+  // Interlinings
+  ;(it.iteration_interlining||[]).forEach(i => {
+    items.push({
+      source: 'spec',
+      material_type: 'interlining',
+      material_name: i.interlining_name + (i.position?' ('+i.position+')':'')
+    })
+  })
+  // Lining
+  if (it.iteration_lining && it.iteration_lining.lining_type !== 'none') {
+    const lc = it.iteration_lining.master_lining_colors?.color||''
+    items.push({
+      source: 'spec',
+      material_type: 'lining',
+      material_name: 'Lining furing' + (lc?' · '+lc:'')
+    })
+  }
+  // Accessories
+  ;(it.iteration_accessories||[]).forEach(ac => {
+    items.push({
+      source: 'spec',
+      material_type: 'accessory',
+      material_name: accLabel(ac)
+    })
+  })
+  return items
+}
+
 async function selectMat(aid) {
   selectedMatId = aid
   renderMatList()
   const a = allArticles.find(x=>x.id===aid)
-  const { data: items } = await db.from('article_material_status')
+
+  // Fresh fetch existing items
+  const { data: existing } = await db.from('article_material_status')
     .select('*').eq('article_id',aid).order('created_at')
-  allMatItems = [...allMatItems.filter(m=>m.article_id!==aid), ...(items||[])]
+  allMatItems = [...allMatItems.filter(m=>m.article_id!==aid), ...(existing||[])]
+
+  // Auto-generate from spec if none exist yet
+  const specItems = buildMatItemsFromSpec(a)
+  if ((existing||[]).length === 0 && specItems.length > 0) {
+    // Insert all spec items automatically
+    const inserts = specItems.map(si => ({
+      article_id: aid,
+      material_name: si.material_name,
+      material_type: si.material_type,
+      material_status: 'pending',
+      updated_by: profile.id
+    }))
+    const { data: inserted, error } = await db.from('article_material_status')
+      .insert(inserts).select()
+    if (!error && inserted) {
+      allMatItems = [...allMatItems.filter(m=>m.article_id!==aid), ...inserted]
+      toast('Material items di-generate dari final spec.')
+    }
+  }
+
+  const items = allMatItems.filter(m=>m.article_id===aid)
 
   document.getElementById('mat-detail').innerHTML = `
-    <div class="d-art-name">${esc(a.name)}</div>
-    <div class="d-art-sub">${esc(a.category)} · ${esc(a.profiles?.full_name||'—')}</div>
+    <div class="d-title">${esc(a.name)}</div>
+    <div class="d-sub">${esc(a.category)} · ${esc(a.profiles?.full_name||'—')}</div>
     <div class="sec-hdr" style="margin-top:0">Material items</div>
     <div id="mi-wrap-${aid}">
-      ${(items||[]).length
-        ? (items||[]).map(m=>renderMatItem(m,aid)).join('')
-        : '<div class="empty">Belum ada items — tambahkan di bawah.</div>'}
+      ${items.length
+        ? items.map(m=>renderMatItem(m,aid)).join('')
+        : '<div class="empty">Belum ada items.</div>'}
     </div>
-    <div style="margin-top:8px">
-      <button class="btn btn-sm" onclick="showAddMatForm('${aid}')">+ Add item</button>
+    <div style="margin-top:10px">
+      <button class="btn btn-sm" onclick="showAddMatForm('${aid}')">+ Add item manual</button>
     </div>
     <div id="mat-add-form-${aid}"></div>
   `
+  renderMatList()
   updateBadges()
 }
 
@@ -871,10 +872,11 @@ function showAddMatForm(aid) {
             <option value="interlining">Interlining</option>
             <option value="accessory">Accessory</option>
             <option value="lining">Lining</option>
+            <option value="other">Other</option>
           </select>
         </div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:4px">
+      <div style="display:flex;gap:8px">
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('mat-add-form-${aid}').innerHTML=''">Cancel</button>
         <button class="btn btn-dark btn-sm" onclick="saveMatItem('${aid}')">Add</button>
       </div>
@@ -895,41 +897,14 @@ async function saveMatItem(aid) {
   toast('Material item ditambahkan.')
 }
 
-// ══════════════════════════════════════
-// MASTER LISTS
-// ══════════════════════════════════════
-function renderFabrics() {
-  document.getElementById('fab-content').innerHTML = masterFabrics.length
-    ? masterFabrics.map(f=>`<div class="mrow"><span class="mrow-name">${esc(f.name)}</span><span class="mrow-sub">${esc(f.color||'—')}</span></div>`).join('')
-    : '<div class="empty">Belum ada data.</div>'
-}
-function renderInterlinings() {
-  document.getElementById('int-content').innerHTML = masterInterlinings.length
-    ? masterInterlinings.map(i=>`<div class="mrow"><span class="mrow-name">${esc(i.name)}</span></div>`).join('')
-    : '<div class="empty">Belum ada data.</div>'
-}
-function renderVendors() {
-  const konv = masterVendors.filter(v=>v.supply_category==='konveksi')
-  const rest  = masterVendors.filter(v=>v.supply_category!=='konveksi')
-  let html = ''
-  if (konv.length) {
-    html += `<div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-60);margin-bottom:8px">Vendor konveksi</div>`
-    html += konv.map(v=>`<div class="mrow"><span class="mrow-name">${esc(v.name)}</span><span class="mrow-sub">${esc(v.contact||'—')}</span></div>`).join('')
-  }
-  if (rest.length) {
-    html += `<div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-60);margin-bottom:8px;margin-top:16px">Vendor lainnya</div>`
-    html += rest.map(v=>`<div class="mrow"><span class="mrow-name">${esc(v.name)}</span><span class="mrow-sub">${esc(v.supply_category||'—')} · ${esc(v.contact||'—')}</span></div>`).join('')
-  }
-  document.getElementById('vend-content').innerHTML = html||'<div class="empty">Belum ada data.</div>'
-}
-
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 // BADGES
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════
 function updateBadges() {
   const aw = allSvItems.filter(s=>s.status==='awaiting_head').length
   const nb = document.getElementById('nb-sv')
   nb.textContent=aw; nb.style.display=aw>0?'':'none'
+
   const ms = allMatItems.filter(m=>m.material_status==='missing').length
   const nm = document.getElementById('nb-mat')
   nm.textContent=ms; nm.style.display=ms>0?'':'none'
