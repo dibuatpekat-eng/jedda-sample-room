@@ -94,13 +94,15 @@
 /* ── EXPAND PANEL ── */
 .expand-wrap{display:none;border-bottom:0.5px solid #d4d1cb}
 .expand-wrap.open{display:block}
-.expand-body{padding:24px 32px 26px;display:grid;grid-template-columns:1fr 1fr;gap:40px;background:#edebe5}
-.expand-actions{padding:14px 32px 18px;border-top:0.5px solid #d0cdc7;display:flex;gap:8px;align-items:center;background:#edebe5}
-.ep-sec{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;padding-bottom:9px;border-bottom:0.5px solid #d0cdc7;margin-bottom:12px}
-.ep-row{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:0.5px solid #e2dfd8}
+.expand-body{padding:16px 32px 18px;display:grid;grid-template-columns:1fr 1fr;gap:32px;background:#edebe5}
+.expand-actions{padding:10px 32px 14px;border-top:0.5px solid #d0cdc7;display:flex;gap:8px;align-items:center;background:#edebe5}
+.ep-sec{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;padding-bottom:7px;border-bottom:0.5px solid #d0cdc7;margin-bottom:10px}
+.ep-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:0.5px solid #e2dfd8}
 .ep-row:last-child{border-bottom:none}
 .ep-key{font-size:11px;color:#aaa}
 .ep-val{font-size:11px;color:#111;text-align:right;max-width:60%}
+
+/* ── PRODUCTION READY page uses existing .data-row + .badge-ok styles ── */
 
 /* ── SPEC BOX ── */
 .spec-box{background:#e4e0d8;padding:13px 15px}
@@ -246,6 +248,10 @@
       Material prep
       <span class="nav-badge" id="nb-mat" style="display:none">0</span>
     </button>
+    <button class="nav-tab" onclick="navTo('prod-ready',this)">
+      Production ready
+      <span class="nav-badge" id="nb-prod" style="display:none">0</span>
+    </button>
     <button class="nav-tab" onclick="navTo('master-fabrics',this)">Fabrics</button>
     <button class="nav-tab" onclick="navTo('master-interlinings',this)">Interlinings</button>
     <button class="nav-tab" onclick="navTo('master-vendors',this)">Vendors</button>
@@ -283,6 +289,16 @@
     </div>
   </div>
 
+  <!-- ══ PRODUCTION READY ══ -->
+  <div class="page" id="page-prod-ready">
+    <div class="table-area">
+      <div class="col-head" style="grid-template-columns:2.4fr 0.9fr 1.4fr 1fr">
+        <span>Article</span><span>Category</span><span>Designer</span><span class="right">Status</span>
+      </div>
+      <div id="prod-list"><div class="empty">Loading...</div></div>
+    </div>
+  </div>
+
   <!-- ══ MASTER FABRICS ══ -->
   <div class="page" id="page-master-fabrics">
     <div class="table-area">
@@ -311,7 +327,7 @@
 
 <script>
 let profile=null
-let allArticles=[],allSvItems=[],allSmItems=[],allMatItems=[]
+let allArticles=[],allMatArticles=[],allSvItems=[],allSmItems=[],allMatItems=[]
 let masterFabrics=[],masterInterlinings=[],masterVendors=[]
 let masterButtons=[],masterZippers=[],konveksiVendors=[]
 let svTabMode='todo'
@@ -326,17 +342,28 @@ async function init(){
 }
 
 async function loadAll(){
-  const [arts,svs,sms,mats,fabs,ints,vens,btns,zips,seasons]=await Promise.all([
-    db.from('articles').select(`id,name,category,stage,size_range,
+  const selectStr=`id,name,category,stage,size_range,
+    profiles!articles_designer_id_fkey(full_name),
+    article_iterations(id,label,is_final_spec,
+      iteration_fabrics(fabric_name,color),
+      iteration_interlining(interlining_name,position),
+      iteration_accessories(category,button_id,zipper_id,sort_order)),
+    size_packs(id,size_label,file_path,confirmed),
+    article_cetakan(id,type,file_path,skip_approved)`
+
+  const [arts, artsAll, svs, sms, mats, fabs, ints, vens, btns, zips, seasons]=await Promise.all([
+    // For sample vendor — only sample_master/sample_vendor/production
+    db.from('articles').select(selectStr)
+      .eq('status','active').in('stage',['sample_master','sample_vendor','production'])
+      .order('created_at',{ascending:false}),
+    // For material prep — ALL active articles (designer can flag early)
+    db.from('articles').select(`id,name,category,stage,
       profiles!articles_designer_id_fkey(full_name),
       article_iterations(id,label,is_final_spec,
         iteration_fabrics(fabric_name,color),
         iteration_interlining(interlining_name,position),
-        iteration_accessories(category,button_id,zipper_id,sort_order)),
-      size_packs(id,size_label,file_path,confirmed),
-      article_cetakan(id,type,file_path,skip_approved)`)
-      .eq('status','active').in('stage',['sample_master','sample_vendor','production'])
-      .order('created_at',{ascending:false}),
+        iteration_accessories(category,button_id,zipper_id,sort_order))`)
+      .eq('status','active').order('created_at',{ascending:false}),
     db.from('sample_vendors').select('*').order('created_at'),
     db.from('sample_masters').select('id,article_id,size,color,status,done_at').order('created_at'),
     db.from('article_material_status').select('*').order('created_at'),
@@ -347,12 +374,18 @@ async function loadAll(){
     db.from('master_zippers').select('id,type,size,color_code'),
     db.from('collections').select('short_name').eq('is_active',true).limit(1),
   ])
-  allArticles=arts.data||[];allSvItems=svs.data||[];allSmItems=sms.data||[]
+  allArticles=arts.data||[]
+  // Material prep: show articles that are sample_master+ OR already have material_status rows
+  const matIds=new Set((mats.data||[]).map(m=>m.article_id))
+  allMatArticles=(artsAll.data||[]).filter(a=>
+    ['sample_master','sample_vendor','production'].includes(a.stage) || matIds.has(a.id)
+  )
+  allSvItems=svs.data||[];allSmItems=sms.data||[]
   allMatItems=mats.data||[];masterFabrics=fabs.data||[];masterInterlinings=ints.data||[]
   masterVendors=vens.data||[];masterButtons=btns.data||[];masterZippers=zips.data||[]
   konveksiVendors=masterVendors.filter(v=>v.supply_category==='konveksi')
   document.getElementById('season-label').textContent=seasons.data?.[0]?.short_name||'—'
-  renderSvList();updateSvStats();renderMatList();updateBadges()
+  renderSvList();updateSvStats();renderProdReadyPage();renderMatList();updateBadges()
   renderFabrics();renderInterlinings();renderVendors()
 }
 
@@ -375,6 +408,7 @@ function navTo(page,el){
   document.querySelectorAll('.nav-tab').forEach(n=>n.classList.remove('active'));el.classList.add('active')
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
   document.getElementById('page-'+page).classList.add('active')
+  if(page==='prod-ready') renderProdReadyPage()
 }
 
 // ── SV TAB LOGIC ─────────────────────────────────
@@ -420,6 +454,46 @@ function updateSvStats(){
   document.getElementById('tc-rev').textContent=r
   document.getElementById('tc-await').textContent=a
   document.getElementById('tc-approved').textContent=p
+}
+
+// ── PRODUCTION READY PAGE ────────────────────────
+// Syarat: semua SV approved (minimal 1) + semua material items ready
+function renderProdReadyPage(){
+  const el=document.getElementById('prod-list')
+  if(!el) return
+
+  const readyArts=allArticles.filter(a=>{
+    const svItems=allSvItems.filter(sv=>sv.article_id===a.id)
+    if(!svItems.length) return false
+    const allApproved=svItems.every(sv=>sv.status==='approved')
+    if(!allApproved) return false
+    const matItems=allMatItems.filter(m=>m.article_id===a.id)
+    if(!matItems.length) return false
+    return matItems.every(m=>m.material_status==='ready')
+  })
+
+  // Update nav badge
+  const nb=document.getElementById('nb-prod')
+  if(nb){nb.textContent=readyArts.length;nb.style.display=readyArts.length>0?'':'none'}
+
+  if(!readyArts.length){
+    el.innerHTML='<div class="empty">Belum ada artikel yang siap turun produksi.</div>';return
+  }
+
+  el.innerHTML=readyArts.map(a=>{
+    const svItems=allSvItems.filter(sv=>sv.article_id===a.id)
+    const vendors=[...new Set(svItems.map(sv=>sv.vendor_name).filter(Boolean))].join(', ')
+    const matItems=allMatItems.filter(m=>m.article_id===a.id)
+    return `<div class="data-row" style="grid-template-columns:2.4fr 0.9fr 1.4fr 1fr;cursor:default">
+      <div>
+        <div class="cell-name-main"><span class="sdot sdot-green"></span>${esc(a.name)}</div>
+        <div class="cell-name-sub">${matItems.length} materials ready · ${svItems.length} SV approved</div>
+      </div>
+      <div class="cell-cat">${esc(a.category)}</div>
+      <div class="cell-vendor">${esc(a.profiles?.full_name||'—')}</div>
+      <div style="text-align:right"><span class="badge badge-ok">Ready</span></div>
+    </div>`
+  }).join('')
 }
 
 // ── SV LIST ──────────────────────────────────────
@@ -522,7 +596,9 @@ function buildSvPanel(sv,a){
     setTimeout(()=>loadRevHistory(sv.id),0)
 
   } else {
-    // ── DEFAULT MODE: detail + readiness kiri, spec kanan ──
+    // ── DEFAULT MODE: detail kiri, spec kanan
+    // Readiness hanya tampil di tab To do (in_progress)
+    const showReadiness = sv.status==='in_progress'
     html=`<div class="expand-body">
       <div>
         ${prog}${okBanner}
@@ -533,11 +609,10 @@ function buildSvPanel(sv,a){
         <div class="ep-row"><span class="ep-key">Tanggal turun</span><span class="ep-val">${fmtDate(sv.sent_at)}</span></div>
         <div class="ep-row"><span class="ep-key">Notes</span><span class="ep-val">${esc(sv.notes||'—')}</span></div>
         ${sv.revision_count>0?`
-        <div class="ep-sec" style="margin-top:20px">Revision history <span style="color:#ccc;font-weight:400">${sv.revision_count}×</span></div>
+        <div class="ep-sec" style="margin-top:16px">Revision history <span style="color:#ccc;font-weight:400">${sv.revision_count}×</span></div>
         <div id="rev-hist-${sv.id}"><div style="font-size:11px;color:#aaa;font-style:italic">Loading...</div></div>
         `:''}
-        <div class="ep-sec" style="margin-top:20px">Readiness</div>
-        ${buildReadinessHtml(a)}
+        ${showReadiness?`<div class="ep-sec" style="margin-top:16px">Readiness</div>${buildReadinessHtml(a)}`:''}
       </div>
       <div>
         <div class="ep-sec">Final spec</div>
@@ -744,8 +819,8 @@ function patchSv(svId,patch){
 // ── MATERIAL PREP ─────────────────────────────────
 function renderMatList(){
   const el=document.getElementById('mat-list')
-  if(!allArticles.length){el.innerHTML='<div class="empty">Belum ada artikel.</div>';return}
-  el.innerHTML=allArticles.map(a=>{
+  if(!allMatArticles.length){el.innerHTML='<div class="empty">Belum ada artikel.</div>';return}
+  el.innerHTML=allMatArticles.map(a=>{
     const items=allMatItems.filter(m=>m.article_id===a.id)
     const allOk=items.length>0&&items.every(m=>m.material_status==='ready')
     const hasMiss=items.some(m=>m.material_status==='missing')
@@ -860,7 +935,7 @@ async function setMat(mid,aid,status){
   }).eq('id',mid)
   if(error){toast('Gagal: '+error.message);return}
   const i=allMatItems.findIndex(m=>m.id===mid);if(i>-1)allMatItems[i].material_status=status
-  renderMatList();updateBadges();toast('Status: '+status.replace('_',' '))
+  renderMatList();updateBadges();renderProdReadyPage();toast('Status: '+status.replace('_',' '))
 }
 
 function showAddMatForm(aid){
