@@ -167,10 +167,37 @@
 .fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
 /* ── MASTER LIST ROWS ── */
-.master-row{display:grid;padding:12px 32px;border-bottom:0.5px solid #eae7e2;align-items:center;background:#fafaf9}
+.master-row{display:grid;padding:12px 32px;border-bottom:0.5px solid #eae7e2;align-items:center;background:#fafaf9;cursor:default}
+.master-row.clickable{cursor:pointer;transition:background .1s}
+.master-row.clickable:hover{background:#f2efe9}
+.master-row.row-open{background:#edebe5}
 .master-name{font-size:12px;color:#111}
 .master-sub{font-size:10px;color:#aaa}
 .master-tag{font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:#aaa}
+
+/* Fabric expand */
+.fab-expand{display:none;background:#edebe5;border-bottom:0.5px solid #d4d1cb;padding:16px 32px 20px}
+.fab-expand.open{display:block}
+.fab-vendor-link{font-size:11px;color:#185FA5;text-decoration:underline;cursor:pointer}
+.fab-vendor-link:hover{color:#0c447c}
+
+/* Vendor edit row */
+.vend-row{display:grid;padding:13px 32px;border-bottom:0.5px solid #eae7e2;align-items:center;background:#fafaf9;transition:background .1s}
+.vend-row:hover{background:#f2efe9}
+.vend-name{font-size:12px;color:#111}
+.vend-cat{font-size:10px;color:#aaa;letter-spacing:0.06em;text-transform:uppercase}
+.vend-contact{font-size:11px;color:#555}
+.vend-contact.none{color:#ccc;font-style:italic}
+.vend-edit-btn{font-size:9px;color:#bbb;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;border:none;background:none;padding:3px 6px;border-radius:0;transition:color .1s}
+.vend-edit-btn:hover{color:#111}
+.vend-edit-form{background:#edebe5;border-bottom:0.5px solid #d4d1cb;padding:16px 32px 20px;display:none}
+.vend-edit-form.open{display:block}
+.grid-vend-4{grid-template-columns:1.8fr 1fr 1.4fr 60px}
+
+/* Compact readiness */
+.r-summary{display:flex;align-items:center;gap:6px;font-size:10px;margin-top:2px}
+.r-summary.ok{color:#3B6D11}
+.r-summary.warn{color:#854F0B}
 
 /* ── BUTTONS ── */
 .btn{font-size:10px;padding:8px 20px;border:none;cursor:pointer;letter-spacing:0.1em;text-transform:uppercase;transition:opacity .15s;border-radius:0}
@@ -275,7 +302,7 @@
   <!-- ══ MASTER VENDORS ══ -->
   <div class="page" id="page-master-vendors">
     <div class="table-area">
-      <div class="col-head grid-master-3"><span>Name</span><span>Category</span><span>Contact</span></div>
+      <div class="col-head grid-vend-4"><span>Name</span><span>Category</span><span>Contact</span><span></span></div>
       <div id="vend-list"><div class="empty">Loading...</div></div>
     </div>
   </div>
@@ -288,7 +315,7 @@ let allArticles=[],allSvItems=[],allSmItems=[],allMatItems=[]
 let masterFabrics=[],masterInterlinings=[],masterVendors=[]
 let masterButtons=[],masterZippers=[],konveksiVendors=[]
 let svTabMode='todo'
-let openSvId=null,openMatId=null
+let openSvId=null,openMatId=null,openFabName=null,openVendId=null
 
 // ── INIT ──────────────────────────────────────────
 async function init(){
@@ -313,7 +340,7 @@ async function loadAll(){
     db.from('sample_vendors').select('*').order('created_at'),
     db.from('sample_masters').select('id,article_id,size,color,status,done_at').order('created_at'),
     db.from('article_material_status').select('*').order('created_at'),
-    db.from('master_fabrics').select('id,name,color').order('name'),
+    db.from('master_fabrics').select('id,name,color,vendor').order('name'),
     db.from('master_interlinings').select('id,name').order('name'),
     db.from('master_vendors').select('id,name,contact,supply_category').order('supply_category,name'),
     db.from('master_buttons').select('id,supplier,name,color,size'),
@@ -564,24 +591,27 @@ function buildSpecHtml(a){
 
 function buildReadinessHtml(a){
   const sps=a.size_packs||[],confirmed=sps.filter(s=>s.confirmed),spOk=confirmed.length>0
-  const spItems=confirmed.length
-    ?confirmed.map(sp=>`<div class="r-item ok">${esc(sp.size_label||'—')}${sp.file_path?`<span class="r-file-link" onclick="openFile('${sp.file_path}')">Lihat</span>`:''}</div>`).join('')
-    :'<div class="r-item">Belum ada size pack confirmed</div>'
   const cets=a.article_cetakan||[]
   const cv=cets.find(c=>c.type==='vendor'),cq=cets.find(c=>c.type==='qc')
-  const cvOk=!!(cv?.file_path||cv?.skip_approved),cqOk=!!(cq?.file_path||cq?.skip_approved),allOk=spOk&&cvOk&&cqOk
-  return `<div class="r-grid">
-    <div class="r-card">
-      <div class="r-card-title"><div class="r-check ${spOk?'ok':'no'}">${spOk?'✓':'✗'}</div>Size pack</div>
-      ${spItems}
-    </div>
-    <div class="r-card">
-      <div class="r-card-title"><div class="r-check ${cvOk&&cqOk?'ok':'no'}">${cvOk&&cqOk?'✓':'✗'}</div>Cetakan</div>
-      <div class="r-item ${cvOk?'ok':''}">Cetakan vendor${cvOk&&cv?.file_path?` <span class="r-file-link" onclick="openFile('${cv.file_path}')">Lihat</span>`:cvOk?' (skip)':''}</div>
-      <div class="r-item ${cqOk?'ok':''}">Cetakan QC${cqOk&&cq?.file_path?` <span class="r-file-link" onclick="openFile('${cq.file_path}')">Lihat</span>`:cqOk?' (skip)':''}</div>
-    </div>
-  </div>
-  <div class="r-hint ${allOk?'ok':'warn'}">${allOk?'✓ Semua readiness terpenuhi.':'⚠ Readiness belum lengkap.'}</div>`
+  const cvOk=!!(cv?.file_path||cv?.skip_approved),cqOk=!!(cq?.file_path||cq?.skip_approved)
+  const allOk=spOk&&cvOk&&cqOk
+
+  // Compact: one line per check
+  const items=[
+    {label:'Size pack',ok:spOk,detail:spOk?confirmed.map(s=>s.size_label).join(', '):'Belum ada'},
+    {label:'Cetakan vendor',ok:cvOk,detail:cvOk?(cv?.file_path?`<span class="r-file-link" onclick="openFile('${cv.file_path}')">Lihat</span>`:'Skip'):'Belum ada'},
+    {label:'Cetakan QC',ok:cqOk,detail:cqOk?(cq?.file_path?`<span class="r-file-link" onclick="openFile('${cq.file_path}')">Lihat</span>`:'Skip'):'Belum ada'},
+  ]
+  return `<div style="margin-top:2px">
+    ${items.map(it=>`<div class="ep-row">
+      <span class="ep-key" style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;${it.ok?'color:#3B6D11':'color:#bbb'}">${it.ok?'✓':'○'}</span>
+        ${it.label}
+      </span>
+      <span class="ep-val" style="${it.ok?'color:#111':'color:#aaa'}">${it.detail}</span>
+    </div>`).join('')}
+    <div style="font-size:10px;margin-top:6px;${allOk?'color:#3B6D11':'color:#854F0B'}">${allOk?'✓ Semua readiness terpenuhi':'⚠ Readiness belum lengkap'}</div>
+  </div>`
 }
 
 function toggleSv(svId){openSvId=openSvId===svId?null:svId;renderSvList()}
@@ -871,14 +901,62 @@ async function saveMatItem(aid){
 
 // ── MASTER LISTS ──────────────────────────────────
 function renderFabrics(){
+  // Group by name, collect colors + vendor (same per name)
   const grouped={}
-  masterFabrics.forEach(f=>{if(!grouped[f.name])grouped[f.name]=[];grouped[f.name].push(f.color||'—')})
-  document.getElementById('fab-list').innerHTML=Object.entries(grouped).map(([name,colors])=>
-    `<div class="master-row grid-master-2">
-      <div class="master-name">${esc(name)}</div>
-      <div class="master-sub">${colors.map(c=>esc(c)).join(', ')}</div>
-    </div>`
-  ).join('')||'<div class="empty">Belum ada data.</div>'
+  masterFabrics.forEach(f=>{
+    if(!grouped[f.name]) grouped[f.name]={colors:[],vendor:f.vendor||null}
+    grouped[f.name].colors.push(f.color||'—')
+  })
+  const el=document.getElementById('fab-list')
+  if(!Object.keys(grouped).length){el.innerHTML='<div class="empty">Belum ada data.</div>';return}
+
+  el.innerHTML=Object.entries(grouped).map(([name,g])=>{
+    const isOpen=openFabName===name
+    const vendorEntry=masterVendors.find(v=>v.name===g.vendor)
+    const vendorHtml=g.vendor
+      ?`<span class="fab-vendor-link" onclick="goToVendor('${esc(g.vendor)}')">${esc(g.vendor)} →</span>`
+      :`<span style="color:#ccc;font-style:italic;font-size:11px">No supplier</span>`
+    return `<div class="master-row grid-master-2 clickable${isOpen?' row-open':''}" onclick="toggleFab('${esc(name)}')">
+        <div class="master-name">${esc(name)}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="master-sub">${g.colors.map(c=>esc(c)).join(', ')}</div>
+          <div class="cell-chevron${isOpen?' open':''}" style="font-size:13px;color:#ccc;transition:transform .2s">›</div>
+        </div>
+      </div>
+      <div class="fab-expand${isOpen?' open':''}">
+        <div style="display:flex;gap:48px">
+          <div>
+            <div class="ep-sec" style="margin-bottom:10px">Supplier</div>
+            <div style="font-size:12px;color:#111;margin-bottom:4px">${vendorHtml}</div>
+            ${g.vendor?`<div style="font-size:10px;color:#bbb;margin-top:4px">${esc(vendorEntry?.contact||'No contact yet')}</div>`:''}
+          </div>
+          <div>
+            <div class="ep-sec" style="margin-bottom:10px">Colors available</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              ${g.colors.map(c=>`<span style="font-size:11px;color:#111;background:#e4e0d8;padding:3px 10px">${esc(c)}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>`
+  }).join('')
+}
+
+function toggleFab(name){
+  openFabName=openFabName===name?null:name
+  renderFabrics()
+}
+
+function goToVendor(vendorName){
+  // Switch to Vendors tab and highlight that vendor
+  const tabs=document.querySelectorAll('.nav-tab')
+  tabs.forEach(t=>t.classList.remove('active'))
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  // Find the vendors nav tab and activate it
+  tabs.forEach(t=>{if(t.textContent.trim()==='Vendors')t.classList.add('active')})
+  document.getElementById('page-master-vendors').classList.add('active')
+  // Find the vendor and open its edit form
+  const v=masterVendors.find(x=>x.name===vendorName)
+  if(v){openVendId=v.id;renderVendors()}
 }
 
 function renderInterlinings(){
@@ -891,23 +969,70 @@ function renderVendors(){
   const konv=masterVendors.filter(v=>v.supply_category==='konveksi')
   const rest=masterVendors.filter(v=>v.supply_category!=='konveksi')
   let html=''
+
+  function vendorRowHtml(v){
+    const isOpen=openVendId===v.id
+    const contactDisplay=v.contact
+      ?`<span class="vend-contact">${esc(v.contact)}</span>`
+      :`<span class="vend-contact none">Belum ada</span>`
+    return `<div class="vend-row grid-vend-4${isOpen?' row-open':''}">
+      <div class="vend-name">${esc(v.name)}</div>
+      <div class="vend-cat">${esc(v.supply_category||'—')}</div>
+      ${contactDisplay}
+      <div style="text-align:right"><button class="vend-edit-btn" onclick="toggleVendEdit('${v.id}')">Edit</button></div>
+    </div>
+    <div class="vend-edit-form${isOpen?' open':''}" id="vef-${v.id}">
+      <div class="fgrid2" style="margin-bottom:10px">
+        <div>
+          <label class="flabel">Nama vendor</label>
+          <input class="finput" id="ve-name-${v.id}" value="${esc(v.name||'')}">
+        </div>
+        <div>
+          <label class="flabel">Category</label>
+          <input class="finput" id="ve-cat-${v.id}" value="${esc(v.supply_category||'')}">
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label class="flabel">Contact (no HP / WA)</label>
+        <input class="finput" id="ve-contact-${v.id}" value="${esc(v.contact||'')}" placeholder="e.g. 081234567890" style="margin-bottom:0">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="toggleVendEdit('${v.id}')">Cancel</button>
+        <button class="btn btn-dark btn-sm" onclick="saveVendor('${v.id}')">Save</button>
+      </div>
+    </div>`
+  }
+
   if(konv.length){
     html+=`<div class="group-hdr">Vendor konveksi</div>`
-    html+=konv.map(v=>`<div class="master-row grid-master-3">
-      <div class="master-name">${esc(v.name)}</div>
-      <div class="master-tag">Konveksi</div>
-      <div class="master-sub">${esc(v.contact||'—')}</div>
-    </div>`).join('')
+    html+=konv.map(v=>vendorRowHtml(v)).join('')
   }
   if(rest.length){
     html+=`<div class="group-hdr">Vendor lainnya</div>`
-    html+=rest.map(v=>`<div class="master-row grid-master-3">
-      <div class="master-name">${esc(v.name)}</div>
-      <div class="master-tag">${esc(v.supply_category||'—')}</div>
-      <div class="master-sub">${esc(v.contact||'—')}</div>
-    </div>`).join('')
+    html+=rest.map(v=>vendorRowHtml(v)).join('')
   }
   document.getElementById('vend-list').innerHTML=html||'<div class="empty">Belum ada data.</div>'
+}
+
+function toggleVendEdit(vid){
+  openVendId=openVendId===vid?null:vid
+  renderVendors()
+}
+
+async function saveVendor(vid){
+  const name=document.getElementById('ve-name-'+vid)?.value.trim()
+  const cat=document.getElementById('ve-cat-'+vid)?.value.trim()
+  const contact=document.getElementById('ve-contact-'+vid)?.value.trim()
+  if(!name){toast('Nama tidak boleh kosong.');return}
+  const{error}=await db.from('master_vendors').update({
+    name:name||null,supply_category:cat||null,contact:contact||null
+  }).eq('id',vid)
+  if(error){toast('Gagal: '+error.message);return}
+  const i=masterVendors.findIndex(v=>v.id===vid)
+  if(i>-1) masterVendors[i]={...masterVendors[i],name,supply_category:cat,contact}
+  openVendId=null
+  renderVendors()
+  toast('Vendor disimpan.')
 }
 
 // ── BADGES ────────────────────────────────────────
