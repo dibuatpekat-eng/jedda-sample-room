@@ -1,32 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jedda — Supervisor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <style>
 *{box-sizing:border-box}
 
-.shell{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:#fafaf9;font-family:inherit;color:#1a1a1a}
+.shell{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:#fafaf9;font-family:'Inter',sans-serif;color:#1a1a1a}
 
 /* ── TOPBAR ── */
 .topbar{height:44px;background:#111;display:flex;align-items:center;padding:0 32px;flex-shrink:0;gap:0}
 .topbar-logo{height:18px;filter:brightness(0) invert(1)}
 .topbar-spacer{flex:1}
 .topbar-right{display:flex;align-items:center;gap:20px}
-.season-tag{font-size:9px;color:#555;letter-spacing:0.14em;text-transform:uppercase}
-.uname{font-size:11px;color:#666;letter-spacing:0.04em}
+.season-tag{font-size:9px;color:#555;letter-spacing:0.14em;text-transform:uppercase;font-family:'Inter',sans-serif}
+.uname{font-size:11px;color:#666;letter-spacing:0.04em;font-family:'Inter',sans-serif}
 .logout-btn{background:none;border:none;color:#444;cursor:pointer;font-size:13px;padding:2px 0 2px 4px;line-height:1}
 .logout-btn:hover{color:#aaa}
 
-/* ── NAV TABS (below topbar, editorial style) ── */
+/* ── NAV TABS ── */
 .nav-row{display:flex;border-bottom:0.5px solid #e0ddd8;padding:0 32px;background:#fafaf9;flex-shrink:0}
-.nav-tab{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#bbb;padding:15px 0;margin-right:36px;cursor:pointer;border:none;background:none;position:relative;transition:color .15s;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.nav-tab{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#bbb;padding:15px 0;margin-right:36px;cursor:pointer;border:none;background:none;position:relative;transition:color .15s;display:flex;align-items:center;gap:7px;white-space:nowrap;font-family:'Inter',sans-serif}
 .nav-tab:hover{color:#666}
 .nav-tab.active{color:#111}
 .nav-tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:#111}
-.nav-badge{font-size:9px;background:#EF9F27;color:#111;padding:1px 6px;border-radius:20px;font-weight:500;letter-spacing:0}
+.nav-badge{font-size:9px;background:#EF9F27;color:#111;padding:1px 6px;border-radius:20px;font-weight:500;letter-spacing:0;font-family:'Inter',sans-serif}
 
 /* ── PAGES ── */
 .page{display:none;flex:1;flex-direction:column;overflow:hidden;min-width:0}
@@ -35,12 +38,12 @@
 /* ── STATS BAR ── */
 .stats-bar{display:flex;padding:0 32px;border-bottom:0.5px solid #e0ddd8;flex-shrink:0}
 .stat-item{padding:22px 52px 22px 0}
-.stat-num{font-size:30px;font-weight:400;color:#111;letter-spacing:-0.03em;line-height:1;font-family:'Georgia',serif}
-.stat-lbl{font-size:9px;color:#bbb;letter-spacing:0.14em;text-transform:uppercase;margin-top:5px}
+.stat-num{font-size:30px;font-weight:300;color:#111;letter-spacing:-0.03em;line-height:1;font-family:'Inter',sans-serif}
+.stat-lbl{font-size:9px;color:#bbb;letter-spacing:0.14em;text-transform:uppercase;margin-top:5px;font-family:'Inter',sans-serif}
 
 /* ── SUB TABS ── */
 .sub-tab-row{display:flex;padding:0 32px;border-bottom:0.5px solid #e0ddd8;flex-shrink:0}
-.sub-tab{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;padding:10px 0;margin-right:28px;cursor:pointer;border:none;background:none;position:relative;transition:color .15s;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.sub-tab{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;padding:10px 0;margin-right:28px;cursor:pointer;border:none;background:none;position:relative;transition:color .15s;display:flex;align-items:center;gap:6px;white-space:nowrap;font-family:'Inter',sans-serif}
 .sub-tab:hover{color:#666}
 .sub-tab.active{color:#111}
 .sub-tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:#111}
@@ -50,15 +53,22 @@
 /* ── TABLE STRUCTURE ── */
 .table-area{flex:1;overflow-y:auto;min-width:0}
 .col-head{display:grid;padding:9px 32px;border-bottom:0.5px solid #e0ddd8;position:sticky;top:0;background:#fafaf9;z-index:3}
-.col-head span{font-size:9px;letter-spacing:0.13em;text-transform:uppercase;color:#bbb;font-weight:400}
+.col-head span{font-size:9px;letter-spacing:0.13em;text-transform:uppercase;color:#bbb;font-weight:400;font-family:'Inter',sans-serif}
 .col-head span.right{text-align:right}
+.col-head span.sortable{cursor:pointer;user-select:none;transition:color .15s}
+.col-head span.sortable:hover{color:#888}
+.col-head span.sort-active{color:#111}
+.sort-arrow{display:inline-block;margin-left:3px;opacity:0.5;font-size:8px}
+.sort-active .sort-arrow{opacity:1}
 .grid-sv{grid-template-columns:2.4fr 0.9fr 1.4fr 130px 20px}
 .grid-mat{grid-template-columns:2.4fr 0.9fr 1.4fr 140px 20px}
 .grid-master-2{grid-template-columns:2fr 1fr}
 .grid-master-3{grid-template-columns:2fr 1fr 1fr}
+.grid-fab{grid-template-columns:1.4fr 1.8fr 0.8fr 80px 20px}
+.grid-int{grid-template-columns:1.2fr 0.8fr 1fr 0.8fr 1fr 80px}
 
 /* ── GROUP HEADER ── */
-.group-hdr{padding:10px 32px 6px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#bbb;border-bottom:0.5px solid #eae7e2;background:#f3f2ee;display:flex;align-items:center;gap:6px}
+.group-hdr{padding:10px 32px 6px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#bbb;border-bottom:0.5px solid #eae7e2;background:#f3f2ee;display:flex;align-items:center;gap:6px;font-family:'Inter',sans-serif}
 
 /* ── DATA ROW ── */
 .data-row{display:grid;padding:14px 32px;border-bottom:0.5px solid #eae7e2;cursor:pointer;transition:background .1s;align-items:center;background:#fafaf9;min-width:0}
@@ -81,7 +91,7 @@
 .sdot-gray{background:#ccc}
 
 /* ── BADGES ── */
-.badge{font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:3px 9px;display:inline-block}
+.badge{font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:3px 9px;display:inline-block;font-family:'Inter',sans-serif}
 .badge-todo{background:#f0eeea;color:#777}
 .badge-rev{background:#faeeda;color:#854F0B}
 .badge-await{background:#faeeda;color:#854F0B}
@@ -90,19 +100,18 @@
 .badge-ready{background:#EAF3DE;color:#3B6D11}
 .badge-prog{background:#f0eeea;color:#888}
 .badge-siap{background:#EAF3DE;color:#3B6D11;border:0.5px solid #97C459}
+.badge-wait-mat{background:#fdf6e8;color:#854F0B;border:0.5px solid #EF9F27}
 
 /* ── EXPAND PANEL ── */
 .expand-wrap{display:none;border-bottom:0.5px solid #d4d1cb}
 .expand-wrap.open{display:block}
 .expand-body{padding:16px 32px 18px;display:grid;grid-template-columns:1fr 1fr;gap:32px;background:#edebe5}
 .expand-actions{padding:10px 32px 14px;border-top:0.5px solid #d0cdc7;display:flex;gap:8px;align-items:center;background:#edebe5}
-.ep-sec{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;padding-bottom:7px;border-bottom:0.5px solid #d0cdc7;margin-bottom:10px}
+.ep-sec{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#aaa;padding-bottom:7px;border-bottom:0.5px solid #d0cdc7;margin-bottom:10px;font-family:'Inter',sans-serif}
 .ep-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:0.5px solid #e2dfd8}
 .ep-row:last-child{border-bottom:none}
 .ep-key{font-size:11px;color:#aaa}
 .ep-val{font-size:11px;color:#111;text-align:right;max-width:60%}
-
-/* ── PRODUCTION READY page uses existing .data-row + .badge-ok styles ── */
 
 /* ── SPEC BOX ── */
 .spec-box{background:#e4e0d8;padding:13px 15px}
@@ -119,14 +128,14 @@
 .p-done{background:#EAF3DE;color:#3B6D11;border:0.5px solid #97C459}
 .p-curr{background:#111;color:#fafaf9}
 .p-wait{background:transparent;color:#ccc;border:0.5px solid #ccc}
-.prog-lbl{font-size:9px;letter-spacing:0.08em;text-transform:uppercase;text-align:center;white-space:nowrap}
+.prog-lbl{font-size:9px;letter-spacing:0.08em;text-transform:uppercase;text-align:center;white-space:nowrap;font-family:'Inter',sans-serif}
 .l-done{color:#639922}
 .l-curr{color:#111}
 .l-wait{color:#ccc}
 
 /* ── REVISION / OK BOX ── */
 .rev-note-box{background:#faeeda;padding:12px 15px;margin-bottom:16px}
-.rev-note-lbl{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#854F0B;margin-bottom:4px}
+.rev-note-lbl{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#854F0B;margin-bottom:4px;font-family:'Inter',sans-serif}
 .rev-note-txt{font-size:11px;color:#633806;line-height:1.6}
 .ok-banner{background:#EAF3DE;padding:12px 15px;display:flex;align-items:center;gap:12px;margin-bottom:16px}
 .ok-text{font-size:12px;color:#3B6D11;font-weight:500}
@@ -149,10 +158,24 @@
 .mat-item-row{display:flex;align-items:flex-start;padding:11px 0;border-bottom:0.5px solid #dedbd4;gap:16px}
 .mat-item-row:last-child{border-bottom:none}
 .mat-item-name{font-size:12px;color:#111}
-.mat-item-type{font-size:9px;color:#bbb;letter-spacing:0.1em;text-transform:uppercase;margin-top:2px}
+.mat-item-type{font-size:9px;color:#bbb;letter-spacing:0.1em;text-transform:uppercase;margin-top:2px;font-family:'Inter',sans-serif}
 .mat-item-contact{font-size:10px;color:#A32D2D;margin-top:5px;display:flex;align-items:center;gap:5px}
+
+/* On order: estimated date field */
+.mat-eta-row{margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mat-eta-label{font-size:9px;color:#185FA5;letter-spacing:0.08em;text-transform:uppercase;font-family:'Inter',sans-serif}
+.mat-eta-input{font-size:11px;padding:4px 8px;border:0.5px solid #85B7EB;background:#E6F1FB;color:#185FA5;outline:none;border-radius:0;width:140px;font-family:'Inter',sans-serif}
+.mat-eta-save{font-size:9px;padding:4px 10px;border:0.5px solid #85B7EB;background:#185FA5;color:#fff;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;border-radius:0;font-family:'Inter',sans-serif}
+.mat-eta-display{font-size:10px;color:#185FA5;margin-top:6px}
+
+/* Missing: supplier info */
+.mat-supplier-panel{margin-top:8px;background:#fdf0f0;border:0.5px solid #F09595;padding:10px 12px}
+.mat-supplier-name{font-size:11px;color:#A32D2D;font-weight:500}
+.mat-supplier-contact{font-size:10px;color:#888;margin-top:2px}
+.mat-supplier-link{font-size:10px;color:#185FA5;text-decoration:underline;cursor:pointer;display:inline-block;margin-top:4px}
+
 .mat-togs{display:flex;gap:2px;flex-shrink:0;margin-top:1px}
-.mtbtn{font-size:9px;padding:4px 10px;border:0.5px solid #d0cdc7;background:none;color:#bbb;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;transition:all .1s}
+.mtbtn{font-size:9px;padding:4px 10px;border:0.5px solid #d0cdc7;background:none;color:#bbb;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;transition:all .1s;font-family:'Inter',sans-serif}
 .mtbtn:hover{border-color:#888;color:#555}
 .mt-r{background:#EAF3DE;border-color:#97C459;color:#3B6D11}
 .mt-o{background:#E6F1FB;border-color:#85B7EB;color:#185FA5}
@@ -161,10 +184,10 @@
 /* ── ADD FORM ── */
 .add-sv-wrap{background:#edebe5;border-bottom:0.5px solid #d0cdc7;padding:20px 32px 24px}
 .add-mat-form{background:#e4e0d8;padding:14px 15px;margin-top:12px}
-.add-inline{display:flex;align-items:center;gap:7px;padding:11px 32px;font-size:10px;color:#bbb;cursor:pointer;border-bottom:0.5px solid #eae7e2;letter-spacing:0.06em;text-transform:uppercase;transition:all .1s;background:#fafaf9}
+.add-inline{display:flex;align-items:center;gap:7px;padding:11px 32px;font-size:10px;color:#bbb;cursor:pointer;border-bottom:0.5px solid #eae7e2;letter-spacing:0.06em;text-transform:uppercase;transition:all .1s;background:#fafaf9;font-family:'Inter',sans-serif}
 .add-inline:hover{color:#666;background:#f2efe9}
-.flabel{font-size:9px;color:#999;margin-bottom:4px;display:block;letter-spacing:0.08em;text-transform:uppercase}
-.finput{width:100%;font-size:11px;padding:7px 9px;border:0.5px solid #cac7bf;background:#fafaf9;color:#111;outline:none;margin-bottom:10px;border-radius:0}
+.flabel{font-size:9px;color:#999;margin-bottom:4px;display:block;letter-spacing:0.08em;text-transform:uppercase;font-family:'Inter',sans-serif}
+.finput{width:100%;font-size:11px;padding:7px 9px;border:0.5px solid #cac7bf;background:#fafaf9;color:#111;outline:none;margin-bottom:10px;border-radius:0;font-family:'Inter',sans-serif}
 .finput:focus{border-color:#888}
 .fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
@@ -175,7 +198,7 @@
 .master-row.row-open{background:#edebe5}
 .master-name{font-size:12px;color:#111}
 .master-sub{font-size:10px;color:#aaa}
-.master-tag{font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:#aaa}
+.master-tag{font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:#aaa;font-family:'Inter',sans-serif}
 
 /* Fabric expand */
 .fab-expand{display:none;background:#edebe5;border-bottom:0.5px solid #d4d1cb;padding:16px 32px 20px}
@@ -183,18 +206,50 @@
 .fab-vendor-link{font-size:11px;color:#185FA5;text-decoration:underline;cursor:pointer}
 .fab-vendor-link:hover{color:#0c447c}
 
+/* Fabric edit form */
+.fab-edit-form{background:#e4e0d8;padding:14px 15px;margin-top:12px}
+.qty-tag{font-size:11px;color:#555;background:#ebe8e2;padding:2px 9px;display:inline-block}
+
+/* Interlining table */
+.int-row{display:grid;padding:11px 32px;border-bottom:0.5px solid #eae7e2;align-items:center;background:#fafaf9;cursor:default;transition:background .1s}
+.int-row:hover{background:#f2efe9}
+.int-tag{font-size:9px;letter-spacing:0.07em;text-transform:uppercase;padding:2px 8px;border-radius:2px}
+.int-soft{background:#EAF3DE;color:#3B6D11}
+.int-medium{background:#E6F1FB;color:#185FA5}
+.int-hard{background:#FCEBEB;color:#A32D2D}
+.int-none{background:#f0eeea;color:#aaa}
+
+/* Vendor page: collapsible groups */
+.vend-group-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 32px;cursor:pointer;background:#f3f2ee;border-bottom:0.5px solid #eae7e2;user-select:none;transition:background .1s}
+.vend-group-hdr:hover{background:#eeece7}
+.vend-group-title{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#888;font-family:'Inter',sans-serif}
+.vend-group-count{font-size:10px;color:#bbb}
+.vend-group-chevron{font-size:13px;color:#ccc;transition:transform .2s}
+.vend-group-chevron.open{transform:rotate(90deg)}
+.vend-group-body{display:none}
+.vend-group-body.open{display:block}
+
 /* Vendor edit row */
 .vend-row{display:grid;padding:13px 32px;border-bottom:0.5px solid #eae7e2;align-items:center;background:#fafaf9;transition:background .1s}
 .vend-row:hover{background:#f2efe9}
 .vend-name{font-size:12px;color:#111}
-.vend-cat{font-size:10px;color:#aaa;letter-spacing:0.06em;text-transform:uppercase}
+.vend-cat{font-size:10px;color:#aaa;letter-spacing:0.06em;text-transform:uppercase;font-family:'Inter',sans-serif}
 .vend-contact{font-size:11px;color:#555}
 .vend-contact.none{color:#ccc;font-style:italic}
-.vend-edit-btn{font-size:9px;color:#bbb;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;border:none;background:none;padding:3px 6px;border-radius:0;transition:color .1s}
+.vend-edit-btn{font-size:9px;color:#bbb;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;border:none;background:none;padding:3px 6px;border-radius:0;transition:color .1s;font-family:'Inter',sans-serif}
 .vend-edit-btn:hover{color:#111}
 .vend-edit-form{background:#edebe5;border-bottom:0.5px solid #d4d1cb;padding:16px 32px 20px;display:none}
 .vend-edit-form.open{display:block}
 .grid-vend-4{grid-template-columns:1.8fr 1fr 1.4fr 60px}
+
+/* Production ready expand */
+.prod-expand{display:none;background:#edebe5;border-bottom:0.5px solid #d4d1cb;padding:16px 32px 20px}
+.prod-expand.open{display:block}
+.prod-section{margin-bottom:18px}
+.prod-section:last-child{margin-bottom:0}
+.size-pill{display:inline-block;font-size:10px;padding:3px 10px;border-radius:2px;margin:2px;font-family:'Inter',sans-serif}
+.size-pill-ok{background:#EAF3DE;color:#3B6D11;border:0.5px solid #97C459}
+.size-pill-pending{background:#f0eeea;color:#aaa;border:0.5px solid #d0cdc7}
 
 /* Compact readiness */
 .r-summary{display:flex;align-items:center;gap:6px;font-size:10px;margin-top:2px}
@@ -202,19 +257,19 @@
 .r-summary.warn{color:#854F0B}
 
 /* ── BUTTONS ── */
-.btn{font-size:10px;padding:8px 20px;border:none;cursor:pointer;letter-spacing:0.1em;text-transform:uppercase;transition:opacity .15s;border-radius:0}
+.btn{font-size:10px;padding:8px 20px;border:none;cursor:pointer;letter-spacing:0.1em;text-transform:uppercase;transition:opacity .15s;border-radius:0;font-family:'Inter',sans-serif}
 .btn-dark{background:#111;color:#fafaf9}
 .btn-dark:hover{opacity:.8}
 .btn-ghost{background:none;color:#888;border:0.5px solid #d0cdc7;padding:8px 14px}
 .btn-ghost:hover{border-color:#888;color:#111}
 .btn-sm{font-size:9px;padding:5px 11px}
 
-.empty{padding:56px 32px;font-size:10px;color:#ccc;letter-spacing:0.12em;text-transform:uppercase;text-align:center}
+.empty{padding:56px 32px;font-size:10px;color:#ccc;letter-spacing:0.12em;text-transform:uppercase;text-align:center;font-family:'Inter',sans-serif}
 
 /* ── REVISION HISTORY ── */
 .rev-hist-item{padding:10px 0;border-bottom:0.5px solid #d8d5cf}
 .rev-hist-item:last-child{border-bottom:none}
-.rev-hist-num{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#854F0B;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.rev-hist-num{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#854F0B;margin-bottom:4px;display:flex;align-items:center;gap:8px;font-family:'Inter',sans-serif}
 .rev-hist-date{color:#cca97a;font-size:9px;letter-spacing:0.04em;text-transform:none}
 .rev-hist-note{font-size:11px;color:#633806;line-height:1.6;background:#faeeda;padding:8px 12px;margin-top:4px}
 </style>
@@ -241,15 +296,15 @@
   <!-- NAV TABS -->
   <div class="nav-row">
     <button class="nav-tab active" onclick="navTo('sample-vendor',this)">
-      Sample vendor
+      Sample Vendor
       <span class="nav-badge" id="nb-sv" style="display:none">0</span>
     </button>
     <button class="nav-tab" onclick="navTo('material-prep',this)">
-      Material prep
+      Material Prep
       <span class="nav-badge" id="nb-mat" style="display:none">0</span>
     </button>
     <button class="nav-tab" onclick="navTo('prod-ready',this)">
-      Production ready
+      Siap Produksi
       <span class="nav-badge" id="nb-prod" style="display:none">0</span>
     </button>
     <button class="nav-tab" onclick="navTo('master-fabrics',this)">Fabrics</button>
@@ -261,21 +316,21 @@
   <div class="page active" id="page-sample-vendor">
     <div class="stats-bar">
       <div class="stat-item"><div class="stat-num" id="sv-s1">—</div><div class="stat-lbl">To do</div></div>
-      <div class="stat-item"><div class="stat-num" id="sv-s2">—</div><div class="stat-lbl">Revision</div></div>
-      <div class="stat-item"><div class="stat-num" id="sv-s3">—</div><div class="stat-lbl">Awaiting head</div></div>
-      <div class="stat-item"><div class="stat-num" id="sv-s4">—</div><div class="stat-lbl">Approved</div></div>
+      <div class="stat-item"><div class="stat-num" id="sv-s2">—</div><div class="stat-lbl">Revisi</div></div>
+      <div class="stat-item"><div class="stat-num" id="sv-s3">—</div><div class="stat-lbl">Menunggu Head</div></div>
+      <div class="stat-item"><div class="stat-num" id="sv-s4">—</div><div class="stat-lbl">Disetujui</div></div>
     </div>
     <div class="sub-tab-row">
-      <button class="sub-tab active" id="svt-todo"   onclick="svTab('todo',this)">To do <span class="sub-count" id="tc-todo">—</span></button>
-      <button class="sub-tab"        id="svt-revision" onclick="svTab('revision',this)">Revision <span class="sub-count" id="tc-rev">—</span></button>
-      <button class="sub-tab"        id="svt-awaiting" onclick="svTab('awaiting',this)">Awaiting head <span class="sub-count" id="tc-await">—</span></button>
-      <button class="sub-tab"        id="svt-approved" onclick="svTab('approved',this)">Approved <span class="sub-count" id="tc-approved">—</span></button>
+      <button class="sub-tab active" id="svt-todo"     onclick="svTab('todo',this)">To do <span class="sub-count" id="tc-todo">—</span></button>
+      <button class="sub-tab"        id="svt-revision"  onclick="svTab('revision',this)">Revisi <span class="sub-count" id="tc-rev">—</span></button>
+      <button class="sub-tab"        id="svt-awaiting"  onclick="svTab('awaiting',this)">Menunggu Head <span class="sub-count" id="tc-await">—</span></button>
+      <button class="sub-tab"        id="svt-approved"  onclick="svTab('approved',this)">Disetujui <span class="sub-count" id="tc-approved">—</span></button>
     </div>
     <div class="table-area">
       <div class="col-head grid-sv">
-        <span>Article / size</span><span>Category</span><span>Vendor</span><span class="right">Status</span><span></span>
+        <span>Artikel / Ukuran</span><span>Kategori</span><span>Vendor</span><span class="right">Status</span><span></span>
       </div>
-      <div id="sv-list"><div class="empty">Loading...</div></div>
+      <div id="sv-list"><div class="empty">Memuat...</div></div>
     </div>
   </div>
 
@@ -283,43 +338,51 @@
   <div class="page" id="page-material-prep">
     <div class="table-area">
       <div class="col-head grid-mat">
-        <span>Article</span><span>Category</span><span>Designer</span><span class="right">Material</span><span></span>
+        <span>Artikel</span><span>Kategori</span><span>Desainer</span><span class="right">Material</span><span></span>
       </div>
-      <div id="mat-list"><div class="empty">Loading...</div></div>
+      <div id="mat-list"><div class="empty">Memuat...</div></div>
     </div>
   </div>
 
-  <!-- ══ PRODUCTION READY ══ -->
+  <!-- ══ SIAP PRODUKSI ══ -->
   <div class="page" id="page-prod-ready">
     <div class="table-area">
-      <div class="col-head" style="grid-template-columns:2.4fr 0.9fr 1.4fr 1fr">
-        <span>Article</span><span>Category</span><span>Designer</span><span class="right">Status</span>
+      <div class="col-head" style="grid-template-columns:2.4fr 0.9fr 1.4fr 1fr 20px">
+        <span>Artikel</span><span>Kategori</span><span>Desainer</span><span class="right">Status</span><span></span>
       </div>
-      <div id="prod-list"><div class="empty">Loading...</div></div>
+      <div id="prod-list"><div class="empty">Memuat...</div></div>
     </div>
   </div>
 
   <!-- ══ MASTER FABRICS ══ -->
   <div class="page" id="page-master-fabrics">
     <div class="table-area">
-      <div class="col-head grid-master-2"><span>Name</span><span>Colors</span></div>
-      <div id="fab-list"><div class="empty">Loading...</div></div>
+      <div class="col-head grid-fab">
+        <span>Nama</span><span>Warna</span><span>Supplier</span><span>Qty</span><span></span>
+      </div>
+      <div id="fab-list"><div class="empty">Memuat...</div></div>
     </div>
   </div>
 
   <!-- ══ MASTER INTERLININGS ══ -->
   <div class="page" id="page-master-interlinings">
     <div class="table-area">
-      <div class="col-head" style="grid-template-columns:1fr"><span>Name</span></div>
-      <div id="int-list"><div class="empty">Loading...</div></div>
+      <div class="col-head grid-int" id="int-col-head">
+        <span class="sortable" onclick="sortInt('name')">Nama <span class="sort-arrow">↕</span></span>
+        <span class="sortable" onclick="sortInt('kategori')">Kategori <span class="sort-arrow">↕</span></span>
+        <span class="sortable" onclick="sortInt('jenis')">Jenis <span class="sort-arrow">↕</span></span>
+        <span class="sortable" onclick="sortInt('peruntukan')">Peruntukan <span class="sort-arrow">↕</span></span>
+        <span class="sortable" onclick="sortInt('supplier')">Supplier <span class="sort-arrow">↕</span></span>
+        <span>Qty</span>
+      </div>
+      <div id="int-list"><div class="empty">Memuat...</div></div>
     </div>
   </div>
 
   <!-- ══ MASTER VENDORS ══ -->
   <div class="page" id="page-master-vendors">
     <div class="table-area">
-      <div class="col-head grid-vend-4"><span>Name</span><span>Category</span><span>Contact</span><span></span></div>
-      <div id="vend-list"><div class="empty">Loading...</div></div>
+      <div id="vend-list"><div class="empty">Memuat...</div></div>
     </div>
   </div>
 
@@ -331,7 +394,9 @@ let allArticles=[],allMatArticles=[],allSvItems=[],allSmItems=[],allMatItems=[]
 let masterFabrics=[],masterInterlinings=[],masterVendors=[]
 let masterButtons=[],masterZippers=[],konveksiVendors=[]
 let svTabMode='todo'
-let openSvId=null,openMatId=null,openFabName=null,openVendId=null
+let openSvId=null,openMatId=null,openFabName=null,openVendId=null,openProdId=null
+let intSortCol='name',intSortDir='asc'
+let vendGroupOpen={konveksi:false,supplier:false}
 
 // ── INIT ──────────────────────────────────────────
 async function init(){
@@ -352,11 +417,9 @@ async function loadAll(){
     article_cetakan(id,type,file_path,skip_approved)`
 
   const [arts, artsAll, svs, sms, mats, fabs, ints, vens, btns, zips, seasons]=await Promise.all([
-    // For sample vendor — only sample_master/sample_vendor/production
     db.from('articles').select(selectStr)
       .eq('status','active').in('stage',['sample_master','sample_vendor','production'])
       .order('created_at',{ascending:false}),
-    // For material prep — ALL active articles (designer can flag early)
     db.from('articles').select(`id,name,category,stage,
       profiles!articles_designer_id_fkey(full_name),
       article_iterations(id,label,is_final_spec,
@@ -367,15 +430,14 @@ async function loadAll(){
     db.from('sample_vendors').select('*').order('created_at'),
     db.from('sample_masters').select('id,article_id,size,color,status,done_at').order('created_at'),
     db.from('article_material_status').select('*').order('created_at'),
-    db.from('master_fabrics').select('id,name,color,vendor').order('name'),
-    db.from('master_interlinings').select('id,name').order('name'),
+    db.from('master_fabrics').select('id,name,color,vendor,qty').order('name'),
+    db.from('master_interlinings').select('id,name,kategori,jenis,peruntukan,supplier,qty').order('name'),
     db.from('master_vendors').select('id,name,contact,supply_category').order('supply_category,name'),
     db.from('master_buttons').select('id,supplier,name,color,size'),
     db.from('master_zippers').select('id,type,size,color_code'),
     db.from('collections').select('short_name').eq('is_active',true).limit(1),
   ])
   allArticles=arts.data||[]
-  // Material prep: show articles that are sample_master+ OR already have material_status rows
   const matIds=new Set((mats.data||[]).map(m=>m.article_id))
   allMatArticles=(artsAll.data||[]).filter(a=>
     ['sample_master','sample_vendor','production'].includes(a.stage) || matIds.has(a.id)
@@ -412,15 +474,13 @@ function navTo(page,el){
 }
 
 // ── SV TAB LOGIC ─────────────────────────────────
-// DB status:  in_progress | revision | awaiting_head | approved
-// UI tab:     open        | revision | awaiting       | approved
 function svTab(mode,el){
   svTabMode=mode;openSvId=null
   document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active')
   renderSvList()
 }
 function tabMatch(status){
-  if(svTabMode==='todo')   return status==='in_progress'
+  if(svTabMode==='todo')     return status==='in_progress'
   if(svTabMode==='revision') return status==='revision'
   if(svTabMode==='awaiting') return status==='awaiting_head'
   if(svTabMode==='approved') return status==='approved'
@@ -435,9 +495,9 @@ function dotClass(s){
 }
 function badgeHtml(s){
   if(s==='in_progress')   return '<span class="badge badge-todo">To do</span>'
-  if(s==='revision')      return '<span class="badge badge-rev">Revision</span>'
-  if(s==='awaiting_head') return '<span class="badge badge-await">Awaiting</span>'
-  if(s==='approved')      return '<span class="badge badge-ok">Approved</span>'
+  if(s==='revision')      return '<span class="badge badge-rev">Revisi</span>'
+  if(s==='awaiting_head') return '<span class="badge badge-await">Menunggu</span>'
+  if(s==='approved')      return '<span class="badge badge-ok">Disetujui</span>'
   return ''
 }
 
@@ -457,43 +517,109 @@ function updateSvStats(){
 }
 
 // ── PRODUCTION READY PAGE ────────────────────────
-// Syarat: semua SV approved (minimal 1) + semua material items ready
+// Logic: SV approved (minimal 1) → vendor eligible
+// Sizes bisa turun = SM done size apa saja
+// Material status: kuning kalau ada yang belum ready
 function renderProdReadyPage(){
   const el=document.getElementById('prod-list')
   if(!el) return
 
-  const readyArts=allArticles.filter(a=>{
-    const svItems=allSvItems.filter(sv=>sv.article_id===a.id)
-    if(!svItems.length) return false
-    const allApproved=svItems.every(sv=>sv.status==='approved')
-    if(!allApproved) return false
-    const matItems=allMatItems.filter(m=>m.article_id===a.id)
-    if(!matItems.length) return false
-    return matItems.every(m=>m.material_status==='ready')
-  })
+  // Cari artikel yang punya minimal 1 SV approved
+  const eligibleArts=allArticles.filter(a=>
+    allSvItems.some(sv=>sv.article_id===a.id && sv.status==='approved')
+  )
 
-  // Update nav badge
   const nb=document.getElementById('nb-prod')
-  if(nb){nb.textContent=readyArts.length;nb.style.display=readyArts.length>0?'':'none'}
+  if(nb){nb.textContent=eligibleArts.length;nb.style.display=eligibleArts.length>0?'':'none'}
 
-  if(!readyArts.length){
+  if(!eligibleArts.length){
     el.innerHTML='<div class="empty">Belum ada artikel yang siap turun produksi.</div>';return
   }
 
-  el.innerHTML=readyArts.map(a=>{
-    const svItems=allSvItems.filter(sv=>sv.article_id===a.id)
-    const vendors=[...new Set(svItems.map(sv=>sv.vendor_name).filter(Boolean))].join(', ')
+  el.innerHTML=eligibleArts.map(a=>{
+    const approvedSvs=allSvItems.filter(sv=>sv.article_id===a.id && sv.status==='approved')
+    const doneSms=allSmItems.filter(sm=>sm.article_id===a.id && sm.status==='done')
     const matItems=allMatItems.filter(m=>m.article_id===a.id)
-    return `<div class="data-row" style="grid-template-columns:2.4fr 0.9fr 1.4fr 1fr;cursor:default">
+    const allMatReady=matItems.length>0 && matItems.every(m=>m.material_status==='ready')
+    const hasMissingMat=matItems.some(m=>m.material_status==='missing')
+    const isOpen=openProdId===a.id
+
+    // Status: hijau = semua material ready, kuning = ada yang belum
+    const dotCls=allMatReady?'sdot-green':hasMissingMat?'sdot-red':'sdot-amber'
+    const statusBadge=allMatReady
+      ?'<span class="badge badge-ready">Siap</span>'
+      :'<span class="badge badge-wait-mat">Tunggu Material</span>'
+
+    const vendorNames=[...new Set(approvedSvs.map(sv=>sv.vendor_name).filter(Boolean))].join(', ')
+
+    return `<div class="data-row" style="grid-template-columns:2.4fr 0.9fr 1.4fr 1fr 20px" onclick="toggleProd('${a.id}')">
       <div>
-        <div class="cell-name-main"><span class="sdot sdot-green"></span>${esc(a.name)}</div>
-        <div class="cell-name-sub">${matItems.length} materials ready · ${svItems.length} SV approved</div>
+        <div class="cell-name-main"><span class="sdot ${dotCls}"></span>${esc(a.name)}</div>
+        <div class="cell-name-sub">${doneSms.length} SM selesai · ${approvedSvs.length} SV disetujui</div>
       </div>
       <div class="cell-cat">${esc(a.category)}</div>
       <div class="cell-vendor">${esc(a.profiles?.full_name||'—')}</div>
-      <div style="text-align:right"><span class="badge badge-ok">Ready</span></div>
+      <div class="cell-status">${statusBadge}</div>
+      <div class="cell-chevron${isOpen?' open':''}">›</div>
+    </div>
+    <div class="prod-expand${isOpen?' open':''}" id="pexp-${a.id}">
+      ${isOpen?buildProdPanel(a,approvedSvs,doneSms,matItems):''}
     </div>`
   }).join('')
+}
+
+function buildProdPanel(a,approvedSvs,doneSms,matItems){
+  // SM done sizes
+  const doneSizes=doneSms.map(sm=>sm.size).filter(Boolean)
+
+  // Per vendor: apa saja sizes yang bisa turun (= SM done)
+  const vendorBlocks=approvedSvs.map(sv=>{
+    const svSizes=doneSizes // Semua SM done bisa turun di vendor ini
+    const sizeHtml=svSizes.length
+      ?svSizes.map(s=>`<span class="size-pill size-pill-ok">${esc(s)}</span>`).join('')
+      :'<span style="font-size:11px;color:#aaa">Belum ada SM selesai</span>'
+    return `<div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:500;color:#111;margin-bottom:4px">${esc(sv.vendor_name||'—')}</div>
+      <div style="font-size:9px;color:#aaa;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">Ukuran yang bisa turun produksi</div>
+      <div>${sizeHtml}</div>
+    </div>`
+  }).join('')
+
+  // SM summary
+  const allSizes=doneSizes.map(s=>`<span class="size-pill size-pill-ok">${esc(s)}</span>`).join('')
+  const pendingSizes=(a.size_range||[]).filter(s=>!doneSizes.includes(s))
+  const pendingHtml=pendingSizes.map(s=>`<span class="size-pill size-pill-pending">${esc(s)}</span>`).join('')
+
+  // Material status summary
+  const matHtml=matItems.length
+    ?matItems.map(m=>{
+      const dot=m.material_status==='ready'?'sdot-green':m.material_status==='missing'?'sdot-red':'sdot-amber'
+      return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:0.5px solid #d8d5cf">
+        <span class="sdot ${dot}"></span>
+        <span style="font-size:11px;color:#111;flex:1">${esc(m.material_name)}</span>
+        <span style="font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em">${esc(m.material_status||'pending')}</span>
+      </div>`
+    }).join('')
+    :'<div style="font-size:11px;color:#aaa;font-style:italic">Belum ada data material.</div>'
+
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:16px 32px 20px">
+    <div>
+      <div class="ep-sec">Sample Master selesai</div>
+      <div style="margin-bottom:6px">${allSizes||'<span style="font-size:11px;color:#aaa">Belum ada</span>'}</div>
+      ${pendingHtml?`<div style="margin-top:6px"><div style="font-size:9px;color:#bbb;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px">Belum selesai</div>${pendingHtml}</div>`:''}
+      <div class="ep-sec" style="margin-top:20px">Vendor yang eligible</div>
+      ${vendorBlocks||'<div style="font-size:11px;color:#aaa">—</div>'}
+    </div>
+    <div>
+      <div class="ep-sec">Status Material</div>
+      ${matHtml}
+    </div>
+  </div>`
+}
+
+function toggleProd(aid){
+  openProdId=openProdId===aid?null:aid
+  renderProdReadyPage()
 }
 
 // ── SV LIST ──────────────────────────────────────
@@ -502,7 +628,6 @@ function renderSvList(){
   const grouped={}
   allArticles.forEach(a=>{
     const items=allSvItems.filter(sv=>sv.article_id===a.id&&tabMatch(sv.status))
-    // "Siap turun" = ada SM done tapi belum ada SV sama sekali, dan kita di tab Open
     const hasDoneSm=allSmItems.some(sm=>sm.article_id===a.id&&sm.status==='done')
     const hasAnySv=allSvItems.some(sv=>sv.article_id===a.id)
     const showReady=svTabMode==='todo'&&hasDoneSm&&!hasAnySv
@@ -539,7 +664,7 @@ function renderSvList(){
     if(svTabMode==='todo'){
       html+=`<div class="add-inline" onclick="showAddSvForm('${art.id}')">
         <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>
-        Add sample vendor
+        Tambah Sample Vendor
       </div>`
     }
   })
@@ -549,7 +674,7 @@ function renderSvList(){
 // ── SV EXPAND PANEL ──────────────────────────────
 function buildSvPanel(sv,a){
   const step=sv.status==='in_progress'||sv.status==='revision'?1:sv.status==='awaiting_head'?2:3
-  const steps=['To do','Awaiting head','Approved']
+  const steps=['To do','Menunggu Head','Disetujui']
   const prog=`<div class="prog-wrap">${steps.map((s,i)=>{
     const n=i+1,cls=n<step?'p-done':n===step?'p-curr':'p-wait'
     const lc=n<step?'l-done':n===step?'l-curr':'l-wait'
@@ -561,9 +686,9 @@ function buildSvPanel(sv,a){
 
   let act=''
   if(sv.status==='in_progress')
-    act=`<button class="btn btn-dark" onclick="submitSvToHead('${sv.id}')">Submit ke head →</button>`
+    act=`<button class="btn btn-dark" onclick="submitSvToHead('${sv.id}')">Submit ke Head →</button>`
   else if(sv.status==='revision')
-    act=`<button class="btn btn-dark" onclick="resubmitSv('${sv.id}')">Re-submit ke head →</button>`
+    act=`<button class="btn btn-dark" onclick="resubmitSv('${sv.id}')">Re-submit ke Head →</button>`
   else if(sv.status==='awaiting_head')
     act=`<span style="font-size:10px;color:#bbb;letter-spacing:0.1em;text-transform:uppercase">Menunggu Gee...</span>
       <button class="btn btn-ghost btn-sm" onclick="simulateApprove('${sv.id}')">Simulate approve</button>
@@ -572,50 +697,47 @@ function buildSvPanel(sv,a){
   const okBanner=sv.status==='approved'
     ?`<div class="ok-banner">
         <div style="font-size:16px;color:#3B6D11">✓</div>
-        <div><div class="ok-text">Head approved</div><div style="font-size:11px;color:#639922;margin-top:2px">${fmtDate(sv.approved_at)}</div></div>
+        <div><div class="ok-text">Head menyetujui</div><div style="font-size:11px;color:#639922;margin-top:2px">${fmtDate(sv.approved_at)}</div></div>
       </div>`:''
 
   let html=''
 
   if(sv.status==='revision'){
-    // ── REVISION MODE: history kiri, spec kanan, no readiness, no detail rows ──
     html=`<div class="expand-body">
       <div>
-        <div class="ep-sec">Revision dari head <span style="color:#ccc;font-weight:400">${sv.revision_count||0}×</span></div>
-        <div id="rev-hist-${sv.id}"><div style="font-size:11px;color:#aaa;font-style:italic">Loading...</div></div>
+        <div class="ep-sec">Revisi dari Head <span style="color:#ccc;font-weight:400">${sv.revision_count||0}×</span></div>
+        <div id="rev-hist-${sv.id}"><div style="font-size:11px;color:#aaa;font-style:italic">Memuat...</div></div>
       </div>
       <div>
-        <div class="ep-sec">Final spec</div>
+        <div class="ep-sec">Final Spec</div>
         ${buildSpecHtml(a)}
         <div class="ep-sec" style="margin-top:20px">Sample</div>
-        <div class="ep-row"><span class="ep-key">Size</span><span class="ep-val">${esc(sv.size||'—')}</span></div>
-        <div class="ep-row"><span class="ep-key">Color</span><span class="ep-val">${esc(sv.color||'—')}</span></div>
+        <div class="ep-row"><span class="ep-key">Ukuran</span><span class="ep-val">${esc(sv.size||'—')}</span></div>
+        <div class="ep-row"><span class="ep-key">Warna</span><span class="ep-val">${esc(sv.color||'—')}</span></div>
         <div class="ep-row"><span class="ep-key">Vendor</span><span class="ep-val">${esc(sv.vendor_name||'—')}</span></div>
       </div>
     </div>${act?`<div class="expand-actions">${act}</div>`:''}`
     setTimeout(()=>loadRevHistory(sv.id),0)
 
   } else {
-    // ── DEFAULT MODE: detail kiri, spec kanan
-    // Readiness hanya tampil di tab To do (in_progress)
     const showReadiness = sv.status==='in_progress'
     html=`<div class="expand-body">
       <div>
         ${prog}${okBanner}
-        <div class="ep-sec">Detail sample</div>
-        <div class="ep-row"><span class="ep-key">Size</span><span class="ep-val">${esc(sv.size||'—')}</span></div>
-        <div class="ep-row"><span class="ep-key">Color</span><span class="ep-val">${esc(sv.color||'—')}</span></div>
+        <div class="ep-sec">Detail Sample</div>
+        <div class="ep-row"><span class="ep-key">Ukuran</span><span class="ep-val">${esc(sv.size||'—')}</span></div>
+        <div class="ep-row"><span class="ep-key">Warna</span><span class="ep-val">${esc(sv.color||'—')}</span></div>
         <div class="ep-row"><span class="ep-key">Vendor</span><span class="ep-val">${esc(sv.vendor_name||'—')}</span></div>
         <div class="ep-row"><span class="ep-key">Tanggal turun</span><span class="ep-val">${fmtDate(sv.sent_at)}</span></div>
-        <div class="ep-row"><span class="ep-key">Notes</span><span class="ep-val">${esc(sv.notes||'—')}</span></div>
+        <div class="ep-row"><span class="ep-key">Catatan</span><span class="ep-val">${esc(sv.notes||'—')}</span></div>
         ${sv.revision_count>0?`
-        <div class="ep-sec" style="margin-top:16px">Revision history <span style="color:#ccc;font-weight:400">${sv.revision_count}×</span></div>
-        <div id="rev-hist-${sv.id}"><div style="font-size:11px;color:#aaa;font-style:italic">Loading...</div></div>
+        <div class="ep-sec" style="margin-top:16px">Riwayat Revisi <span style="color:#ccc;font-weight:400">${sv.revision_count}×</span></div>
+        <div id="rev-hist-${sv.id}"><div style="font-size:11px;color:#aaa;font-style:italic">Memuat...</div></div>
         `:''}
-        ${showReadiness?`<div class="ep-sec" style="margin-top:16px">Readiness</div>${buildReadinessHtml(a)}`:''}
+        ${showReadiness?`<div class="ep-sec" style="margin-top:16px">Kelengkapan</div>${buildReadinessHtml(a)}`:''}
       </div>
       <div>
-        <div class="ep-sec">Final spec</div>
+        <div class="ep-sec">Final Spec</div>
         ${buildSpecHtml(a)}
       </div>
     </div>${act?`<div class="expand-actions">${act}</div>`:''}`
@@ -633,11 +755,10 @@ async function loadRevHistory(svId){
     .eq('sample_vendor_id',svId)
     .order('revision_number',{ascending:true})
   if(error||!data?.length){
-    // Fallback: check if old single-column note exists in allSvItems
     const sv=allSvItems.find(s=>s.id===svId)
     if(sv?.revision_note){
       el.innerHTML=`<div class="rev-hist-item">
-        <div class="rev-hist-num">Revision 1</div>
+        <div class="rev-hist-num">Revisi 1</div>
         <div class="rev-hist-note">${esc(sv.revision_note)}</div>
       </div>`
     } else {
@@ -646,7 +767,7 @@ async function loadRevHistory(svId){
     return
   }
   el.innerHTML=data.map(r=>`<div class="rev-hist-item">
-    <div class="rev-hist-num">Revision ${r.revision_number} <span class="rev-hist-date">${fmtDate(r.created_at)}</span></div>
+    <div class="rev-hist-num">Revisi ${r.revision_number} <span class="rev-hist-date">${fmtDate(r.created_at)}</span></div>
     <div class="rev-hist-note">${esc(r.note)}</div>
   </div>`).join('')
 }
@@ -670,8 +791,6 @@ function buildReadinessHtml(a){
   const cv=cets.find(c=>c.type==='vendor'),cq=cets.find(c=>c.type==='qc')
   const cvOk=!!(cv?.file_path||cv?.skip_approved),cqOk=!!(cq?.file_path||cq?.skip_approved)
   const allOk=spOk&&cvOk&&cqOk
-
-  // Compact: one line per check
   const items=[
     {label:'Size pack',ok:spOk,detail:spOk?confirmed.map(s=>s.size_label).join(', '):'Belum ada'},
     {label:'Cetakan vendor',ok:cvOk,detail:cvOk?(cv?.file_path?`<span class="r-file-link" onclick="openFile('${cv.file_path}')">Lihat</span>`:'Skip'):'Belum ada'},
@@ -685,7 +804,7 @@ function buildReadinessHtml(a){
       </span>
       <span class="ep-val" style="${it.ok?'color:#111':'color:#aaa'}">${it.detail}</span>
     </div>`).join('')}
-    <div style="font-size:10px;margin-top:6px;${allOk?'color:#3B6D11':'color:#854F0B'}">${allOk?'✓ Semua readiness terpenuhi':'⚠ Readiness belum lengkap'}</div>
+    <div style="font-size:10px;margin-top:6px;${allOk?'color:#3B6D11':'color:#854F0B'}">${allOk?'✓ Semua kelengkapan terpenuhi':'⚠ Kelengkapan belum lengkap'}</div>
   </div>`
 }
 
@@ -698,18 +817,18 @@ function showAddSvForm(articleId){
   const doneSizes=allSmItems.filter(sm=>sm.article_id===articleId&&sm.status==='done').map(sm=>sm.size).filter(Boolean)
   const sizeOpts=doneSizes.length
     ?doneSizes.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')
-    :'<option value="" disabled>Belum ada SM done</option>'
+    :'<option value="" disabled>Belum ada SM selesai</option>'
   const vendorOpts=konveksiVendors.map(v=>`<option value="${esc(v.name)}">${esc(v.name)}</option>`).join('')
   const formId='add-sv-form-'+articleId
   const existing=document.getElementById(formId)
   if(existing){existing.remove();return}
   const formHtml=`<div id="${formId}" class="add-sv-wrap">
-    <div style="font-size:9px;letter-spacing:0.13em;text-transform:uppercase;color:#aaa;margin-bottom:14px">Add sample vendor — ${esc(a?.name||'')}</div>
+    <div style="font-size:9px;letter-spacing:0.13em;text-transform:uppercase;color:#aaa;margin-bottom:14px">Tambah Sample Vendor — ${esc(a?.name||'')}</div>
     <div class="fgrid2">
-      <div><label class="flabel">Size * <span style="font-size:8px">(dari SM done)</span></label>
+      <div><label class="flabel">Ukuran * <span style="font-size:8px">(dari SM selesai)</span></label>
         <select class="finput" id="ns-size-${articleId}">${sizeOpts}</select>
       </div>
-      <div><label class="flabel">Color *</label>
+      <div><label class="flabel">Warna *</label>
         <input class="finput" id="ns-color-${articleId}" placeholder="e.g. Bistre">
       </div>
     </div>
@@ -717,11 +836,11 @@ function showAddSvForm(articleId){
     <select class="finput" id="ns-vendor-${articleId}">
       <option value="">Pilih vendor...</option>${vendorOpts}
     </select>
-    <label class="flabel">Notes</label>
+    <label class="flabel">Catatan</label>
     <input class="finput" id="ns-notes-${articleId}" placeholder="Catatan..." style="margin-bottom:14px">
     <div style="display:flex;gap:8px">
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('${formId}').remove()">Cancel</button>
-      <button class="btn btn-dark btn-sm" onclick="saveNewSv('${articleId}')">Add sample vendor</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('${formId}').remove()">Batal</button>
+      <button class="btn btn-dark btn-sm" onclick="saveNewSv('${articleId}')">Tambah Sample Vendor</button>
     </div>
   </div>`
   document.getElementById('sv-list').insertAdjacentHTML('beforeend',formHtml)
@@ -732,7 +851,7 @@ async function saveNewSv(articleId){
   const color=document.getElementById('ns-color-'+articleId)?.value.trim()
   const vendor_name=document.getElementById('ns-vendor-'+articleId)?.value
   const notes=document.getElementById('ns-notes-'+articleId)?.value.trim()
-  if(!size||!color||!vendor_name){toast('Isi size, color, dan vendor dulu.');return}
+  if(!size||!color||!vendor_name){toast('Isi ukuran, warna, dan vendor dulu.');return}
   const{data,error}=await db.from('sample_vendors').insert({
     article_id:articleId,size,color,vendor_name,
     sent_at:new Date().toISOString(),notes:notes||null,
@@ -780,36 +899,28 @@ async function simulateApprove(svId){
   svTabMode='approved'
   document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'))
   document.getElementById('svt-approved').classList.add('active')
-  openSvId=svId;renderSvList();toast('Approved ✓')
+  openSvId=svId;renderSvList();renderProdReadyPage();toast('Disetujui ✓')
 }
 
 async function simulateRevision(svId){
-  const note=prompt('Revision note dari head:')
+  const note=prompt('Catatan revisi dari head:')
   if(note===null) return
-  if(!note.trim()){toast('Isi revision note dulu.');return}
+  if(!note.trim()){toast('Isi catatan revisi dulu.');return}
   const sv=allSvItems.find(s=>s.id===svId)
   const newCount=(sv?.revision_count||0)+1
-
-  // Update status + increment count + simpan note terakhir (backward compat)
   const{error}=await db.from('sample_vendors').update({
     status:'revision',revision_note:note.trim(),revision_count:newCount
   }).eq('id',svId)
   if(error){toast('Gagal: '+error.message);return}
-
-  // Insert ke tabel history
   await db.from('sample_vendor_revisions').insert({
-    sample_vendor_id:svId,
-    revision_number:newCount,
-    note:note.trim(),
-    noted_by:profile.id
+    sample_vendor_id:svId,revision_number:newCount,note:note.trim(),noted_by:profile.id
   })
-
   patchSv(svId,{status:'revision',revision_note:note.trim(),revision_count:newCount})
   updateSvStats()
   svTabMode='revision'
   document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'))
   document.getElementById('svt-revision').classList.add('active')
-  openSvId=svId;renderSvList();toast('Revision dicatat.')
+  openSvId=svId;renderSvList();toast('Revisi dicatat.')
 }
 
 function patchSv(svId,patch){
@@ -826,12 +937,12 @@ function renderMatList(){
     const hasMiss=items.some(m=>m.material_status==='missing')
     const isOpen=openMatId===a.id
     const dotCls=allOk?'sdot-green':hasMiss?'sdot-red':'sdot-amber'
-    const lbl=allOk?'<span class="badge badge-ready">All ready</span>'
-      :hasMiss?'<span class="badge badge-miss">Missing</span>'
-      :items.length?'<span class="badge badge-prog">In progress</span>'
+    const lbl=allOk?'<span class="badge badge-ready">Semua Siap</span>'
+      :hasMiss?'<span class="badge badge-miss">Ada yang Kurang</span>'
+      :items.length?'<span class="badge badge-prog">Sedang Proses</span>'
       :'<span class="badge badge-prog">Belum ada</span>'
     const readyCnt=items.filter(m=>m.material_status==='ready').length
-    const sub=items.length?`${readyCnt}/${items.length} ready`:esc(a.profiles?.full_name||'—')
+    const sub=items.length?`${readyCnt}/${items.length} siap`:esc(a.profiles?.full_name||'—')
     return `<div class="data-row grid-mat${isOpen?' row-open':''}" onclick="toggleMat('${a.id}')">
       <div>
         <div class="cell-name-main"><span class="sdot ${dotCls}"></span>${esc(a.name)}</div>
@@ -849,13 +960,13 @@ function renderMatList(){
 function buildMatPanel(a,items){
   const itemsHtml=items.length
     ?items.map(m=>renderMatItem(m,a.id)).join('')
-    :'<div style="font-size:11px;color:#aaa;padding:8px 0;font-style:italic">Belum ada material items.</div>'
+    :'<div style="font-size:11px;color:#aaa;padding:8px 0;font-style:italic">Belum ada item material.</div>'
   return `<div style="background:#edebe5">
     <div style="padding:18px 32px 20px">
-      <div class="ep-sec" style="margin-bottom:14px">Material items — ${esc(a.name)}</div>
+      <div class="ep-sec" style="margin-bottom:14px">Item Material — ${esc(a.name)}</div>
       <div id="mi-wrap-${a.id}">${itemsHtml}</div>
       <div style="margin-top:12px">
-        <button class="btn btn-ghost btn-sm" onclick="showAddMatForm('${a.id}')">+ Add item</button>
+        <button class="btn btn-ghost btn-sm" onclick="showAddMatForm('${a.id}')">+ Tambah item</button>
       </div>
       <div id="mat-add-form-${a.id}"></div>
     </div>
@@ -865,19 +976,66 @@ function buildMatPanel(a,items){
 function renderMatItem(m,aid){
   const s=m.material_status||'pending'
   const vendor=findVendorForMaterial(m)
-  const contactHtml=s==='missing'?buildContactHtml(m,vendor):''
+  const extraHtml=s==='missing'?buildMissingPanel(m,vendor):s==='on_order'?buildOnOrderPanel(m):''
   return `<div class="mat-item-row" id="mi-${m.id}">
     <div style="flex:1;min-width:0">
       <div class="mat-item-name">${esc(m.material_name||'—')}</div>
       <div class="mat-item-type">${esc(m.material_type||'—')}</div>
-      ${contactHtml}
+      ${extraHtml}
     </div>
     <div class="mat-togs">
-      <button class="mtbtn ${s==='ready'?'mt-r':''}"    onclick="setMat('${m.id}','${aid}','ready')">Ready</button>
-      <button class="mtbtn ${s==='on_order'?'mt-o':''}" onclick="setMat('${m.id}','${aid}','on_order')">On order</button>
-      <button class="mtbtn ${s==='missing'?'mt-m':''}"  onclick="setMat('${m.id}','${aid}','missing')">Missing</button>
+      <button class="mtbtn ${s==='ready'?'mt-r':''}"    onclick="setMat('${m.id}','${aid}','ready')">Siap</button>
+      <button class="mtbtn ${s==='on_order'?'mt-o':''}" onclick="setMat('${m.id}','${aid}','on_order')">On Order</button>
+      <button class="mtbtn ${s==='missing'?'mt-m':''}"  onclick="setMat('${m.id}','${aid}','missing')">Kurang</button>
     </div>
   </div>`
+}
+
+function buildMissingPanel(m,vendor){
+  if(!vendor){
+    return `<div class="mat-supplier-panel">
+      <div class="mat-supplier-name" style="color:#aaa;font-style:italic">Supplier tidak ditemukan</div>
+      <div class="mat-supplier-contact"><span class="mat-supplier-link" onclick="navToVendors()">Cek di tab Vendors →</span></div>
+    </div>`
+  }
+  const contactLine=vendor.contact
+    ?`<div class="mat-supplier-contact">${esc(vendor.contact)}</div>`
+    :`<div class="mat-supplier-contact" style="color:#ccc;font-style:italic">Belum ada kontak</div>`
+  return `<div class="mat-supplier-panel">
+    <div class="mat-supplier-name">${esc(vendor.name)}</div>
+    ${contactLine}
+    <span class="mat-supplier-link" onclick="goToVendorById('${vendor.id}')">Lihat detail vendor →</span>
+  </div>`
+}
+
+function buildOnOrderPanel(m){
+  const eta=m.estimated_date||null
+  const etaDisplay=eta?`<div class="mat-eta-display">Estimasi selesai: <strong>${fmtDate(eta)}</strong></div>`:''
+  return `<div class="mat-eta-row">
+    <span class="mat-eta-label">Estimasi selesai</span>
+    <input type="date" class="mat-eta-input" id="eta-${m.id}" value="${eta?eta.split('T')[0]:''}">
+    <button class="mat-eta-save" onclick="saveMatEta('${m.id}')">Simpan</button>
+  </div>
+  ${etaDisplay}`
+}
+
+async function saveMatEta(mid){
+  const val=document.getElementById('eta-'+mid)?.value
+  if(!val){toast('Pilih tanggal estimasi dulu.');return}
+  const{error}=await db.from('article_material_status').update({
+    estimated_date:val,updated_by:profile.id,updated_at:new Date().toISOString()
+  }).eq('id',mid)
+  if(error){toast('Gagal: '+error.message);return}
+  const i=allMatItems.findIndex(m=>m.id===mid)
+  if(i>-1) allMatItems[i].estimated_date=val
+  renderMatList();toast('Estimasi disimpan.')
+}
+
+function navToVendors(){
+  document.querySelectorAll('.nav-tab').forEach(n=>n.classList.remove('active'))
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.nav-tab').forEach(t=>{if(t.textContent.trim()==='Vendors')t.classList.add('active')})
+  document.getElementById('page-master-vendors').classList.add('active')
 }
 
 function findVendorForMaterial(m){
@@ -889,19 +1047,10 @@ function findVendorForMaterial(m){
   return null
 }
 
-function buildContactHtml(m,vendor){
-  if(vendor?.contact){
-    const raw=vendor.contact.replace(/\D/g,''),waNum=raw.startsWith('0')?'62'+raw.slice(1):raw
-    const msg=encodeURIComponent('Halo '+vendor.name+', ingin menanyakan ketersediaan material: '+m.material_name)
-    return `<div class="mat-item-contact">Hubungi: <a href="https://wa.me/${waNum}?text=${msg}" target="_blank" style="color:#185FA5;text-decoration:underline">WA ${esc(vendor.name)}</a></div>`
-  }
-  return `<div class="mat-item-contact" style="opacity:0.7">Cek kontak di tab Vendors</div>`
-}
-
 async function toggleMat(aid){
   if(openMatId===aid){openMatId=null;renderMatList();return}
   openMatId=aid
-  const a=allArticles.find(x=>x.id===aid)
+  const a=allMatArticles.find(x=>x.id===aid)||allArticles.find(x=>x.id===aid)
   const{data:existing}=await db.from('article_material_status').select('*').eq('article_id',aid).order('created_at')
   allMatItems=[...allMatItems.filter(m=>m.article_id!==aid),...(existing||[])]
   if(!(existing||[]).length){
@@ -934,8 +1083,9 @@ async function setMat(mid,aid,status){
     material_status:status,updated_by:profile.id,updated_at:new Date().toISOString()
   }).eq('id',mid)
   if(error){toast('Gagal: '+error.message);return}
-  const i=allMatItems.findIndex(m=>m.id===mid);if(i>-1)allMatItems[i].material_status=status
-  renderMatList();updateBadges();renderProdReadyPage();toast('Status: '+status.replace('_',' '))
+  const i=allMatItems.findIndex(m=>m.id===mid)
+  if(i>-1) allMatItems[i].material_status=status
+  renderMatList();updateBadges();renderProdReadyPage();toast('Status diperbarui.')
 }
 
 function showAddMatForm(aid){
@@ -957,8 +1107,8 @@ function showAddMatForm(aid){
       </div>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('mat-add-form-${aid}').innerHTML=''">Cancel</button>
-      <button class="btn btn-dark btn-sm" onclick="saveMatItem('${aid}')">Add</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('mat-add-form-${aid}').innerHTML=''">Batal</button>
+      <button class="btn btn-dark btn-sm" onclick="saveMatItem('${aid}')">Tambah</button>
     </div>
   </div>`
 }
@@ -974,13 +1124,16 @@ async function saveMatItem(aid){
   allMatItems.push(data);renderMatList();toast('Material item ditambahkan.')
 }
 
-// ── MASTER LISTS ──────────────────────────────────
+// ── MASTER FABRICS ─────────────────────────────────
+// Grouped by name, columns: nama | warna | supplier | qty | expand
 function renderFabrics(){
-  // Group by name, collect colors + vendor (same per name)
   const grouped={}
   masterFabrics.forEach(f=>{
-    if(!grouped[f.name]) grouped[f.name]={colors:[],vendor:f.vendor||null}
+    if(!grouped[f.name]) grouped[f.name]={colors:[],vendor:f.vendor||null,qty:f.qty||null,ids:[]}
     grouped[f.name].colors.push(f.color||'—')
+    grouped[f.name].ids.push(f.id)
+    // Use qty/vendor from last row (should be consistent per name)
+    if(f.qty) grouped[f.name].qty=f.qty
   })
   const el=document.getElementById('fab-list')
   if(!Object.keys(grouped).length){el.innerHTML='<div class="empty">Belum ada data.</div>';return}
@@ -988,32 +1141,62 @@ function renderFabrics(){
   el.innerHTML=Object.entries(grouped).map(([name,g])=>{
     const isOpen=openFabName===name
     const vendorEntry=masterVendors.find(v=>v.name===g.vendor)
-    const vendorHtml=g.vendor
-      ?`<span class="fab-vendor-link" onclick="goToVendor('${esc(g.vendor)}')">${esc(g.vendor)} →</span>`
-      :`<span style="color:#ccc;font-style:italic;font-size:11px">No supplier</span>`
-    return `<div class="master-row grid-master-2 clickable${isOpen?' row-open':''}" onclick="toggleFab('${esc(name)}')">
+    return `<div class="master-row grid-fab clickable${isOpen?' row-open':''}" onclick="toggleFab('${esc(name)}')">
         <div class="master-name">${esc(name)}</div>
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div class="master-sub">${g.colors.map(c=>esc(c)).join(', ')}</div>
-          <div class="cell-chevron${isOpen?' open':''}" style="font-size:13px;color:#ccc;transition:transform .2s">›</div>
+        <div class="master-sub">${g.colors.map(c=>esc(c)).join(', ')}</div>
+        <div style="font-size:11px;color:#555">${esc(g.vendor||'—')}</div>
+        <div>
+          ${g.qty?`<span class="qty-tag">${esc(g.qty)}</span>`:`<span style="font-size:10px;color:#ccc;font-style:italic">—</span>`}
         </div>
+        <div class="cell-chevron${isOpen?' open':''}" style="font-size:13px;color:#ccc">›</div>
       </div>
       <div class="fab-expand${isOpen?' open':''}">
-        <div style="display:flex;gap:48px">
+        <div style="display:flex;gap:48px;margin-bottom:16px">
           <div>
             <div class="ep-sec" style="margin-bottom:10px">Supplier</div>
-            <div style="font-size:12px;color:#111;margin-bottom:4px">${vendorHtml}</div>
-            ${g.vendor?`<div style="font-size:10px;color:#bbb;margin-top:4px">${esc(vendorEntry?.contact||'No contact yet')}</div>`:''}
+            ${g.vendor
+              ?`<div style="font-size:12px;color:#111;margin-bottom:4px">
+                  <span class="fab-vendor-link" onclick="goToVendor('${esc(g.vendor)}')">${esc(g.vendor)} →</span>
+                </div>
+                <div style="font-size:10px;color:#bbb;margin-top:4px">${esc(vendorEntry?.contact||'Belum ada kontak')}</div>`
+              :`<span style="color:#ccc;font-style:italic;font-size:11px">Belum ada supplier</span>`
+            }
           </div>
           <div>
-            <div class="ep-sec" style="margin-bottom:10px">Colors available</div>
+            <div class="ep-sec" style="margin-bottom:10px">Warna tersedia</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px">
               ${g.colors.map(c=>`<span style="font-size:11px;color:#111;background:#e4e0d8;padding:3px 10px">${esc(c)}</span>`).join('')}
             </div>
           </div>
         </div>
+        <div class="fab-edit-form">
+          <div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#aaa;margin-bottom:10px">Update data</div>
+          <div class="fgrid2" style="max-width:480px">
+            <div>
+              <label class="flabel">Supplier</label>
+              <input class="finput" id="fab-vendor-${esc(name)}" value="${esc(g.vendor||'')}" placeholder="Nama supplier">
+            </div>
+            <div>
+              <label class="flabel">Qty</label>
+              <input class="finput" id="fab-qty-${esc(name)}" value="${esc(g.qty||'')}" placeholder="e.g. 500m">
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-dark btn-sm" onclick="saveFabricData('${esc(name)}')">Simpan</button>
+          </div>
+        </div>
       </div>`
   }).join('')
+}
+
+async function saveFabricData(name){
+  const vendor=document.getElementById('fab-vendor-'+name)?.value.trim()
+  const qty=document.getElementById('fab-qty-'+name)?.value.trim()
+  // Update all rows with this fabric name
+  const {error}=await db.from('master_fabrics').update({vendor:vendor||null,qty:qty||null}).eq('name',name)
+  if(error){toast('Gagal: '+error.message);return}
+  masterFabrics=masterFabrics.map(f=>f.name===name?{...f,vendor:vendor||null,qty:qty||null}:f)
+  renderFabrics();toast('Data fabric disimpan.')
 }
 
 function toggleFab(name){
@@ -1022,24 +1205,96 @@ function toggleFab(name){
 }
 
 function goToVendor(vendorName){
-  // Switch to Vendors tab and highlight that vendor
-  const tabs=document.querySelectorAll('.nav-tab')
-  tabs.forEach(t=>t.classList.remove('active'))
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'))
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
-  // Find the vendors nav tab and activate it
-  tabs.forEach(t=>{if(t.textContent.trim()==='Vendors')t.classList.add('active')})
+  document.querySelectorAll('.nav-tab').forEach(t=>{if(t.textContent.trim()==='Vendors')t.classList.add('active')})
   document.getElementById('page-master-vendors').classList.add('active')
-  // Find the vendor and open its edit form
   const v=masterVendors.find(x=>x.name===vendorName)
   if(v){openVendId=v.id;renderVendors()}
 }
 
-function renderInterlinings(){
-  document.getElementById('int-list').innerHTML=masterInterlinings.map(i=>
-    `<div class="master-row" style="grid-template-columns:1fr"><div class="master-name">${esc(i.name)}</div></div>`
-  ).join('')||'<div class="empty">Belum ada data.</div>'
+function goToVendorById(vid){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'))
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.nav-tab').forEach(t=>{if(t.textContent.trim()==='Vendors')t.classList.add('active')})
+  document.getElementById('page-master-vendors').classList.add('active')
+  openVendId=vid
+  // Open the group that contains this vendor
+  const v=masterVendors.find(x=>x.id===vid)
+  if(v){
+    if(v.supply_category==='konveksi') vendGroupOpen.konveksi=true
+    else vendGroupOpen.supplier=true
+  }
+  renderVendors()
 }
 
+// ── INTERLININGS ──────────────────────────────────
+function sortInt(col){
+  if(intSortCol===col) intSortDir=intSortDir==='asc'?'desc':'asc'
+  else {intSortCol=col;intSortDir='asc'}
+  renderInterlinings()
+}
+
+function renderInterlinings(){
+  const el=document.getElementById('int-list')
+  if(!masterInterlinings.length){el.innerHTML='<div class="empty">Belum ada data.</div>';return}
+
+  // Update sort arrows in header
+  document.querySelectorAll('#int-col-head .sortable').forEach(sp=>{
+    const col=sp.getAttribute('onclick').match(/sortInt\('(\w+)'\)/)?.[1]
+    const arrow=sp.querySelector('.sort-arrow')
+    sp.classList.remove('sort-active')
+    if(col===intSortCol){
+      sp.classList.add('sort-active')
+      if(arrow) arrow.textContent=intSortDir==='asc'?'↑':'↓'
+    } else {
+      if(arrow) arrow.textContent='↕'
+    }
+  })
+
+  const sorted=[...masterInterlinings].sort((a,b)=>{
+    const va=(a[intSortCol]||'').toString().toLowerCase()
+    const vb=(b[intSortCol]||'').toString().toLowerCase()
+    if(va<vb) return intSortDir==='asc'?-1:1
+    if(va>vb) return intSortDir==='asc'?1:-1
+    return 0
+  })
+
+  function katBadge(k){
+    if(!k) return '<span class="int-tag int-none">—</span>'
+    const cls=k==='soft'?'int-soft':k==='medium'?'int-medium':'int-hard'
+    const lbl=k==='soft'?'Soft':k==='medium'?'Medium':'Hard'
+    return `<span class="int-tag ${cls}">${lbl}</span>`
+  }
+  function jenisFmt(j){
+    if(!j) return '<span style="color:#ccc">—</span>'
+    if(j==='non_woven') return '<span style="font-size:11px;color:#555">Non-woven</span>'
+    if(j==='cotton_woven') return '<span style="font-size:11px;color:#555">Cotton woven</span>'
+    if(j==='poly_woven') return '<span style="font-size:11px;color:#555">Poly woven</span>'
+    return `<span style="font-size:11px;color:#555">${esc(j)}</span>`
+  }
+  function peruntukanFmt(p){
+    if(!p) return '<span style="color:#ccc">—</span>'
+    if(p==='shirt') return '<span style="font-size:11px;color:#555">Shirt</span>'
+    if(p==='outer') return '<span style="font-size:11px;color:#555">Outer</span>'
+    if(p==='shirt_outer') return '<span style="font-size:11px;color:#555">Shirt & Outer</span>'
+    return `<span style="font-size:11px;color:#555">${esc(p)}</span>`
+  }
+
+  el.innerHTML=sorted.map(i=>`
+    <div class="int-row grid-int">
+      <div class="master-name">${esc(i.name)}</div>
+      <div>${katBadge(i.kategori)}</div>
+      <div>${jenisFmt(i.jenis)}</div>
+      <div>${peruntukanFmt(i.peruntukan)}</div>
+      <div style="font-size:11px;color:#555">${esc(i.supplier||'—')}</div>
+      <div style="font-size:11px;color:#555">${esc(i.qty||'—')}</div>
+    </div>`
+  ).join('')
+}
+
+// ── VENDORS ───────────────────────────────────────
+// Collapsible groups: Vendor konveksi + Supplier
 function renderVendors(){
   const konv=masterVendors.filter(v=>v.supply_category==='konveksi')
   const rest=masterVendors.filter(v=>v.supply_category!=='konveksi')
@@ -1063,30 +1318,55 @@ function renderVendors(){
           <input class="finput" id="ve-name-${v.id}" value="${esc(v.name||'')}">
         </div>
         <div>
-          <label class="flabel">Category</label>
+          <label class="flabel">Kategori</label>
           <input class="finput" id="ve-cat-${v.id}" value="${esc(v.supply_category||'')}">
         </div>
       </div>
       <div style="margin-bottom:12px">
-        <label class="flabel">Contact (no HP / WA)</label>
+        <label class="flabel">Kontak (No HP / WA)</label>
         <input class="finput" id="ve-contact-${v.id}" value="${esc(v.contact||'')}" placeholder="e.g. 081234567890" style="margin-bottom:0">
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost btn-sm" onclick="toggleVendEdit('${v.id}')">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="saveVendor('${v.id}')">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleVendEdit('${v.id}')">Batal</button>
+        <button class="btn btn-dark btn-sm" onclick="saveVendor('${v.id}')">Simpan</button>
       </div>
     </div>`
   }
 
   if(konv.length){
-    html+=`<div class="group-hdr">Vendor konveksi</div>`
-    html+=konv.map(v=>vendorRowHtml(v)).join('')
+    const isOpen=vendGroupOpen.konveksi
+    html+=`<div class="vend-group-hdr" onclick="toggleVendGroup('konveksi')">
+      <span class="vend-group-title">Vendor Konveksi</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="vend-group-count">${konv.length} vendor</span>
+        <span class="vend-group-chevron${isOpen?' open':''}">›</span>
+      </div>
+    </div>
+    <div class="vend-group-body${isOpen?' open':''}">
+      <div class="col-head grid-vend-4" style="top:0"><span>Nama</span><span>Kategori</span><span>Kontak</span><span></span></div>
+      ${konv.map(v=>vendorRowHtml(v)).join('')}
+    </div>`
   }
   if(rest.length){
-    html+=`<div class="group-hdr">Vendor lainnya</div>`
-    html+=rest.map(v=>vendorRowHtml(v)).join('')
+    const isOpen=vendGroupOpen.supplier
+    html+=`<div class="vend-group-hdr" onclick="toggleVendGroup('supplier')">
+      <span class="vend-group-title">Supplier Bahan</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="vend-group-count">${rest.length} supplier</span>
+        <span class="vend-group-chevron${isOpen?' open':''}">›</span>
+      </div>
+    </div>
+    <div class="vend-group-body${isOpen?' open':''}">
+      <div class="col-head grid-vend-4" style="top:0"><span>Nama</span><span>Kategori</span><span>Kontak</span><span></span></div>
+      ${rest.map(v=>vendorRowHtml(v)).join('')}
+    </div>`
   }
   document.getElementById('vend-list').innerHTML=html||'<div class="empty">Belum ada data.</div>'
+}
+
+function toggleVendGroup(grp){
+  vendGroupOpen[grp]=!vendGroupOpen[grp]
+  renderVendors()
 }
 
 function toggleVendEdit(vid){
