@@ -587,7 +587,8 @@ function buildProdPanel(a,approvedSvs,doneSms,matItems){
 
   // SM summary
   const allSizes=doneSizes.map(s=>`<span class="size-pill size-pill-ok">${esc(s)}</span>`).join('')
-  const pendingSizes=(a.size_range||[]).filter(s=>!doneSizes.includes(s))
+  const sizeRange=Array.isArray(a.size_range)?a.size_range:(typeof a.size_range==='string'?a.size_range.replace(/[{}"]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[])
+  const pendingSizes=sizeRange.filter(s=>!doneSizes.includes(s))
   const pendingHtml=pendingSizes.map(s=>`<span class="size-pill size-pill-pending">${esc(s)}</span>`).join('')
 
   // Material status summary
