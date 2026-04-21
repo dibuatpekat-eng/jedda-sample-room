@@ -1079,9 +1079,12 @@ async function renderSpecPane(a, isOwn) {
         <div class="spec-cell"><div class="spec-label">Accessories</div><div class="spec-val">${acc}</div></div>
       </div>
       ${isOwn ? `<div style="font-size:11px;margin-top:10px;padding:8px 12px;border-radius:2px;display:flex;align-items:center;gap:8px;background:${materialFlagged?'var(--sage-light)':'var(--cream)'};border:0.5px solid ${materialFlagged?'var(--sage-mid)':'var(--border)'}">
-        <span style="color:${materialFlagged?'var(--sage)':'var(--ink-30)'}">
+        <span style="color:${materialFlagged?'var(--sage)':'var(--ink-60)'}">
           ${materialFlagged ? '✓ Material sudah di-flag ke Siti' : '○ Material belum di-flag ke Siti'}
         </span>
+        ${!specLocked ? `<button class="btn btn-sm ${materialFlagged?'':'btn-dark'}" style="margin-left:auto" onclick="manualFlagMaterial('${a.id}')">
+          ${materialFlagged ? 'Update flag' : 'Flag material ke Siti'}
+        </button>` : ''}
       </div>` : ''}`
   } else {
     specHtml = `<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:16px">
@@ -1854,12 +1857,10 @@ async function setFinalSpec(iterId, articleId) {
   if (iter?.stage !== 'done') { toast('Iteration must be marked as Done before setting as final spec.'); return }
   await db.from('article_iterations').update({ is_final_spec: false }).eq('article_id', articleId)
   await db.from('article_iterations').update({ is_final_spec: true }).eq('id', iterId)
-  // Auto-flag material to Siti
-  await flagMaterialFromSpec(articleId)
   await loadArticles()
   const a = allArticles.find(x => x.id === articleId)
   if (a) await renderSpecPane(a, a.designer_id === profile.id)
-  toast('Set as final spec. Material flagged to Siti ✓')
+  toast('Set as final spec ✓')
 }
 
 async function clearFinalSpec(articleId) {
@@ -3161,6 +3162,14 @@ async function submitToSiti(articleId, size) {
   const updated = allArticles.find(x => x.id === articleId)
   if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
   toast('Size ' + size + ' submitted to Siti ✓')
+}
+
+async function manualFlagMaterial(articleId) {
+  await flagMaterialFromSpec(articleId)
+  await loadArticles()
+  const a = allArticles.find(x => x.id === articleId)
+  if (a) await renderSpecPane(a, a.designer_id === profile.id)
+  toast('Material di-flag ke Siti ✓')
 }
 
 async function flagMaterialFromSpec(articleId) {

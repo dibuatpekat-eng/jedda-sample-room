@@ -633,13 +633,8 @@ function renderSvList(){
     const items=allSvItems.filter(sv=>sv.article_id===a.id&&tabMatch(sv.status))
     const hasDoneSm=allSmItems.some(sm=>sm.article_id===a.id&&sm.status==='done')
     const hasAnySv=allSvItems.some(sv=>sv.article_id===a.id)
-    // Cek cetakan — harus ada cetakan vendor + QC (file atau skip approved)
-    const cets=a.article_cetakan||[]
-    const cv=cets.find(c=>c.type==='vendor'),cq=cets.find(c=>c.type==='qc')
-    const cetakanDone=!!(cv?.file_path||cv?.skip_approved)&&!!(cq?.file_path||cq?.skip_approved)
-    const showReady=svTabMode==='todo'&&hasDoneSm&&!hasAnySv&&cetakanDone
-    if(!items.length&&!showReady) return
-    grouped[a.id]={art:a,items,showReady}
+    if(!items.length) return
+    grouped[a.id]={art:a,items}
   })
 
   if(!Object.keys(grouped).length){
@@ -647,10 +642,8 @@ function renderSvList(){
   }
 
   let html=''
-  Object.values(grouped).forEach(({art,items,showReady})=>{
-    const siapBadge=showReady&&!items.length
-      ?'<span class="badge badge-siap" style="margin-left:6px">Siap turun ↓</span>':''
-    html+=`<div class="group-hdr">${esc(art.name)}<span style="color:#ddd;margin:0 2px">·</span><span style="letter-spacing:0.08em">${esc(art.category)}</span>${siapBadge}</div>`
+  Object.values(grouped).forEach(({art,items})=>{
+    html+=`<div class="group-hdr">${esc(art.name)}<span style="color:#ddd;margin:0 2px">·</span><span style="letter-spacing:0.08em">${esc(art.category)}</span></div>`
 
     items.forEach(sv=>{
       const op=openSvId===sv.id
