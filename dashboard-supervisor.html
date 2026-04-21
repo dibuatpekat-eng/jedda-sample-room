@@ -420,7 +420,7 @@ async function loadAll(){
     db.from('articles').select(selectStr)
       .eq('status','active').in('stage',['sample_master','sample_vendor','production'])
       .order('created_at',{ascending:false}),
-    db.from('articles').select(`id,name,category,stage,
+    db.from('articles').select(`id,name,category,stage,size_range,
       profiles!articles_designer_id_fkey(full_name),
       article_iterations(id,label,is_final_spec,
         iteration_fabrics(fabric_name,color),
@@ -480,13 +480,14 @@ function svTab(mode,el){
   renderSvList()
 }
 function tabMatch(status){
-  if(svTabMode==='todo')     return status==='in_progress'
+  if(svTabMode==='todo')     return status==='in_progress' || status==='requested'
   if(svTabMode==='revision') return status==='revision'
   if(svTabMode==='awaiting') return status==='awaiting_head'
   if(svTabMode==='approved') return status==='approved'
   return false
 }
 function dotClass(s){
+  if(s==='requested')     return 'sdot-blue'
   if(s==='in_progress')   return 'sdot-gray'
   if(s==='revision')      return 'sdot-amber'
   if(s==='awaiting_head') return 'sdot-amber'
@@ -494,6 +495,7 @@ function dotClass(s){
   return 'sdot-gray'
 }
 function badgeHtml(s){
+  if(s==='requested')     return '<span class="badge badge-todo" style="color:#185FA5;background:#E6F1FB">Requested</span>'
   if(s==='in_progress')   return '<span class="badge badge-todo">To do</span>'
   if(s==='revision')      return '<span class="badge badge-rev">Revisi</span>'
   if(s==='awaiting_head') return '<span class="badge badge-await">Menunggu</span>'
@@ -502,7 +504,7 @@ function badgeHtml(s){
 }
 
 function updateSvStats(){
-  const t=allSvItems.filter(s=>s.status==='in_progress').length
+  const t=allSvItems.filter(s=>s.status==='in_progress'||s.status==='requested').length
   const r=allSvItems.filter(s=>s.status==='revision').length
   const a=allSvItems.filter(s=>s.status==='awaiting_head').length
   const p=allSvItems.filter(s=>s.status==='approved').length
@@ -648,32 +650,64 @@ function renderSvList(){
 
     items.forEach(sv=>{
       const op=openSvId===sv.id
+      const sizeLabel=sv.status==='requested'
+        ?`${esc(sv.size||'—')} <span style="font-size:9px;color:#185FA5;letter-spacing:0.06em;text-transform:uppercase">· Dari Designer</span>`
+        :`${esc(sv.size||'—')} · ${esc(sv.color||'—')}`
       html+=`
       <div class="data-row grid-sv${op?' row-open':''}" onclick="toggleSv('${sv.id}')">
         <div>
-          <div class="cell-name-main"><span class="sdot ${dotClass(sv.status)}"></span>${esc(sv.size)} · ${esc(sv.color)}</div>
-          <div class="cell-name-sub">${esc(sv.vendor_name||'—')}</div>
+          <div class="cell-name-main"><span class="sdot ${dotClass(sv.status)}"></span>${sizeLabel}</div>
+          <div class="cell-name-sub">${sv.status==='requested'?'Menunggu diproses Siti':esc(sv.vendor_name||'—')}</div>
         </div>
         <div class="cell-cat">${esc(art.category)}</div>
-        <div class="cell-vendor">${esc(sv.vendor_name||'—')}</div>
+        <div class="cell-vendor">${sv.status==='requested'?'—':esc(sv.vendor_name||'—')}</div>
         <div class="cell-status">${badgeHtml(sv.status)}</div>
         <div class="cell-chevron${op?' open':''}">›</div>
       </div>
       <div class="expand-wrap${op?' open':''}" id="ep-${sv.id}">${op?buildSvPanel(sv,art):''}</div>`
     })
-
-    if(svTabMode==='todo'){
-      html+=`<div class="add-inline" onclick="showAddSvForm('${art.id}')">
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>
-        Tambah Sample Vendor
-      </div>`
-    }
   })
   el.innerHTML=html
 }
 
 // ── SV EXPAND PANEL ──────────────────────────────
 function buildSvPanel(sv,a){
+  if(sv.status==='requested'){
+    const konvOpts=konveksiVendors.map(v=>`<option value="${esc(v.name)}">${esc(v.name)}</option>`).join('')
+    return `<div class="expand-body" style="grid-template-columns:1fr 1fr">
+      <div>
+        <div class="ep-sec">Request dari Designer</div>
+        <div class="ep-row"><span class="ep-key">Size</span><span class="ep-val">${esc(sv.size||'—')}</span></div>
+        <div class="ep-row"><span class="ep-key">Diminta</span><span class="ep-val">${fmtDate(sv.requested_at)}</span></div>
+        <div style="margin-top:16px">
+          <div class="ep-sec">Isi Detail Sample Vendor</div>
+          <div style="margin-bottom:8px">
+            <label class="flabel">Warna *</label>
+            <input class="finput" id="svd-color-${sv.id}" placeholder="e.g. Bistre">
+          </div>
+          <div style="margin-bottom:8px">
+            <label class="flabel">Vendor *</label>
+            <select class="finput" id="svd-vendor-${sv.id}">
+              <option value="">Pilih vendor konveksi...</option>
+              ${konvOpts}
+            </select>
+          </div>
+          <div style="margin-bottom:12px">
+            <label class="flabel">Catatan</label>
+            <input class="finput" id="svd-notes-${sv.id}" placeholder="Opsional...">
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-dark btn-sm" onclick="startProcessingSv('${sv.id}')">Mulai proses →</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="ep-sec">Final Spec</div>
+        ${buildSpecHtml(a)}
+      </div>
+    </div>`
+  }
+
   const step=sv.status==='in_progress'||sv.status==='revision'?1:sv.status==='awaiting_head'?2:3
   const steps=['To do','Menunggu Head','Disetujui']
   const prog=`<div class="prog-wrap">${steps.map((s,i)=>{
@@ -702,7 +736,6 @@ function buildSvPanel(sv,a){
       </div>`:''
 
   let html=''
-
   if(sv.status==='revision'){
     html=`<div class="expand-body">
       <div>
@@ -719,9 +752,8 @@ function buildSvPanel(sv,a){
       </div>
     </div>${act?`<div class="expand-actions">${act}</div>`:''}`
     setTimeout(()=>loadRevHistory(sv.id),0)
-
   } else {
-    const showReadiness = sv.status==='in_progress'
+    const showReadiness=sv.status==='in_progress'
     html=`<div class="expand-body">
       <div>
         ${prog}${okBanner}
@@ -744,7 +776,6 @@ function buildSvPanel(sv,a){
     </div>${act?`<div class="expand-actions">${act}</div>`:''}`
     if(sv.revision_count>0) setTimeout(()=>loadRevHistory(sv.id),0)
   }
-
   return html
 }
 
@@ -888,6 +919,27 @@ async function resubmitSv(svId){
   document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'))
   document.getElementById('svt-awaiting').classList.add('active')
   openSvId=svId;renderSvList();toast('Re-submitted ke head.')
+}
+
+async function startProcessingSv(svId){
+  const color=document.getElementById('svd-color-'+svId)?.value.trim()
+  const vendor_name=document.getElementById('svd-vendor-'+svId)?.value
+  const notes=document.getElementById('svd-notes-'+svId)?.value.trim()
+  if(!color){toast('Isi warna dulu.');return}
+  if(!vendor_name){toast('Pilih vendor dulu.');return}
+  const{error}=await db.from('sample_vendors').update({
+    color,
+    vendor_name,
+    notes:notes||null,
+    status:'in_progress',
+    sent_at:new Date().toISOString(),
+    submitted_by:profile.id
+  }).eq('id',svId)
+  if(error){toast('Gagal: '+error.message);return}
+  patchSv(svId,{color,vendor_name,notes:notes||null,status:'in_progress',sent_at:new Date().toISOString()})
+  updateSvStats();updateBadges()
+  openSvId=svId;renderSvList()
+  toast('Sample vendor diproses ✓')
 }
 
 async function simulateApprove(svId){
@@ -1395,7 +1447,8 @@ async function saveVendor(vid){
 function updateBadges(){
   const rev=allSvItems.filter(s=>s.status==='revision').length
   const aw=allSvItems.filter(s=>s.status==='awaiting_head').length
-  const urgentSv=rev+aw
+  const req=allSvItems.filter(s=>s.status==='requested').length
+  const urgentSv=rev+aw+req
   const nb=document.getElementById('nb-sv')
   nb.textContent=urgentSv;nb.style.display=urgentSv>0?'':'none'
   const ms=allMatItems.filter(m=>m.material_status==='missing').length

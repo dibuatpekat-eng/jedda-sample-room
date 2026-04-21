@@ -1283,9 +1283,10 @@ async function renderReadinessPane(a, isOwn) {
 async function proceedToSampleMaster(articleId) {
   const { error } = await db.from('articles').update({ stage: 'sample_master' }).eq('id', articleId)
   if (error) { toast('Failed.'); return }
+  // Overwrite material flag with latest final spec
+  await flagMaterialFromSpec(articleId)
   await loadArticles()
-  toast('Article advanced to Sample Master.')
-  // Switch directly to Samples tab — no close/reopen
+  toast('Article advanced to Sample Master. Material updated ✓')
   const modal = document.getElementById('modal-article')
   const samplesTabBtn = modal?.querySelector('.tab[onclick*="dtab-samples"]')
   if (samplesTabBtn) {
@@ -1294,7 +1295,6 @@ async function proceedToSampleMaster(articleId) {
     samplesTabBtn.classList.add('active')
     document.getElementById('dtab-samples').classList.add('active')
   }
-  // Re-render samples and readiness panes
   const updated = allArticles.find(x => x.id === articleId)
   if (updated) {
     await renderSamplesPane(updated, updated.designer_id === profile.id)
@@ -1302,7 +1302,6 @@ async function proceedToSampleMaster(articleId) {
   }
 }
 
-// ── Samples pane ──
 async function renderSamplesPane(a, isOwn) {
   const isUnlocked = ['sample_master','sample_vendor','production'].includes(a.stage)
 
@@ -1324,7 +1323,6 @@ async function renderSamplesPane(a, isOwn) {
     db.from('size_packs').select('size_label,confirmed').eq('article_id', a.id)
   ])
 
-  // Build WIP map for tailor dropdown
   const smWl = {}
   tailors.forEach(t => { smWl[t.id] = (activeSews||[]).filter(s => s.tailor_id === t.id).length })
 
@@ -1333,24 +1331,21 @@ async function renderSamplesPane(a, isOwn) {
   const cetakanDone = (cetakanVendor?.file_path || cetakanVendor?.skip_approved) &&
                       (cetakanQC?.file_path || cetakanQC?.skip_approved)
 
-  // Parse sizes from size_range for tracking
   const parseSizes = (sizeRange) => {
     if (!sizeRange) return []
     return sizeRange.split(/[,]+/).map(s => s.trim()).filter(Boolean)
   }
   const expectedSizes = parseSizes(a.size_range)
-  // Only sizes that have at least one confirmed size pack
   const sizePackConfirmedSizes = (spList||[]).filter(s => s.confirmed && s.size_label).map(s => s.size_label)
   const availableSizes = expectedSizes.length > 0
     ? expectedSizes.filter(s => sizePackConfirmedSizes.includes(s))
-    : expectedSizes // if no size_range, show all
+    : expectedSizes
   const doneSizes = (masters||[]).filter(m => ['done','approved','qc_checked'].includes(m.status)).map(m => m.size?.trim()).filter(Boolean)
   const missingSizes = expectedSizes.filter(s => !doneSizes.includes(s))
   const allSizesDone = expectedSizes.length > 0 && missingSizes.length === 0
 
   let html = `<div class="section-label">Sample master</div>`
 
-  // Show size progress if size_range is set
   if (expectedSizes.length > 0) {
     html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">`
     expectedSizes.forEach(s => {
@@ -1411,9 +1406,9 @@ async function renderSamplesPane(a, isOwn) {
     <button class="btn btn-dark btn-sm" onclick="confirmAddSampleMaster('${a.id}')">Add sample master</button>
   </div>`
 
-  // ── CETAKAN SECTION ──
+  // ── CETAKAN ──
   html += `<div class="section-label" style="margin-top:4px">Cetakan</div>
-  <div style="font-size:11px;color:var(--ink-60);margin-bottom:12px">Upload foto cetakan vendor dan QC sebelum sample vendor. Atau request skip (perlu approval head).</div>`
+  <div style="font-size:11px;color:var(--ink-60);margin-bottom:12px">Upload foto cetakan vendor dan QC sebelum bisa submit ke Siti.</div>`
 
   const renderCetakanItem = (type, item) => {
     const label = type === 'vendor' ? 'Cetakan Vendor' : 'Cetakan QC'
@@ -1438,7 +1433,6 @@ async function renderSamplesPane(a, isOwn) {
         <span style="font-size:11px;color:var(--sage)">✓ OK</span>
       </div>`
     }
-    // Not yet
     if (!isOwn) return `<div style="font-size:11px;color:var(--ink-30);margin-bottom:8px">${label}: Not yet</div>`
     return `<div style="padding:10px 12px;background:var(--cream);border-radius:2px;margin-bottom:8px">
       <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-30);margin-bottom:8px">${label}</div>
@@ -1455,27 +1449,43 @@ async function renderSamplesPane(a, isOwn) {
   html += renderCetakanItem('vendor', cetakanVendor)
   html += renderCetakanItem('qc', cetakanQC)
 
-  // ── SAMPLE VENDOR (locked until all masters done + cetakan done) ──
-  const allMastersDone = masters?.length > 0 && masters.every(m => ['done','approved'].includes(m.status))
-  const vendorUnlocked = allMastersDone && cetakanDone
-
+  // ── SAMPLE VENDOR — designer hanya bisa Submit to Siti ──
   html += `<div class="section-label" style="margin-top:8px">Sample vendor</div>`
-  if (!vendorUnlocked) {
-    const reasons = []
-    if (!allMastersDone) reasons.push('semua sample master harus done/approved')
-    if (!cetakanDone) reasons.push('cetakan vendor & QC harus selesai')
-    html += `<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-bottom:12px">🔒 ${reasons.join(' + ')}.</div>`
+
+  if (!cetakanDone) {
+    html += `<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-bottom:12px">🔒 Upload cetakan vendor & QC dulu sebelum bisa submit ke Siti.</div>`
   } else {
-    html += vendors?.length
-      ? `<table class="data-table"><thead><tr><th>Vendor</th><th>Size</th><th>Status</th></tr></thead><tbody>${vendors.map(v=>`<tr><td>${esc(v.vendor_name)}</td><td>${esc(v.size||'—')}</td><td><span class="badge badge-vendor">${v.status}</span></td></tr>`).join('')}</tbody></table>`
-      : '<div class="empty-sm">None yet.</div>'
-    if (isOwn) html += `<div style="padding:12px;background:var(--cream);border-radius:2px;margin-top:10px">
-      <div class="form-grid-2" style="margin-bottom:8px">
-        <div class="form-row" style="margin:0"><label class="form-label">Vendor</label><input type="text" id="sv-vendor" placeholder="e.g. Pak Tatang"></div>
-        <div class="form-row" style="margin:0"><label class="form-label">Size</label><input type="text" id="sv-size" placeholder="e.g. M"></div>
-      </div>
-      <button class="btn btn-dark btn-sm" onclick="addSampleVendor('${a.id}')">Add sample vendor</button>
-    </div>`
+    const existingSvSizes = (vendors||[]).map(v => v.size?.trim()).filter(Boolean)
+    // Sizes yang SM-nya done + belum ada SV entry
+    const submitableSizes = doneSizes.filter(s => !existingSvSizes.includes(s))
+
+    if (vendors?.length) {
+      html += `<table class="data-table" style="margin-bottom:12px"><thead><tr><th>Size</th><th>Vendor</th><th>Status</th></tr></thead><tbody>
+        ${vendors.map(v => {
+          const svBadgeCls = { requested:'badge-pattern', in_progress:'badge-inprog', awaiting_head:'badge-master', revision:'badge-dropped', approved:'badge-done' }[v.status] || 'badge-active'
+          const svBadgeLabel = { requested:'REQUESTED', in_progress:'IN PROGRESS', awaiting_head:'AWAITING HEAD', revision:'REVISION', approved:'APPROVED' }[v.status] || (v.status||'').toUpperCase()
+          return `<tr>
+            <td>${esc(v.size||'—')}</td>
+            <td>${esc(v.vendor_name||'—')}</td>
+            <td><span class="badge ${svBadgeCls}">${svBadgeLabel}</span></td>
+          </tr>`
+        }).join('')}
+      </tbody></table>`
+    } else {
+      html += `<div class="empty-sm">Belum ada sample vendor.</div>`
+    }
+
+    if (isOwn && submitableSizes.length > 0) {
+      html += `<div style="padding:12px;background:var(--cream);border-radius:2px;margin-top:8px">
+        <div style="font-size:11px;color:var(--ink-60);margin-bottom:10px">Size berikut SM-nya sudah selesai dan siap di-submit ke Siti:</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">`
+      submitableSizes.forEach(s => {
+        html += `<button class="btn btn-dark btn-sm" onclick="submitToSiti('${a.id}','${esc(s)}')">Submit to Siti — ${esc(s)}</button>`
+      })
+      html += `</div></div>`
+    } else if (isOwn && doneSizes.length === 0) {
+      html += `<div style="font-size:11px;color:var(--ink-30);font-style:italic;margin-top:8px">Selesaikan sample master dulu sebelum bisa submit ke Siti.</div>`
+    }
   }
 
   document.getElementById('dtab-samples').innerHTML = html
@@ -1831,25 +1841,26 @@ async function addLogEntry(iterId, stage) {
 }
 
 async function setFinalSpec(iterId, articleId) {
-  // Check stage — must be done
   const { data: iter } = await db.from('article_iterations').select('stage').eq('id', iterId).single()
   if (iter?.stage !== 'done') { toast('Iteration must be marked as Done before setting as final spec.'); return }
-  // Remove previous final spec flag
   await db.from('article_iterations').update({ is_final_spec: false }).eq('article_id', articleId)
-  // Set this one as final
   await db.from('article_iterations').update({ is_final_spec: true }).eq('id', iterId)
+  // Auto-flag material to Siti
+  await flagMaterialFromSpec(articleId)
   await loadArticles()
   const a = allArticles.find(x => x.id === articleId)
   if (a) await renderSpecPane(a, a.designer_id === profile.id)
-  toast('Set as final spec.')
+  toast('Set as final spec. Material flagged to Siti ✓')
 }
 
 async function clearFinalSpec(articleId) {
   await db.from('article_iterations').update({ is_final_spec: false }).eq('article_id', articleId)
+  // Clear material flag — spec sudah di-clear
+  await db.from('article_material_status').delete().eq('article_id', articleId)
   await loadArticles()
   const a = allArticles.find(x => x.id === articleId)
   if (a) await renderSpecPane(a, a.designer_id === profile.id)
-  toast('Final spec cleared.')
+  toast('Final spec cleared. Material flag removed.')
 }
 
 // ══════════════════════════════════════════
@@ -3125,18 +3136,60 @@ async function openSampleMasterDetail(masterId, articleId) {
   openModal('modal-sm-detail')
 }
 
-async function addSampleVendor(articleId) {
-  const vendor = document.getElementById('sv-vendor')?.value?.trim()
-  if (!vendor) { toast('Vendor name is required.'); return }
-  const { error } = await db.from('sample_vendors').insert({
-    article_id: articleId, vendor_name: vendor,
-    size: document.getElementById('sv-size')?.value?.trim() || null,
-    status: 'sent'
+async function submitToSiti(articleId, size) {
+  if (!confirm('Submit sample vendor untuk size ' + size + ' ke Siti?')) return
+  const { data, error } = await db.from('sample_vendors').insert({
+    article_id: articleId,
+    size,
+    color: null,
+    vendor_name: null,
+    status: 'requested',
+    requested_by: profile.id,
+    requested_at: new Date().toISOString()
+  }).select().single()
+  if (error) { toast('Failed to submit. ' + error.message); console.error(error); return }
+  await loadArticles()
+  const updated = allArticles.find(x => x.id === articleId)
+  if (updated) await renderSamplesPane(updated, updated.designer_id === profile.id)
+  toast('Size ' + size + ' submitted to Siti ✓')
+}
+
+async function flagMaterialFromSpec(articleId) {
+  const { data: finalSpec } = await db.from('article_iterations')
+    .select('*, iteration_fabrics(*), iteration_lining(*), iteration_interlining(*), iteration_accessories(*)')
+    .eq('article_id', articleId).eq('is_final_spec', true).maybeSingle()
+  if (!finalSpec) return
+
+  const items = []
+  ;(finalSpec.iteration_fabrics || []).forEach(f => {
+    items.push({ material_type: 'fabric', material_name: f.fabric_name + (f.color ? ' · ' + f.color : '') })
   })
-  if (error) { toast('Failed.'); return }
-  const a = allArticles.find(x => x.id === articleId)
-  if (a) await renderSamplesPane(a, a.designer_id === profile.id)
-  toast('Sample vendor added.')
+  const lin = (finalSpec.iteration_lining || [])[0]
+  if (lin && lin.lining_type === 'furing' && lin.fabric_name) {
+    items.push({ material_type: 'lining', material_name: 'Furing · ' + lin.fabric_name })
+  }
+  ;(finalSpec.iteration_interlining || []).forEach(i => {
+    items.push({ material_type: 'interlining', material_name: i.interlining_name + (i.position ? ' (' + i.position + ')' : '') })
+  })
+  ;(finalSpec.iteration_accessories || []).forEach(ac => {
+    items.push({ material_type: 'accessory', material_name: accLabel(ac) })
+  })
+
+  if (!items.length) return
+
+  // Overwrite — delete existing rows dulu
+  await db.from('article_material_status').delete().eq('article_id', articleId)
+
+  const { error } = await db.from('article_material_status').insert(
+    items.map(i => ({
+      article_id: articleId,
+      material_name: i.material_name,
+      material_type: i.material_type,
+      material_status: 'pending',
+      updated_by: profile.id
+    }))
+  )
+  if (error) console.warn('flagMaterialFromSpec error:', error.message)
 }
 
 async function addNote(articleId) {
