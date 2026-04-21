@@ -1049,11 +1049,15 @@ async function renderIterationsPane(a, isOwn) {
 
 // ── Spec & Size pane ──
 async function renderSpecPane(a, isOwn) {
-  const { data: finalSpec } = await db.from('article_iterations')
-    .select('*, iteration_fabrics(*), iteration_lining(*), iteration_interlining(*), iteration_accessories(*)')
-    .eq('article_id', a.id).eq('is_final_spec', true).maybeSingle()
+  const [{ data: finalSpec }, { data: matItems }] = await Promise.all([
+    db.from('article_iterations')
+      .select('*, iteration_fabrics(*), iteration_lining(*), iteration_interlining(*), iteration_accessories(*)')
+      .eq('article_id', a.id).eq('is_final_spec', true).maybeSingle(),
+    db.from('article_material_status').select('id').eq('article_id', a.id).limit(1)
+  ])
 
   const specLocked = ['sample_master','sample_vendor','production'].includes(a.stage)
+  const materialFlagged = (matItems||[]).length > 0
 
   let specHtml = ''
   if (finalSpec) {
@@ -1073,7 +1077,12 @@ async function renderSpecPane(a, isOwn) {
         <div class="spec-cell"><div class="spec-label">Lining</div><div class="spec-val">${lStr}</div></div>
         <div class="spec-cell"><div class="spec-label">Interlining</div><div class="spec-val">${int}</div></div>
         <div class="spec-cell"><div class="spec-label">Accessories</div><div class="spec-val">${acc}</div></div>
-      </div>`
+      </div>
+      ${isOwn ? `<div style="font-size:11px;margin-top:10px;padding:8px 12px;border-radius:2px;display:flex;align-items:center;gap:8px;background:${materialFlagged?'var(--sage-light)':'var(--cream)'};border:0.5px solid ${materialFlagged?'var(--sage-mid)':'var(--border)'}">
+        <span style="color:${materialFlagged?'var(--sage)':'var(--ink-30)'}">
+          ${materialFlagged ? '✓ Material sudah di-flag ke Siti' : '○ Material belum di-flag ke Siti'}
+        </span>
+      </div>` : ''}`
   } else {
     specHtml = `<div style="font-size:12px;color:var(--ink-30);font-style:italic;margin-bottom:16px">
       No final spec set yet. Go to an iteration → mark as done → "Set as final spec".

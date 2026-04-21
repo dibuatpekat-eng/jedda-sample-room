@@ -633,7 +633,11 @@ function renderSvList(){
     const items=allSvItems.filter(sv=>sv.article_id===a.id&&tabMatch(sv.status))
     const hasDoneSm=allSmItems.some(sm=>sm.article_id===a.id&&sm.status==='done')
     const hasAnySv=allSvItems.some(sv=>sv.article_id===a.id)
-    const showReady=svTabMode==='todo'&&hasDoneSm&&!hasAnySv
+    // Cek cetakan — harus ada cetakan vendor + QC (file atau skip approved)
+    const cets=a.article_cetakan||[]
+    const cv=cets.find(c=>c.type==='vendor'),cq=cets.find(c=>c.type==='qc')
+    const cetakanDone=!!(cv?.file_path||cv?.skip_approved)&&!!(cq?.file_path||cq?.skip_approved)
+    const showReady=svTabMode==='todo'&&hasDoneSm&&!hasAnySv&&cetakanDone
     if(!items.length&&!showReady) return
     grouped[a.id]={art:a,items,showReady}
   })
